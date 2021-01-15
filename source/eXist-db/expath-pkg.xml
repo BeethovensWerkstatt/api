@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://expath.org/ns/pkg" name="https://api.beethovens-werkstatt.de" abbrev="$$abbrev$$" version="$$version$$" spec="1.0">
+    <title>$$abbrev$$</title>
+</package>

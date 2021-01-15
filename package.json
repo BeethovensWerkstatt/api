@@ -1,0 +1,42 @@
+{
+  "name": "api",
+  "version": "0.1.0",
+  "description": "An API that will makes independent data packages with mostly MEI data available",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://kepper@github.com/BeethovensWerkstatt/api.git"
+  },
+  "keywords": [
+    "MEI",
+    "Beethoven",
+    "IIIF",
+    "Humanities",
+    "DH",
+    "API",
+    "Music"
+  ],
+  "author": "Johannes Kepper",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/BeethovensWerkstatt/api/issues"
+  },
+  "homepage": "https://github.com/BeethovensWerkstatt/api#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@existdb/gulp-exist": "^4.0.0",
+    "dateformat": "^4.4.1",
+    "del": "^6.0.0",
+    "fs": "0.0.1-security",
+    "git-rev-sync": "^3.0.1",
+    "gulp": "^4.0.2",
+    "gulp-bump": "^3.2.0",
+    "gulp-newer": "^1.4.0",
+    "gulp-replace": "^1.0.0",
+    "gulp-zip": "^5.0.2",
+    "simple-git": "^2.31.0"
+  }
+}
