@@ -7,7 +7,7 @@ xquery version "3.1";
 :)
 
 (: import shared ressources, mainly path to data folder :)
-import module namespace config="https://api.beethovens-werkstatt.de" at "../xqm/config.xqm";
+import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -32,7 +32,7 @@ let $database := collection($config:data-root)
 let $files :=
   for $file in $database//mei:mei[@xml:id][.//mei:facsimile[.//mei:graphic]]
   let $id := $file/string(@xml:id)
-  let $manifest := 'https://api.beethovens-werkstatt.de/iiif/document/' || $id || '/manifest.json'
+  let $manifest := $config:iiif-basepath || 'document/' || $id || '/manifest.json'
   let $pages := count($file//mei:surface[mei:graphic])
   return map {
     'id': $id,              (: the ID of the file :)

@@ -28,6 +28,14 @@ declare variable $config:app-root :=
 
 declare variable $config:data-root := $config:app-root || "/data/";
 
+declare variable $config:module3-root := $config:data-root || "/module3/";
+
+declare variable $config:iiif-basepath := 'https://api.beethovens-werkstatt.de/iiif/';
+
+declare variable $config:file-basepath := 'https://api.beethovens-werkstatt.de/file/';
+
+declare variable $config:module3-basepath := 'https://api.beethovens-werkstatt.de/module3/';
+
 declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.xml"))/repo:meta;
 
 declare variable $config:expath-descriptor := doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package;

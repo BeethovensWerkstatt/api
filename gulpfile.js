@@ -42,6 +42,14 @@ gulp.task('deploy-xql', gulp.series('xql', function() {
         .pipe(existClient.dest({target: '/db/apps/' + existPackageName + '/resources/xql/'}))
 }))
 
+//deploys xqm to exist-db
+gulp.task('deploy-xqm', gulp.series('xqm', function() {
+
+    return gulp.src(['**/*'], {cwd: 'build/resources/xqm/'})
+        .pipe(existClient.newer({target: '/db/apps/' + existPackageName + '/resources/xqm/'}))
+        .pipe(existClient.dest({target: '/db/apps/' + existPackageName + '/resources/xqm/'}))
+}))
+
 //watches xql for changes
 gulp.task('watch-xql',function() {
     return gulp.watch([sourcePath + '/xql/**/*',sourcePath + '/xqm/**/*'], gulp.series('deploy-xql'))

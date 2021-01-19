@@ -7,7 +7,7 @@ xquery version "3.1";
 :)
 
 (: import shared ressources, mainly path to data folder :)
-import module namespace config="https://api.beethovens-werkstatt.de" at "../xqm/config.xqm";
+import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -31,7 +31,7 @@ let $database := collection($config:data-root)
 (: get the ID of the requested document, as passed by the controller :)
 let $document.id := request:get-parameter('document.id','')
 
-let $document.uri := 'https://api.beethovens-werkstatt.de/iiif/document/' || $document.id || '/'
+let $document.uri := $config:iiif-basepath || '/document/' || $document.id || '/'
 
 (: get file from database :)
 let $file := $database//mei:mei[@xml:id = $document.id]
