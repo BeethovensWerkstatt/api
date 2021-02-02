@@ -40,7 +40,7 @@ let $file := $database//mei:mei[@xml:id = $document.id]
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
 let $file.type := 'sc:Manifest'
 let $id := $document.uri || 'manifest.json'
-let $label := string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ') || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//text(),' / ')
+let $label := string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//normalize-space(text()),' ') || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
 let $navDate := 'tbd' (: TODO :)
 let $license := 'http://rightsstatements.org/vocab/CNE/1.0/' (: TODO: this should be made more specific, if possible :)
 let $attribution := 'Beethovens Werkstatt'
@@ -62,7 +62,7 @@ let $sequences :=
         then($canvas/string(@label))
         else if($canvas/@n)
         then($canvas/string(@label))
-        else($canvas.index)
+        else(string($canvas.index))
 
     (: build variables for images = graphics:)
     let $images :=
