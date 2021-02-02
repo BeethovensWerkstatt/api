@@ -28,16 +28,20 @@ let $header-addition := response:set-header("Access-Control-Allow-Origin","*")
 (: get database from configuration :)
 let $database := collection($config:module3-root)
 
-(: get all files that have both an ID and some operable graphic elements :)
+(: get all files that 
+    - have an xml:id
+    - have an identifier that assigns them with module 3
+    - have no facsimiles in them (TODO: find a better way to identify work files, maybe using @class)
+:)
 let $files :=
-  for $file in $database//mei:mei[@xml:id][.//mei:seriesStmt/mei:identifier[@auth.uri = 'https://beethovens-werkstatt.de/modul-3/']]
+  for $file in $database//mei:mei[@xml:id][.//mei:seriesStmt/mei:identifier[@auth.uri = 'https://beethovens-werkstatt.de/modul-3/']][not(.//mei:facsimile)]
   let $file.id := $file/string(@xml:id)
-  let $external.id := 'https://api.beethovens-werkstatt.de/module3/' || $file.id || '.json'
+  let $external.id := $config:module3-basepath || $file.id || '.json'
   let $title := 
     for $title in $file//mei:fileDesc/mei:titleStmt/mei:title
     return map {
       'title': $title/text(),
-      'lang': $title/string(@xml:lang)
+      '@lang': $title/string(@xml:lang)
     }
     
   let $composer.elem := $file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
@@ -47,41 +51,10 @@ let $files :=
     'internalId': $composer.elem/string(@xml:id)
   }
   
-  let $manifestations := 
-    for $manifestationRef in $file//mei:manifestation
-    let $label := $manifestationRef/string(@label)
-    let $manifestation.filename := 
-      if(contains($manifestationRef/@sameas,'/')) 
-      then(tokenize($manifestationRef/@sameas,'/')[last()]) 
-      else($manifestationRef/string(@sameas))
-    let $manifestation.file := $database/element()[tokenize(document-uri(./root()),'/')[last()] = $manifestation.filename]
-    where exists($manifestation.file) and exists($manifestation.file/@xml:id)
-    let $manifestation.id := $manifestation.file/string(@xml:id)
-    let $manifestation.namespace := namespace-uri($manifestation.file)
-    let $manifestation.external.id := $config:module3-basepath || $file.id || '/manifestation/' || $manifestation.id || '.json'
-    
-    let $iiif.manifest := $config:iiif-basepath || 'document/' || $manifestation.id || '/manifest.json'
-    
-    return map {
-      '@id': $manifestation.id,
-      'label': $label,
-      'file': map {
-        'uri': $config:file-basepath || $manifestation.id || '.xml',
-        '@ns':  $manifestation.namespace,
-        'name': $manifestation.filename
-      },
-      'frbr': map {
-        'level': 'manifestation'
-      },
-      'iiif': map {
-        'manifest': $iiif.manifest
-      }
-    }
   return map {
     '@id': $external.id,
     'title': array { $title },
-    'composer': $composer,
-    'manifestations': $manifestations
+    'composer': $composer
   }
 
 
