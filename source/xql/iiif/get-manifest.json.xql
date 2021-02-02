@@ -40,7 +40,7 @@ let $file := $database//mei:mei[@xml:id = $document.id]
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
 let $file.type := 'sc:Manifest'
 let $id := $document.uri || 'manifest.json'
-let $label := 'tbd' (: TODO :)
+let $label := string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ') || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//text(),' / ')
 let $navDate := 'tbd' (: TODO :)
 let $license := 'http://rightsstatements.org/vocab/CNE/1.0/' (: TODO: this should be made more specific, if possible :)
 let $attribution := 'Beethovens Werkstatt'
@@ -57,7 +57,12 @@ let $sequences :=
     for $canvas at $canvas.index in $facsimile/mei:surface (: iiif:canvas matches mei:surface :)
     let $canvas.id := $document.uri || 'canvas/' || (if($canvas/@xml:id) then($canvas/@xml:id) else($canvas.index))
     let $canvas.type := 'sc:Canvas'
-    let $canvas.label := $canvas/string(@label)
+    let $canvas.label := 
+        if($canvas/@label)
+        then($canvas/string(@label))
+        else if($canvas/@n)
+        then($canvas/string(@label))
+        else($canvas.index)
 
     (: build variables for images = graphics:)
     let $images :=
@@ -65,7 +70,7 @@ let $sequences :=
       let $image.type := 'oa:Annotation'
       let $image.motivation := 'sc:painting'
       let $image.resource := map {
-        '@id': $image/@target || 'full/full/0/default.jpg',
+        '@id': $image/@target || '/full/full/0/default.jpg',
         '@type': 'dctypes:Image',
         'service': map {
           '@context': 'http://iiif.io/api/image/2/context.json',
