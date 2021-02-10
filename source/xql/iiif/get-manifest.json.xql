@@ -37,7 +37,7 @@ let $database := collection($config:data-root)
 (: get the ID of the requested document, as passed by the controller :)
 let $document.id := request:get-parameter('document.id','')
 
-let $document.uri := $config:iiif-basepath || '/document/' || $document.id || '/'
+let $document.uri := $config:iiif-basepath || 'document/' || $document.id || '/'
 
 (: get file from database :)
 let $file := $database//mei:mei[@xml:id = $document.id]
