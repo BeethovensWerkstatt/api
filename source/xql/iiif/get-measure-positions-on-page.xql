@@ -94,7 +94,6 @@ let $zones :=
     let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
     
     return map {
-        'on': $canvas.uri || $xywh,
         '@id': $annotation.uri.base || $zone/@xml:id,
         '@type': 'oa:Annotation',
         'motivation': 'oa:commenting',
