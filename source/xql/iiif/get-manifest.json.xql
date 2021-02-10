@@ -17,6 +17,12 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace f = "http://local.link";
+declare namespace map="http://www.w3.org/2005/xpath-functions/map";
+
+declare function f:addConditionally($map, $key, $data) as map(*) {
+  if (exists($data)) then map:put($map, $key, $data) else $map
+};
 
 (: set output to JSON:)
 declare option output:method "json";
@@ -40,7 +46,7 @@ let $file := $database//mei:mei[@xml:id = $document.id]
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
 let $file.type := 'sc:Manifest'
 let $id := $document.uri || 'manifest.json'
-let $label := string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//normalize-space(text()),' ') || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
+let $label := normalize-space(string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ')) || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
 let $navDate := 'tbd' (: TODO :)
 let $license := 'http://rightsstatements.org/vocab/CNE/1.0/' (: TODO: this should be made more specific, if possible :)
 let $attribution := 'Beethovens Werkstatt'
@@ -61,7 +67,7 @@ let $sequences :=
         if($canvas/@label)
         then($canvas/string(@label))
         else if($canvas/@n)
-        then($canvas/string(@label))
+        then($canvas/string(@n))
         else(string($canvas.index))
 
     (: build variables for images = graphics:)
@@ -91,14 +97,46 @@ let $sequences :=
       }
     let $canvas.width := $canvas/mei:graphic[@width][1]/xs:integer(@width)
     let $canvas.height := $canvas/mei:graphic[@height][1]/xs:integer(@height)
+    
+    let $folium := (
+        $file//mei:folium[(@recto = '#' || $canvas/@xml:id) or (@verso = '#' || $canvas/@xml:id)] | 
+        $file//mei:bifolium[(@inner.recto = '#' || $canvas/@xml:id) or (@inner.verso = '#' || $canvas/@xml:id) or (@outer.recto = '#' || $canvas/@xml:id) or (@outer.verso = '#' || $canvas/@xml:id)]
+    )[1]
+    
+    let $canvas.service := 
+        if($folium/@width and $folium/@height and $folium/@unit)
+        then(
+            map {
+                '@context': 'http://iiif.io/api/annex/services/physdim/1/context.json',
+                'profile': 'http://iiif.io/api/annex/services/physdim',
+                'physicalScale': 0.0025,
+                'physicalUnits': 'mm'
+            }
+        )
+        else()
+    
+    let $otherContent := 
+        if($canvas/mei:zone)
+        then(
+            map {
+              '@id': $document.uri || 'list/' || (if($canvas/@xml:id) then($canvas/@xml:id) else($canvas.index)) || '_zones',
+              '@type': 'sc:AnnotationList',
+              'label': 'measure positions'
+            }
+        )
+        else()
+    
+    
     return map {
       '@id': $canvas.id,
       '@type': $canvas.type,
       'label': $canvas.label,
       'images': array { $images },
       'width': $canvas.width,
-      'height': $canvas.height
-    }
+      'height': $canvas.height,
+      'otherContent': array { $otherContent }
+    } => f:addConditionally('service', data($canvas.service))
+    
   return map {
     '@type': $sequence.type,
     'canvases': array { $canvases }
