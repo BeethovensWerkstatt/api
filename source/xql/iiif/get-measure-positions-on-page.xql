@@ -94,6 +94,7 @@ let $zones :=
     let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
     
     return map {
+        '@context': 'http://iiif.io/api/presentation/2/context.json',
         '@id': $annotation.uri.base || $zone/@xml:id,
         '@type': 'oa:Annotation',
         'motivation': 'oa:commenting',
