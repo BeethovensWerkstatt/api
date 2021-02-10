@@ -97,7 +97,7 @@ let $zones :=
         '@context': 'http://iiif.io/api/presentation/2/context.json',
         '@id': $annotation.uri.base || $zone/@xml:id,
         '@type': 'oa:Annotation',
-        'motivation': 'oa:commenting',
+        'motivation': array { 'oa:commenting' },
         'on': map {
             '@type': 'oa:SpecificResource',
             'full': $canvas.uri,
