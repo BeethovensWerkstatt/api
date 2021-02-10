@@ -43,13 +43,13 @@ let $canvas.id := request:get-parameter('canvas.id','')
 let $file := $database//mei:mei[@xml:id = $document.id]
 let $canvas := $file//mei:surface[@xml:id = $canvas.id]
 
-let $annotation.uri.base := $config:iiif-basepath || '/document/' || $document.id || '/annotation/'
-let $document.uri := $config:iiif-basepath || '/document/' || $document.id || '/list/' || $canvas.id || '_zones'
-let $canvas.uri := $config:iiif-basepath || '/document/' || $document.id || '/canvas/' || $canvas.id
-let $manifest.uri := $config:iiif-basepath || '/document/' || $document.id || '/manifest.json'
+let $annotation.uri.base := $config:iiif-basepath || 'document/' || $document.id || '/annotation/'
+let $document.uri := $config:iiif-basepath || 'document/' || $document.id || '/list/' || $canvas.id || '_zones'
+let $canvas.uri := $config:iiif-basepath || 'document/' || $document.id || '/canvas/' || $canvas.id
+let $manifest.uri := $config:iiif-basepath || 'document/' || $document.id || '/manifest.json'
 
 (: build variable for file:)
-let $file.context := 'http://iiif.io/api/presentation/2/context.json'
+let $file.context := 'http://www.shared-canvas.org/ns/context.json' (:'http://iiif.io/api/presentation/2/context.json':)
 let $file.type := 'sc:AnnotationList'
 let $canvas.label := 
     if($canvas/@label)
