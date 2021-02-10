@@ -75,6 +75,9 @@ let $sequences :=
       for $image in $canvas/mei:graphic
       let $image.type := 'oa:Annotation'
       let $image.motivation := 'sc:painting'
+      let $image.width := $image/xs:integer(@width)
+      let $image.height := $image/xs:integer(@height)
+      
       let $image.resource := map {
         '@id': $image/@target || '/full/full/0/default.jpg',
         '@type': 'dctypes:Image',
@@ -85,8 +88,8 @@ let $sequences :=
           'protocol': 'http://iiif.io/api/image'
         },
         'format': 'image/jpeg',
-        'width': $image/xs:integer(@width),
-        'height': $image/xs:integer(@height)
+        'width': $image.width,
+        'height': $image.height
       }
       let $image.on := $canvas.id
       return map {
@@ -106,10 +109,21 @@ let $sequences :=
     let $canvas.service := 
         if($folium/@width and $folium/@height and $folium/@unit)
         then(
-            map {
+            
+            let $factor := 
+                if($folium/@unit = 'mm')
+                then(1)
+                else if($folium/@unit = 'cm')
+                then(10)
+                else if($folium/@unit = 'in')
+                then(25.4)
+                else(1)
+                
+            let $scale := round(xs:decimal($folium/@height) * xs:decimal($factor) div xs:decimal($canvas.height) * 10000) div 10000
+            return map {
                 '@context': 'http://iiif.io/api/annex/services/physdim/1/context.json',
                 'profile': 'http://iiif.io/api/annex/services/physdim',
-                'physicalScale': 0.0025,
+                'physicalScale': $scale,
                 'physicalUnits': 'mm'
             }
         )
