@@ -140,16 +140,33 @@ let $sequences :=
         )
         else()
     
+    let $canvas.map :=
+        if($folium/@width and $folium/@height and $folium/@unit)
+        then(
+            map {
+                '@id': $canvas.id,
+                '@type': $canvas.type,
+                'label': $canvas.label,
+                'images': array { $images },
+                'width': $canvas.width,
+                'height': $canvas.height,
+                'otherContent': array { $otherContent },
+                'service': $canvas.service
+            }
+        )
+        else(
+            map {
+                '@id': $canvas.id,
+                '@type': $canvas.type,
+                'label': $canvas.label,
+                'images': array { $images },
+                'width': $canvas.width,
+                'height': $canvas.height,
+                'otherContent': array { $otherContent }
+            }
+        )
     
-    return map {
-      '@id': $canvas.id,
-      '@type': $canvas.type,
-      'label': $canvas.label,
-      'images': array { $images },
-      'width': $canvas.width,
-      'height': $canvas.height,
-      'otherContent': array { $otherContent }
-    } => f:addConditionally('service', data($canvas.service))
+    return $canvas.map
     
   return map {
     '@type': $sequence.type,
