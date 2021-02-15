@@ -13,6 +13,7 @@ import module namespace iiif="https://edirom.de/iiif" at "../../xqm/iiif.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
+declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace svg="http://www.w3.org/2000/svg";
 declare namespace request="http://exist-db.org/xquery/request";
 declare namespace util="http://exist-db.org/xquery/util";
@@ -61,6 +62,104 @@ let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $compla
 
 let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
 
+let $embodiments := 
+    
+    let $embodied.annots := $database//mei:annot[mei:relation[@rel = 'isEmbodimentOf'][some $annot.id in $annot.ids satisfies contains(@target,'#' || $annot.id)]]
+    let $embodied.annot.ids := distinct-values($embodied.annots/string(@xml:id))
+    let $manifestation.ids := distinct-values($embodied.annots/ancestor::*[local-name() = ('mei','TEI')]/@xml:id)
+    for $manifestation.id in $manifestation.ids
+        let $manifestation := ($database//mei:mei[@xml:id = $manifestation.id] | $database//tei:TEI[@xml:id = $manifestation.id])
+        let $manifestation.namespace := namespace-uri($manifestation)
+        let $manifestation.filename := tokenize(document-uri($manifestation/root()),'/')[last()] 
+        let $manifestationRef := $file//mei:manifestation[@sameas ='./' || $manifestation.filename]
+        let $label := $manifestationRef/string(@label)
+        
+        let $relevant.annots := $embodied.annots[ancestor::*[local-name() = ('mei','TEI')][@xml:id = $manifestation.id]]
+        
+        let $affected.measures :=
+            for $complaint in ($relevant.annots)
+            
+            let $first.measure := $complaint/ancestor::mei:measure
+            
+            (:how many additional measures do I need to pull?:)
+            let $range := 
+                if($complaint/@tstamp2 and matches($complaint/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($complaint/@tstamp2,'m')) gt 0)
+                then(xs:integer(substring-before($complaint/@tstamp2,'m')))
+                else(0)
+            let $subsequent.measures :=
+                if($range gt 0)
+                then($first.measure/following::mei:measure[position() le $range])
+                else()
+                
+            return ($first.measure | $subsequent.measures)
+        
+        let $doc.zones := $manifestation//mei:zone
+        
+        let $measures := 
+            for $measure in $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id]
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label := 
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
+            let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
+            let $iiif := 
+                
+                let $zones := 
+                    (:measure is referencing a zone:)
+                    if($measure/@facs and $doc.zones[@xml:id = $facs.refs])
+                    then(
+                        $doc.zones[@xml:id = $facs.refs]
+                    )
+                    (:a zone is referencing the measure:)
+                    else if($doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')])
+                    then(
+                        $doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')]
+                    )
+                    else()
+                let $annots := 
+                    if(count($zones) gt 0)
+                    then(
+                        iiif:getRectangle($manifestation, $zones, true())
+                    )
+                    else()
+                
+                return $annots
+            
+            return map {
+                'id': $measure.id,
+                'label': $measure.label
+            }
+            
+        let $iiif := iiif:getRectangle($manifestation, $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id], true())
+        
+        return map {
+            '@id': $manifestation.id,
+            'label': $label,
+            'file': map {
+                'uri': $config:file-basepath || $manifestation.id || '.xml',
+                '@ns': $manifestation.namespace,
+                'name': $manifestation.filename
+            },
+            'annots': array {
+                distinct-values($relevant.annots/string(@xml:id))
+            },
+            'measures': array {
+                $measures
+            },
+            'iiif': array {
+                $iiif
+            }
+            
+        }
+    
+    (:return map {
+        'id': array { $embodied.annot.ids },
+        'uris': array { $documents }
+    }:)
+    
 let $affected.measures :=
     for $complaint in ($annot, $dependent.complaints)
     
@@ -111,7 +210,7 @@ let $measures :=
             )
             else()
         
-        return $annots
+        return count($zones) (:$annots:)
     
     return map {
         'id': $measure.id,
@@ -138,8 +237,9 @@ let $staves :=
     
 return map {
     '@id': $public.complaint.id,
-    'on': $document.uri,
+    '@work': $document.uri,
     'annots': array { $annot.ids },
+    'embodiments': array { $embodiments },
     'movement': map {
         'id': $mdiv.id,
         'n': $mdiv.n,
