@@ -89,13 +89,14 @@ let $measures :=
         else if($measure/@n)
         then($measure/string(@n))
         else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
+    let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
     let $iiif := 
         
         let $zones := 
             (:measure is referencing a zone:)
-            if($measure/@facs and $doc.zones[@xml:id = tokenize(normalize-space(replace($measure/@facs,'#','')),' ')])
+            if($measure/@facs and $doc.zones[@xml:id = $facs.refs])
             then(
-                $doc.zones[@xml:id = tokenize(normalize-space(replace($measure/@facs,'#','')),' ')]
+                $doc.zones[@xml:id = $facs.refs]
             )
             (:a zone is referencing the measure:)
             else if($doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')])
