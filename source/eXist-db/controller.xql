@@ -88,6 +88,7 @@ if(matches($exist:path,'/module3/works\.json')) then (
 
 ) else
 
+(: get specific work:)
 if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
@@ -95,6 +96,19 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
         <forward url="{$exist:controller}/resources/xql/module3/get-work.xql">
           (: pass in the UUID of the document passed in the URI :)
           <add-parameter name="document.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: get specific complaint:)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/complaints/[\da-zA-Z-_\.]+\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-complaint.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="complaint.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
         </forward>
     </dispatch>
 ) else

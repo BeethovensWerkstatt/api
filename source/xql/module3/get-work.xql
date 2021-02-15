@@ -96,7 +96,7 @@ let $complaints :=
     (: get only those annots that are the first occurence of something :)
     where not(replace($annot/@corresp,'#','') = $file//mei:annot/@xml:id)
     let $complaint.id := $annot/string(@xml:id)
-    let $public.complaint.id := $config:module3-basepath || 'complaints/' || $complaint.id || '.json'
+    let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
     let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
     let $mdiv.id := $mdiv/string(@xml:id)
     let $mdiv.n := 
@@ -147,7 +147,7 @@ let $complaints :=
         }
         
     
-    let $staves := 
+    (:let $staves := 
         for $staff in tokenize($annot/normalize-space(@staff),' ')
         let $staff.label := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:label) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:label)][1]/mei:label/string(text())
         let $staff.labelAbbr := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:labelAbbr) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:labelAbbr)][1]/mei:labelAbbr/string(text())
@@ -156,9 +156,10 @@ let $complaints :=
             'label': $staff.label,
             'abbr': $staff.labelAbbr
         }
-        (:return xs:integer($staff):)
+        (\:return xs:integer($staff):\)
         
-    
+    :)
+        
         
     return map {
         '@id': $public.complaint.id,
@@ -168,8 +169,7 @@ let $complaints :=
             'n': $mdiv.n,
             'label': $mdiv.label
         },
-        'measures': array { $measures },
-        'staves': array { $staves }
+        'measures': array { $measures }
     }
 
 
