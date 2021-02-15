@@ -16,14 +16,16 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 
-declare function iiif:getRectangle($file as node(),$elements as node()+,$boundingRect as xs:boolean) as map(*)* {
+declare function iiif:getRectangle($file as node(),$elements as node()*,$boundingRect as xs:boolean) as map(*)* {
     
     let $document.id := $file/@xml:id
     let $manifest.uri := $config:iiif-basepath || 'document/' || $document.id || '/manifest.json'
     
     let $maps :=
+        if(count($elements) = 0)
+        then()
         (: all requested elements are mei:zones :)
-        if (every $element in $elements satisfies local-name($element) = 'zone')
+        else if (every $element in $elements satisfies local-name($element) = 'zone')
         then (
             let $zones := $elements[@xml:id]
             let $zone.ids := for $zone in $elements return '#' || $zone/@xml:id

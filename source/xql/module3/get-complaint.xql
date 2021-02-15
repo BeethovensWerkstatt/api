@@ -103,7 +103,13 @@ let $measures :=
                 $doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')]
             )
             else()
-        let $annots := iiif:getRectangle($file, $zones, true())
+        let $annots := 
+            if(count($zones) gt 0)
+            then(
+                iiif:getRectangle($file, $zones, true())
+            )
+            else()
+        
         return $annots
     
     return map {
