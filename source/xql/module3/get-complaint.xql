@@ -8,8 +8,9 @@ xquery version "3.1";
 
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
-
 import module namespace iiif="https://edirom.de/iiif" at "../../xqm/iiif.xqm";
+import module namespace ef="https://edirom.de/file" at "../../xqm/file.xqm";
+import module namespace ema="https://github.com/music-addressability/ema/blob/master/docs/api.md" at "../../xqm/ema.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -74,7 +75,18 @@ let $embodiments :=
         let $manifestationRef := $file//mei:manifestation[@sameas ='./' || $manifestation.filename]
         let $label := $manifestationRef/string(@label)
         
+        let $manifestation.classes := tokenize(normalize-space($manifestationRef/@class),' ')
+        let $text.status := 
+            if('#initialVersion' = $manifestation.classes)
+            then('initialVersion')
+            else if('#revisedVersion' = $manifestation.classes)
+            then('revisedVersion')
+            else if('#revisionList' = $manifestation.classes)
+            then('revisionInstruction')
+            else('unknown')
+        
         let $relevant.annots := $embodied.annots[ancestor::*[local-name() = ('mei','TEI')][@xml:id = $manifestation.id]]
+        
         
         let $affected.measures :=
             for $complaint in ($relevant.annots)
@@ -130,10 +142,12 @@ let $embodiments :=
             
             return map {
                 'id': $measure.id,
+                'uri': ef:getElementLink($manifestation.id,$measure.id),
                 'label': $measure.label
             }
             
         let $iiif := iiif:getRectangle($manifestation, $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id], true())
+        let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
         
         return map {
             '@id': $manifestation.id,
@@ -143,8 +157,10 @@ let $embodiments :=
                 '@ns': $manifestation.namespace,
                 'name': $manifestation.filename
             },
+            'textStatus': $text.status,
+            'ema': $ema,
             'annots': array {
-                distinct-values($relevant.annots/string(@xml:id))
+                for $annot in distinct-values($relevant.annots/string(@xml:id)) return ef:getElementLink($manifestation.id, $annot)
             },
             'measures': array {
                 $measures
@@ -214,6 +230,7 @@ let $measures :=
     
     return map {
         'id': $measure.id,
+        'uri': ef:getElementLink($document.id,$measure.id),
         'label': $measure.label,
         'iiif': array {
             $iiif
@@ -238,10 +255,11 @@ let $staves :=
 return map {
     '@id': $public.complaint.id,
     '@work': $document.uri,
-    'annots': array { $annot.ids },
+    'annots': array { for $annot in $annot.ids return ef:getElementLink($document.id,$annot)},
     'embodiments': array { $embodiments },
     'movement': map {
         'id': $mdiv.id,
+        'uri': ef:getElementLink($document.id,$mdiv.id),
         'n': $mdiv.n,
         'label': $mdiv.label
     },

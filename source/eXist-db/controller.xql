@@ -113,6 +113,31 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/complaints/[\da-zA-Z-_\.]+\.jso
     </dispatch>
 ) else
 
+(: get MEI element:)
+if(matches($exist:path,'/file/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/file/get-element.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="element.id" value="{tokenize($exist:path,'/')[last()]}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: get MEI file:)
+if(matches($exist:path,'/file/[\da-zA-Z-_\.]+.xml$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/file/get-file.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.xml')}"/>          
+        </forward>
+    </dispatch>
+) else
+
 (: endpoint for index.html :)
 if ($exist:path eq "/index.html") then (
     (: forward root path to index.xql :)

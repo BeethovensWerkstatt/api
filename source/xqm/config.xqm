@@ -34,6 +34,8 @@ declare variable $config:iiif-basepath := 'https://api.beethovens-werkstatt.de/i
 
 declare variable $config:file-basepath := 'https://api.beethovens-werkstatt.de/file/';
 
+declare variable $config:ema-basepath := 'https://api.beethovens-werkstatt.de/ema/';
+
 declare variable $config:module3-basepath := 'https://api.beethovens-werkstatt.de/module3/';
 
 declare variable $config:repo-descriptor := doc(concat($config:app-root, "/repo.xml"))/repo:meta;
