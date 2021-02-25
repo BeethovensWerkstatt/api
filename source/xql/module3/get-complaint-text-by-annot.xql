@@ -47,7 +47,7 @@ let $xslt := $config:xslt-basepath || '../xslt/module3/get-complaint-text-by-ann
 
 let $extract := transform:transform($file,
                doc($xslt), <parameters>
-                   <param name="annot.ids" value="{$annot.ids.raw}"/>
+                   <param name="annot.ids.joined" value="{$annot.ids.raw}"/>
                </parameters>)
 
 return $extract
