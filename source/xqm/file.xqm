@@ -21,3 +21,8 @@ declare function ef:getElementLink($file.id as xs:string, $element.id as xs:stri
     let $link := $config:file-basepath || $file.id || '/element/' || $element.id
     return $link
 };
+
+declare function ef:getMeiByAnnotsLink($file.id as xs:string, $annot.ids as xs:string*) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/annots/' || string-join($annot.ids,',') || '/text.xml'
+    return $link
+};

@@ -148,6 +148,7 @@ let $embodiments :=
             
         let $iiif := iiif:getRectangle($manifestation, $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id], true())
         let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
+        let $mei := ef:getMeiByAnnotsLink($manifestation.id, $relevant.annots/@xml:id)
         
         return map {
             '@id': $manifestation.id,
@@ -159,6 +160,7 @@ let $embodiments :=
             },
             'textStatus': $text.status,
             'ema': $ema,
+            'mei': $mei,
             'annots': array {
                 for $annot in distinct-values($relevant.annots/string(@xml:id)) return ef:getElementLink($manifestation.id, $annot)
             },

@@ -33,23 +33,23 @@
             <xd:p>The annot elements which delimit the content that is to be retrieved</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:variable name="annots" select="for $annot.id in $annot.ids  return /id($annot.id)" as="node()*"/>
+    <xsl:variable name="annots" select="for $annot.id in $annot.ids return /id($annot.id)" as="node()*"/>
     <!--<xsl:variable name="start.measures" select="for $annot in $annots return ancestor::mei:measure" as="node()*"/>-->
     
     <!-- extract a single excerpt for each annotation, irrespective of other annots (if any) -->
     <xsl:variable name="ranges" as="node()*">
-        <xsl:for-each select="$annots">
+        <xsl:for-each select="($annots)">
             <xsl:variable name="annot" select="." as="node()"/>
             <xsl:variable name="first.measure" select="ancestor::mei:measure" as="node()"/>
             <xsl:variable name="tstamp" select="number($annot/@tstamp)" as="xs:double"/>
             <xsl:variable name="end.tstamp" select="if(not(contains($annot/@tstamp2,'m+'))) then(number($annot/@tstamp2)) else(number(substring-after($annot/@tstamp2,'m+')))" as="xs:double"/>
             <xsl:variable name="subsequent.measures" select="if(starts-with($annot/@tstamp2,'0m+') or not(contains($annot/@tstamp2,'m+'))) then() else($first.measure/following::measure[position() le xs:integer(substring-before($annot/@tstamp2,'m+'))])" as="node()*"/>
             <xsl:variable name="affected.measures" select="$first.measure | $subsequent.measures" as="node()+"/>
-            <xsl:variable name="staves.n" select="if($annot/@staff) then(tokenize(normalize-space($annot/@sstaff),' ')) else(distinct-values($first.measure/mei:staff/@n))" as="xs:string*"/>
+            <xsl:variable name="staves.n" select="if($annot/@staff) then(tokenize(normalize-space($annot/@staff),' ')) else(distinct-values($first.measure/mei:staff/@n))" as="xs:string*"/>
             
             <!-- delimit the area in which relevant features can be found -->
             <xsl:variable name="search.space" as="node()">
-                <xsl:apply-templates select="$first.measure/ancestor::mei:mdiv[1]" mode="get.search.space">
+                <xsl:apply-templates select="$first.measure/ancestor::mei:*[local-name() = ('score','part')]" mode="get.search.space">
                     <xsl:with-param name="measure.id" select="$first.measure/@xml:id" tunnel="yes"/>
                 </xsl:apply-templates>
             </xsl:variable>
@@ -84,7 +84,7 @@
                             <xsl:choose>
                                 <xsl:when test="not($is.multi.staff)">
                                     
-                                    <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text())[1]" as="xs:string"/>
+                                    <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text() | $search.space/self::mei:part/@label)[last()]" as="xs:string"/>
                                     
                                     <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n]//mei:clef)[last()]" as="node()"/>
                                     <xsl:variable name="clef.shape" select="$clef.elem/@clef.shape | $clef.elem/@shape" as="xs:string"/>
@@ -95,7 +95,7 @@
                                     <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                     
                                     
-                                    <staffDef n="{$current.staff.n}">
+                                    <staffDef n="{$current.staff.n}" lines="5">
                                         <xsl:attribute name="label" select="$staff.label"/>
                                         <xsl:attribute name="clef.shape" select="$clef.shape"/>
                                         <xsl:attribute name="clef.line" select="$clef.line"/>
@@ -138,7 +138,7 @@
                                                         <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                                         
                                                         
-                                                        <staffDef n="{$current.staff.n.in.group}">
+                                                        <staffDef n="{$current.staff.n.in.group}" lines="5">
                                                             <xsl:if test="exists($staff.label)">
                                                                 <xsl:attribute name="label" select="$staff.label"/>
                                                             </xsl:if>
@@ -168,7 +168,7 @@
                                                 <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                                 
                                                 
-                                                <staffDef n="{$current.staff.n}">
+                                                <staffDef n="{$current.staff.n}" lines="5">
                                                     <xsl:if test="exists($staff.label)">
                                                         <xsl:attribute name="label" select="$staff.label"/>
                                                     </xsl:if>
@@ -300,7 +300,6 @@
                 </mdiv>
             </body>
         </music>
-        <xsl:apply-templates select="node()"/>
     </xsl:template>
     
     <xd:doc>
@@ -323,7 +322,7 @@
         <xd:param name="staves"></xd:param>
     </xd:doc>
     <xsl:template match="mei:staff" mode="get.selected.staves">
-        <xsl:param  name="staves" tunnel="yes" as="xs:string*"/>
+        <xsl:param name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:if test="@n = $staves">
             <xsl:next-match/>
         </xsl:if>
@@ -336,7 +335,7 @@
         <xd:param name="staves"></xd:param>
     </xd:doc>
     <xsl:template match="mei:measure/mei:*[@staff]" mode="get.selected.staves">
-        <xsl:param  name="staves" tunnel="yes" as="xs:string*"/>
+        <xsl:param name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:if test="some $n in tokenize(normalize-space(@staff),' ') satisfies $n = $staves">
             <xsl:next-match/>
         </xsl:if>
