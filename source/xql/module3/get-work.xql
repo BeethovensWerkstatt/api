@@ -50,6 +50,7 @@ let $composer := map {
     'internalId': $composer.elem/string(@xml:id)
 }
 
+(:
 let $manifestation.files := 
     for $manifestationRef in $file//mei:manifestation
     let $manifestation.filename := 
@@ -59,7 +60,7 @@ let $manifestation.files :=
     let $manifestation.file := $database/element()[tokenize(document-uri(./root()),'/')[last()] = $manifestation.filename]
     where exists($manifestation.file) and exists($manifestation.file/@xml:id)
     return $manifestation.file
-  
+    
 let $manifestations := 
     for $manifestationRef in $file//mei:manifestation
     let $manifestation.filename := 
@@ -83,6 +84,33 @@ let $manifestations :=
         '@ns':  $manifestation.namespace,
         'name': $manifestation.filename
       },
+      'frbr': map {
+        'level': 'manifestation'
+      },
+      'iiif': map {
+        'manifest': $iiif.manifest
+      }
+    }    
+    
+:)
+    
+let $manifestations := 
+    for $manifestation in $file//mei:manifestation
+    let $facsimile := $file//mei:facsimile[@decls = replace(normalize-space(.),'#','')]
+    
+    where exists($facsimile) (:TODO: Decide how to deal with TEI files… :)
+    
+    let $label := $manifestation/string(@label)
+    let $facsimile.id := $facsimile/string(@xml:id)
+    
+    (:let $manifestation.namespace := namespace-uri($manifestation.file):)
+    let $manifestation.external.id := $config:module3-basepath || $document.id || '/manifestation/' || $facsimile.id || '.json'
+    
+    let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile.id || '/manifest.json'
+    
+    return map {
+      '@id': $facsimile.id,
+      'label': $label,
       'frbr': map {
         'level': 'manifestation'
       },
