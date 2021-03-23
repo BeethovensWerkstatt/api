@@ -8,6 +8,7 @@ xquery version "3.1";
 
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
+import module namespace iiif="https://edirom.de/iiif" at "../../xqm/iiif.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -40,7 +41,10 @@ let $document.id := request:get-parameter('document.id','')
 let $canvas.id := request:get-parameter('canvas.id','')
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei)
+(: is this a link to a facsimile only, or to a document :)
+let $is.facsimile.id := not($file/@xml:id = $document.id)
+
 let $canvas := $file//mei:surface[@xml:id = $canvas.id]
 
 let $annotation.uri.base := $config:iiif-basepath || 'document/' || $document.id || '/annotation/'
@@ -60,62 +64,40 @@ let $canvas.label :=
 let $file.label := 'measure positions on page ' || $canvas.label || ' of ' || normalize-space(string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ')) || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
 
 let $zone.ids := for $zone.id in $canvas//mei:zone/@xml:id return '#' || $zone.id
-let $referencing.elements := $file//mei:*[@facs][@facs = $zone.ids]
-let $references := $canvas//mei:zone/substring-after(@data,'#')
+let $referencing.elements := $file//mei:*[@facs][@facs = $zone.ids or (contains(@facs,' ') and (some $ref in tokenize(normalize-space(@facs),' ') satisfies $ref = $zone.ids))]
+let $references := distinct-values($canvas//mei:zone/tokenize(replace(normalize-space(@data),'#',''),' '))
 let $referenced.elements := for $reference in $references return $file/root()/id($reference)
 
 let $zones := 
     for $zone in $canvas//mei:zone[@xml:id]
-    let $zone.target :=
+    let $zone.targets :=
         if($zone/@data)
-        then($referenced.elements[@xml:id = substring-after($zone/@data,'#')])
-        else if($referencing.elements[@facs = '#' || $zone/@xml:id])
-        then($referencing.elements[@facs = '#' || $zone/@xml:id])
+        then($referenced.elements[@xml:id = tokenize(replace(normalize-space($zone/@data),'#',''))])
+        else if($referencing.elements[some $facs in tokenize(replace(normalize-space(./@facs),'#','')) satisfies $facs = $zone/@xml:id])
+        then($referencing.elements[some $facs in tokenize(replace(normalize-space(./@facs),'#','')) satisfies $facs = $zone/@xml:id])
         else()
-    where exists($zone.target) and $zone.target/@xml:id
-    let $zone.target.label := 
-        if($zone.target/@label)
-        then(local-name($zone.target) || ' ' || $zone.target/string(@label))
-        else if($zone.target/@n)
-        then(local-name($zone.target) || ' ' || $zone.target/string(@n))
-        else(local-name($zone.target) || ' ' || string($zone.target/@xml:id))
+        
+    (: when there are no elements connected to this zone, stop processing for this particular zone :)
+    where exists($zone.targets) and (every $zone in $zone.targets satisfies $zone/@xml:id)
     
-    let $x := xs:integer($zone/@ulx)
-    let $y := xs:integer($zone/@uly)
-    let $w := xs:integer($zone/@lrx) - $x
-    let $h := xs:integer($zone/@lry) - $y
+    (: retrieve labels for each element connected to the zone :)
+    let $individual.labels :=
+        for $target in $zone.targets
+        return iiif:getLabel($target,true())
+    (: and join them into a comma-separated list :)
+    let $zone.target.label := string-join($individual.labels,', ')
     
-    let $xywh := '#xywh=' || $x || ',' || $y || ',' || $w ||',' || $h
-    let $region := $x || ',' || $y || ',' || $w || ',' || $h 
+    let $region := iiif:getRegion($zone)
+    let $xywh := iiif:getXywh($region)
     
     let $graphic := $canvas/mei:graphic[@target and starts-with(@target,'http')]
     let $graphic.target := $graphic/string(@target)
     let $graphic.target.id := $graphic.target || '/' || $region || '/full/0/default.jpg'
     let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
     
-    return map {
-        '@context': 'http://iiif.io/api/presentation/2/context.json',
-        '@id': $annotation.uri.base || $zone/@xml:id,
-        '@type': 'oa:Annotation',
-        'motivation': array { 'oa:commenting' },
-        'on': map {
-            '@type': 'oa:SpecificResource',
-            'full': $canvas.uri,
-            'selector': map {
-                '@type': 'oa:FragmentSelector',
-                'value': substring($xywh,2)
-            },
-            'within': map {
-                '@id': $manifest.uri,
-                '@type': 'sc:Manifest'
-            }
-        },
-        'resource': map {
-            '@type': 'dctypes:Text',
-            'chars': $zone.target.label,
-            'format': 'text/html'
-        }
-    } 
+    let $annotation := iiif:getIiifAnnotation($document.id, $zone/@xml:id, $canvas.uri, $xywh, $manifest.uri, $zone.target.label, $graphic.target.id)
+    
+    return $annotation
     
 return map {
     '@context': $file.context,

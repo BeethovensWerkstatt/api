@@ -8,6 +8,7 @@ xquery version "3.1";
 
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
+import module namespace iiif="https://edirom.de/iiif" at "../../xqm/iiif.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -40,7 +41,9 @@ let $document.id := request:get-parameter('document.id','')
 let $document.uri := $config:iiif-basepath || 'document/' || $document.id || '/'
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei)
+(: is this a link to a facsimile only, or to a document :)
+let $is.facsimile.id := not($file/@xml:id = $document.id)
 
 (: build variable for file:)
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
@@ -53,9 +56,15 @@ let $attribution := 'Beethovens Werkstatt'
 let $viewingDirection := 'left-to-right'
 let $viewingHint := 'paged'
 
+(: if a specific facsimile was requested, get only that :)
+let $relevantFacsimiles :=
+    if($is.facsimile.id)
+    then($file//mei:facsimile[@xml:id =  $document.id])
+    else($file//mei:facsimile)
+
 (: build variable for sequences :)
 let $sequences :=
-  for $facsimile in $file//mei:facsimile
+  for $facsimile in $relevantFacsimiles
   let $sequence.type := 'sc:Sequence'
 
   (: build variables for canvases = surfaces :)
@@ -78,19 +87,9 @@ let $sequences :=
       let $image.width := $image/xs:integer(@width)
       let $image.height := $image/xs:integer(@height)
       
-      let $image.resource := map {
-        '@id': $image/@target || '/full/full/0/default.jpg',
-        '@type': 'dctypes:Image',
-        'service': map {
-          '@context': 'http://iiif.io/api/image/2/context.json',
-          '@id': $image/string(@target)(: || 'info.json':),
-          'profile': 'http://iiif.io/api/image/2/level2.json',
-          'protocol': 'http://iiif.io/api/image'
-        },
-        'format': 'image/jpeg',
-        'width': $image.width,
-        'height': $image.height
-      }
+      let $image.resource := iiif:getImageResource($image.width, $image.height, $image/string(@target))
+      
+      
       let $image.on := $canvas.id
       return map {
         '@type': $image.type,
