@@ -16,13 +16,22 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 
+declare function ef:getFileLink($file.id as xs:string) as xs:string {
+    let $link := $config:file-basepath || $file.id || '.xml'
+    return $link
+};
+
+declare function ef:getMdivLink($file.id as xs:string, $mdiv.id as xs:string) as xs:string {
+    let $link := $config:file-basepath || $file.id || '/mdiv/' || $mdiv.id || '.xml'
+    return $link
+};
 
 declare function ef:getElementLink($file.id as xs:string, $element.id as xs:string) as xs:string {
-    let $link := $config:file-basepath || $file.id || '/element/' || $element.id
+    let $link := $config:file-basepath || $file.id || '/element/' || $element.id || '.xml'
     return $link
 };
 
 declare function ef:getMeiByAnnotsLink($file.id as xs:string, $annot.ids as xs:string*) as xs:string {
-    let $link := $config:module3-basepath || $file.id || '/annots/' || string-join($annot.ids,',') || '/text.xml'
+    let $link := $config:module3-basepath || $file.id || '/annots/' || string-join($annot.ids,',') || '.mei'
     return $link
 };

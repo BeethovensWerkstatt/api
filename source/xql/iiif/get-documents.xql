@@ -8,6 +8,7 @@ xquery version "3.1";
 
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
+import module namespace ef="https://edirom.de/file" at "../../xqm/file.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -30,14 +31,16 @@ let $database := collection($config:data-root)
 
 (: get all files that have both an ID and some operable graphic elements :)
 let $files :=
-  for $file in $database//mei:mei[@xml:id][.//mei:facsimile[.//mei:graphic]]
-  let $id := $file/string(@xml:id)
+  for $facsimile in $database//mei:mei[@xml:id][.//mei:facsimile[@xml:id and .//mei:graphic]]//mei:facsimile
+  let $id := $facsimile/string(@xml:id)
+  let $file.id := $facsimile/ancestor::mei:mei/string(@xml:id)
   let $manifest := $config:iiif-basepath || 'document/' || $id || '/manifest.json'
-  let $pages := count($file//mei:surface[mei:graphic])
+  let $pages := count($facsimile//mei:surface[mei:graphic])
   return map {
     'id': $id,              (: the ID of the file :)
     'manifest': $manifest,  (: link to the IIIF manifest :)
-    'pages': $pages         (: the number of pages :)
+    'pages': $pages,        (: the number of pages :)
+    'file': ef:getFileLink($file.id)
   }
 
 

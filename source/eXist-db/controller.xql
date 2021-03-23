@@ -139,14 +139,14 @@ if(matches($exist:path,'/file/[\da-zA-Z-_\.]+.xml$')) then (
 ) else
 
 (: get MEI extract for showing a single complaint's text :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/annots/[\da-zA-Z-_\.,]+/text.xml$')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/annots/[\da-zA-Z-_\.,]+.mei$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="{$exist:controller}/resources/xql/module3/get-complaint-text-by-annot.xql">
           (: pass in the UUID of the document passed in the URI :)
-          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
-          <add-parameter name="annot.ids" value="{tokenize($exist:path,'/')[last() - 1]}"/>          
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="annot.ids" value="{substring(tokenize($exist:path,'/')[last()],1,string-length(tokenize($exist:path,'/')[last()]) - 4)}"/>          
         </forward>
     </dispatch>
 ) else

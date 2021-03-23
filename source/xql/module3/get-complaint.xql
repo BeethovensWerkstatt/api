@@ -48,6 +48,7 @@ let $annot := $file//mei:body//mei:annot[@xml:id = $complaint.id]
 let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
 let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
 let $mdiv.id := $mdiv/string(@xml:id)
+let $mdiv.uri := ef:getMdivLink($document.id, $mdiv/string(@xml:id))
 let $mdiv.n := 
     if($mdiv/@n)
     then($mdiv/string(@n))
@@ -63,6 +64,82 @@ let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $compla
 
 let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
 
+let $affected.measures :=
+    for $complaint in ($annot, $dependent.complaints)
+    
+    let $first.measure := $complaint/ancestor::mei:measure
+    
+    (:how many additional measures do I need to pull?:)
+    let $range := 
+        if($annot/@tstamp2 and matches($annot/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($annot/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($annot/@tstamp2,'m')))
+        else(0)
+    let $subsequent.measures :=
+        if($range gt 0)
+        then($first.measure/following::mei:measure[position() le $range])
+        else()
+        
+    return ($first.measure | $subsequent.measures)
+
+let $affected.staves := tokenize($annot/normalize-space(@staff),' ')
+
+(: used for performance reasons :)
+let $doc.zones := $file//mei:zone
+
+let $embodiments :=
+    let $measure.facs := $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ')
+    let $relevant.staves := $affected.measures/mei:staff[@n = $affected.staves]
+    let $staff.facs := $relevant.staves/tokenize(replace(normalize-space(@facs),'#',''),' ')
+    let $measure.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/@xml:id]
+    let $measure.zones.by.facs := $doc.zones[@xml:id = $measure.facs]
+    let $staff.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/mei:staff[@n = $affected.staves]/@xml:id]
+    let $staff.zones.by.facs := $doc.zones[@xml:id = $staff.facs]
+    
+    let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
+    let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id)
+    
+    let $facsimile.ids := distinct-values($relevant.zones/ancestor::mei:facsimile/@xml:id)
+    let $facsimiles := $file//mei:facsimile[@xml:id = $facsimile.ids]
+    
+    for $facsimile in $facsimiles
+        let $manifestation := $file//mei:manifestation[@xml:id = $facsimile/replace(normalize-space(@decls),'#','')]
+        let $label := $manifestation/string(@label)
+        
+        let $manifestation.classes := tokenize(normalize-space($manifestation/@class),' ')
+        let $text.status := 
+            if('#initialVersion' = $manifestation.classes)
+            then('initialVersion')
+            else if('#revisedVersion' = $manifestation.classes)
+            then('revisedVersion')
+            else if('#revisionList' = $manifestation.classes)
+            then('revisionInstruction')
+            else('unknown')
+            
+        let $current.zones := $facsimile//mei:zone[@xml:id = $relevant.zones.ids]
+        
+        let $iiif := iiif:getRectangle($document.id, $current.zones, true())
+        (:let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
+        let $mei := ef:getMeiByAnnotsLink($manifestation.id, $relevant.annots/@xml:id):)
+        
+        let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile/@xml:id || '/manifest.json'
+        (:'measures': array {
+                $measures
+            },:)
+        return map {
+            'id': string($facsimile/@xml:id),
+            'label': $label,
+            'textStatus': $text.status,
+            'annots': array {
+                for $annot in distinct-values($annot.ids) return ef:getElementLink($document.id, $annot)
+            },
+            'iiif': map {
+                'manifest': $iiif.manifest,
+                'rects': array { $iiif }
+            }
+        }
+        
+(:        
+        
 let $embodiments := 
     
     let $embodied.annots := $database//mei:annot[mei:relation[@rel = 'isEmbodimentOf'][some $annot.id in $annot.ids satisfies contains(@target,'#' || $annot.id)]]
@@ -84,6 +161,9 @@ let $embodiments :=
             else if('#revisionList' = $manifestation.classes)
             then('revisionInstruction')
             else('unknown')
+        
+        
+        
         
         let $relevant.annots := $embodied.annots[ancestor::*[local-name() = ('mei','TEI')][@xml:id = $manifestation.id]]
         
@@ -171,31 +251,15 @@ let $embodiments :=
                 $iiif
             }
             
-        }
+        }:)
     
     (:return map {
         'id': array { $embodied.annot.ids },
         'uris': array { $documents }
     }:)
     
-let $affected.measures :=
-    for $complaint in ($annot, $dependent.complaints)
-    
-    let $first.measure := $complaint/ancestor::mei:measure
-    
-    (:how many additional measures do I need to pull?:)
-    let $range := 
-        if($annot/@tstamp2 and matches($annot/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($annot/@tstamp2,'m')) gt 0)
-        then(xs:integer(substring-before($annot/@tstamp2,'m')))
-        else(0)
-    let $subsequent.measures :=
-        if($range gt 0)
-        then($first.measure/following::mei:measure[position() le $range])
-        else()
-        
-    return ($first.measure | $subsequent.measures)
 
-let $doc.zones := $file//mei:zone
+
 
 let $measures := 
     for $measure in $file//mei:measure[@xml:id = $affected.measures/@xml:id]
@@ -238,21 +302,6 @@ let $measures :=
             $iiif
         }
     }
-
-
-
-let $staves := 
-    for $staff in tokenize($annot/normalize-space(@staff),' ')
-    let $staff.label := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:label) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:label)][1]/mei:label/string(text())
-    let $staff.labelAbbr := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:labelAbbr) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:labelAbbr)][1]/mei:labelAbbr/string(text())
-    return map {
-        'n': $staff,
-        'label': $staff.label,
-        'abbr': $staff.labelAbbr
-    }
-    (:return xs:integer($staff):)
-    
-
     
 return map {
     '@id': $public.complaint.id,
@@ -266,6 +315,8 @@ return map {
         'label': $mdiv.label
     },
     'measures': array { $measures },
-    'staves': array { $staves }
+    'staves': array { $affected.staves },
+    'affectedMeasures': array { $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ') }
+    
 }
 

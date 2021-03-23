@@ -8,6 +8,7 @@ xquery version "3.1";
 
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
+import module namespace ef="https://edirom.de/file" at "../../xqm/file.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -17,6 +18,7 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace map = "http://www.w3.org/2005/xpath-functions/map";
 
 (: set output to JSON:)
 declare option output:method "json";
@@ -93,10 +95,46 @@ let $manifestations :=
     }    
     
 :)
+
+let $mdivs := 
+    map:merge(for $mdiv in $file//mei:mdiv[@xml:id]
+    let $mdiv.id := $mdiv/string(@xml:id)
+    let $mdiv.n := 
+        if($mdiv/@n)
+        then($mdiv/string(@n))
+        else(string(count($mdiv/preceding::mei:mdiv) + 1))
+    let $mdiv.label :=
+        if($mdiv/@label)
+        then($mdiv/string(@label))
+        else if($mdiv/@n)
+        then($mdiv/string(@n))
+        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
+        
+    let $staves := 
+        for $staff in distinct-values($mdiv//mei:staffDef/@n)
+        let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text())
+        let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text())
+        order by xs:integer($staff)
+        return map {
+            'n': $staff,
+            'label': $staff.label,
+            'abbr': $staff.labelAbbr
+        }
+        
+    
+    return map:entry(
+        $mdiv.id, map {
+            '@id': ef:getMdivLink($document.id, $mdiv.id),
+            'label': $mdiv.label,
+            'n': $mdiv.n,
+            'staves': array { $staves }
+        }
+    ))
+    
     
 let $manifestations := 
     for $manifestation in $file//mei:manifestation
-    let $facsimile := $file//mei:facsimile[@decls = replace(normalize-space(.),'#','')]
+    let $facsimile := $file//mei:facsimile[@decls = concat('#',$manifestation/@xml:id)]
     
     where exists($facsimile) (:TODO: Decide how to deal with TEI files… :)
     
@@ -109,7 +147,7 @@ let $manifestations :=
     let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile.id || '/manifest.json'
     
     return map {
-      '@id': $facsimile.id,
+      'id': $facsimile.id,
       'label': $label,
       'frbr': map {
         'level': 'manifestation'
@@ -127,17 +165,7 @@ let $complaints :=
     let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
     let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
     let $mdiv.id := $mdiv/string(@xml:id)
-    let $mdiv.n := 
-        if($mdiv/@n)
-        then($mdiv/string(@n))
-        else(string(count($mdiv/preceding::mei:mdiv) + 1))
-    let $mdiv.label :=
-        if($mdiv/@label)
-        then($mdiv/string(@label))
-        else if($mdiv/@n)
-        then($mdiv/string(@n))
-        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
-        
+    
     let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $complaint.id]
     
     let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
@@ -174,29 +202,10 @@ let $complaints :=
             'label': $measure.label
         }
         
-    
-    (:let $staves := 
-        for $staff in tokenize($annot/normalize-space(@staff),' ')
-        let $staff.label := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:label) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:label)][1]/mei:label/string(text())
-        let $staff.labelAbbr := $mdiv//mei:*[(local-name() = 'staffDef' and @n = $staff and ./mei:labelAbbr) or (local-name() = 'staffGrp' and .//mei:staffDef[@n = $staff] and ./mei:labelAbbr)][1]/mei:labelAbbr/string(text())
-        return map {
-            'n': $staff,
-            'label': $staff.label,
-            'abbr': $staff.labelAbbr
-        }
-        (\:return xs:integer($staff):\)
-        
-    :)
-        
-        
     return map {
         '@id': $public.complaint.id,
         'annots': array { $annot.ids },
-        'movement': map {
-            'id': $mdiv.id,
-            'n': $mdiv.n,
-            'label': $mdiv.label
-        },
+        'mdiv': $mdiv.id,
         'measures': array { $measures }
     }
 
@@ -206,7 +215,8 @@ return map {
     'title': array { $title },
     'composer': $composer,
     'manifestations': array { $manifestations },
-    'complaints': array { $complaints }
+    'complaints': array { $complaints },
+    'movements': $mdivs
 }
 
 
