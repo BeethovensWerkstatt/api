@@ -11,6 +11,8 @@ import module namespace config="https://api.beethovens-werkstatt.de" at "../../x
 import module namespace iiif="https://edirom.de/iiif" at "../../xqm/iiif.xqm";
 import module namespace ef="https://edirom.de/file" at "../../xqm/file.xqm";
 import module namespace ema="https://github.com/music-addressability/ema/blob/master/docs/api.md" at "../../xqm/ema.xqm";
+import module namespace module3="https://beethovens-werkstatt/ns/module3" at "../../xqm/module3.xqm";
+
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -43,10 +45,10 @@ let $document.uri := $config:module3-basepath || $document.id || '.json'
 (: get file from database :)
 let $file := $database//mei:mei[@xml:id = $document.id]
 
-let $annot := $file//mei:body//mei:annot[@xml:id = $complaint.id]
+let $complaint := $file//mei:body//mei:metaMark[@xml:id = $complaint.id]
     
 let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
-let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
+let $mdiv := $complaint/ancestor::mei:mdiv[@xml:id][1]
 let $mdiv.id := $mdiv/string(@xml:id)
 let $mdiv.uri := ef:getMdivLink($document.id, $mdiv/string(@xml:id))
 let $mdiv.n := 
@@ -65,14 +67,14 @@ let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $compla
 let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
 
 let $affected.measures :=
-    for $complaint in ($annot, $dependent.complaints)
+    for $complaint in ($complaint, $dependent.complaints)
     
     let $first.measure := $complaint/ancestor::mei:measure
     
     (:how many additional measures do I need to pull?:)
     let $range := 
-        if($annot/@tstamp2 and matches($annot/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($annot/@tstamp2,'m')) gt 0)
-        then(xs:integer(substring-before($annot/@tstamp2,'m')))
+        if($complaint/@tstamp2 and matches($complaint/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($complaint/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($complaint/@tstamp2,'m')))
         else(0)
     let $subsequent.measures :=
         if($range gt 0)
@@ -81,12 +83,31 @@ let $affected.measures :=
         
     return ($first.measure | $subsequent.measures)
 
-let $affected.staves := tokenize($annot/normalize-space(@staff),' ')
+let $affected.staves := tokenize($complaint/normalize-space(@staff),' ')
 
 (: used for performance reasons :)
 let $doc.zones := $file//mei:zone
 
+let $revisionDoc.ids := $complaint/tokenize(replace(normalize-space(@source),'#',''),' ')
+let $revisionDocs := 
+    for $source.id in $revisionDoc.ids
+    return module3:getEmbodiment($document.id, $complaint, $source.id, 'revision', $affected.measures, $affected.staves)
+    
+let $anteDoc.ids := distinct-values($complaint/mei:relation[@rel = 'isRevisionOf']/tokenize(replace(normalize-space(@target),'#',''),' '))
+let $anteDocs := 
+    for $source.id in $anteDoc.ids
+    return module3:getEmbodiment($document.id, $complaint, $source.id, 'ante', $affected.measures, $affected.staves)
+
+let $postDoc.ids := distinct-values($complaint/mei:relation[@rel = 'hasRevision']/tokenize(replace(normalize-space(@target),'#',''),' '))
+let $postDocs := 
+    for $source.id in $postDoc.ids
+    return module3:getEmbodiment($document.id, $complaint, $source.id, 'post', $affected.measures, $affected.staves)
+
 let $embodiments :=
+
+    
+
+
     let $measure.facs := $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ')
     let $relevant.staves := $affected.measures/mei:staff[@n = $affected.staves]
     let $staff.facs := $relevant.staves/tokenize(replace(normalize-space(@facs),'#',''),' ')
@@ -117,7 +138,7 @@ let $embodiments :=
             
         let $current.zones := $facsimile//mei:zone[@xml:id = $relevant.zones.ids]
         
-        let $iiif := iiif:getRectangle($document.id, $current.zones, true())
+        let $iiif := iiif:getRectangle($file, $current.zones, true())
         (:let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
         let $mei := ef:getMeiByAnnotsLink($manifestation.id, $relevant.annots/@xml:id):)
         
@@ -271,43 +292,19 @@ let $measures :=
         then($measure/string(@n))
         else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
     let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
-    let $iiif := 
-        
-        let $zones := 
-            (:measure is referencing a zone:)
-            if($measure/@facs and $doc.zones[@xml:id = $facs.refs])
-            then(
-                $doc.zones[@xml:id = $facs.refs]
-            )
-            (:a zone is referencing the measure:)
-            else if($doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')])
-            then(
-                $doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')]
-            )
-            else()
-        let $annots := 
-            if(count($zones) gt 0)
-            then(
-                iiif:getRectangle($file, $zones, true())
-            )
-            else()
-        
-        return count($zones) (:$annots:)
     
     return map {
         'id': $measure.id,
         'uri': ef:getElementLink($document.id,$measure.id),
-        'label': $measure.label,
-        'iiif': array {
-            $iiif
-        }
+        'label': $measure.label
     }
     
 return map {
     '@id': $public.complaint.id,
+    'label': $complaint/string(@label),
     '@work': $document.uri,
     'annots': array { for $annot in $annot.ids return ef:getElementLink($document.id,$annot)},
-    'embodiments': array { $embodiments },
+    (:'embodiments': array { $embodiments },:)
     'movement': map {
         'id': $mdiv.id,
         'uri': ef:getElementLink($document.id,$mdiv.id),
@@ -316,7 +313,8 @@ return map {
     },
     'measures': array { $measures },
     'staves': array { $affected.staves },
-    'affectedMeasures': array { $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ') }
-    
+    'revisionDocs': array { $revisionDocs },
+    'anteDocs': array { $anteDocs },
+    'postDocs': array { $postDocs }
 }
 

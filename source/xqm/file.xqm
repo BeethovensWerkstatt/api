@@ -35,3 +35,8 @@ declare function ef:getMeiByAnnotsLink($file.id as xs:string, $annot.ids as xs:s
     let $link := $config:module3-basepath || $file.id || '/annots/' || string-join($annot.ids,',') || '.mei'
     return $link
 };
+
+declare function ef:getMeiByContextLink($file.id as xs:string, $context.id as xs:string, $source.id as xs:string, $state.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/snippet/' || $context.id || '.mei?source=' || $source.id || '&amp;state=' || $state.id
+    return $link
+};
