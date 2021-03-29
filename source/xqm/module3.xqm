@@ -16,6 +16,7 @@ declare namespace mei="http://www.music-encoding.org/ns/mei";
 declare namespace util="http://exist-db.org/xquery/util";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
+declare namespace ft="http://exist-db.org/xquery/lucene";
 
 declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*) as map(*) {
     
@@ -52,7 +53,13 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         (:let $referencing.zones := $facsimile//mei:zone[some $token in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $token = ($affected.measures/@xml:id, $affected.measures/mei:staff[@n = $affected.staves]/@xml:id)]
         let $referenced.zones := $facsimile//mei:zone[@xml:id = ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))]:)
         
-        let $referencing.zones := $facsimile//mei:zone[@data = ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))]
+        (:let $referencing.zones := $facsimile//mei:zone[@data = ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))]
+        :)
+        
+        let $data.targets := ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))
+        let $referencing.zones := 
+            for $data.target in $data.targets
+            return $facsimile//mei:zone/@data[ft:query(.,$data.target)]/parent::node()
         
         let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
         let $root := $file/root()

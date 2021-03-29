@@ -120,12 +120,25 @@ let $embodiments :=
     let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
     let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id):)
     
-    let $measure.zones.by.zone := $doc.zones[@data = $affected.measures/concat('#',@xml:id)]
-    let $measure.zones.by.facs := $doc.zones[@xml:id = $measure.facs]
+    let $measure.ids := $affected.measures/concat('#',@xml:id)
+    let $measure.zones.by.zone := 
+        for $measure.id in $measure.ids
+        return $doc.zones/@data[ft:query(.,$measure.id)]/parent::node()
+        
+    let $measure.zones.by.facs := 
+        for $measure.fac in $measure.facs
+        return $file/root()/id($measure.fac)
+        
     let $staff.ids := $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id)
-    let $staff.zones.by.zone := $doc.zones[@data = $staff.ids]
-    let $staff.zones.by.facs := $doc.zones[@xml:id = $staff.facs]
     
+    let $staff.zones.by.zone := 
+        for $staff.id in $staff.ids
+        return $doc.zones/@data[ft:query(.,$staff.id)]/parent::node()
+    
+    let $staff.zones.by.facs := 
+        for $staff.fac in $staff.facs
+        return $file/root()/id($staff.fac)
+        
     let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
     let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id)
     
@@ -146,7 +159,9 @@ let $embodiments :=
             then('revisionInstruction')
             else('unknown')
             
-        let $current.zones := $facsimile//mei:zone[@xml:id = $relevant.zones.ids]
+        let $current.zones := 
+            for $relevant.zone.id in $relevant.zones.ids
+            return $file/root()/id($relevant.zone.id)
         
         let $iiif := iiif:getRectangle($file, $current.zones, true())
         (:let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
@@ -291,10 +306,9 @@ let $embodiments :=
     
 
 
-
 let $measures := 
-    for $measure in $file//mei:measure[@xml:id = $affected.measures/@xml:id]
-    let $measure.id := $measure/string(@xml:id)
+    for $measure.id in $affected.measures/string(@xml:id)
+    let $measure := $file/root()/id($measure.id)
     let $measure.label := 
         if($measure/@label)
         then($measure/string(@label))

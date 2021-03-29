@@ -31,7 +31,14 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
             let $zone.ids := for $zone in $elements return '#' || $zone/@xml:id
             
             (: these are notes / measures / etc., which reference the current set of zones, i.e. a connection through @facs :)
-            let $referencing.elements := $file//mei:*[@facs][some $facs in tokenize(normalize-space(@facs),' ') satisfies $facs = $zone.ids]
+            (:let $referencing.elements := $file//mei:*[@facs][some $facs in tokenize(normalize-space(@facs),' ') satisfies $facs = $zone.ids]:)
+            
+            let $referencing.elements := 
+                for $zone.id in $zone.ids
+                let $measures := $file//mei:measure/@facs[ft:query(.,$zone.id)]/parent::node()
+                let $staves := $file//mei:staff/@facs[ft:query(.,$zone.id)]/parent::node()
+                return ($measures, $staves)
+            
             let $references := for $zone in $zones return tokenize(normalize-space(replace($zone/@data,'#','')),' ')
             (: these are notes / measures / etc., which are references from the current set of zones, i.e. a connection through @data :)
             let $referenced.elements := for $reference in $references return $file/root()/id($reference)

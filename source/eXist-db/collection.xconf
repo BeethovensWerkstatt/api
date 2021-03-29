@@ -13,5 +13,12 @@
         		<field name="staff-facs" match="@facs" type="xs:string"/>
     		</create>
         </range>
+        <lucene>
+    		<analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    		<analyzer id="ws" class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
+    		<text match="mei:zone/@data" analyzer="ws"/>
+    		<text qname="mei:measure/@facs" analyzer="ws"/>
+    		<text qname="mei:staff/@facs" analyzer="ws"/>
+		</lucene>
     </index>
 </collection>
