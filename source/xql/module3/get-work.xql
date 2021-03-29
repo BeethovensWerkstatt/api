@@ -189,8 +189,8 @@ let $complaints :=
         return ($first.measure | $subsequent.measures)
     
     let $measures := 
-        for $measure in $file//mei:measure[@xml:id = $affected.measures/@xml:id]
-        let $measure.id := $measure/string(@xml:id)
+        for $measure.id in $affected.measures/string(@xml:id)
+        let $measure := $file/root()/id($measure.id)
         let $measure.label := 
             if($measure/@label)
             then($measure/string(@label))

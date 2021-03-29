@@ -64,7 +64,12 @@ let $canvas.label :=
 let $file.label := 'measure positions on page ' || $canvas.label || ' of ' || normalize-space(string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ')) || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
 
 let $zone.ids := for $zone.id in $canvas//mei:zone/@xml:id return '#' || $zone.id
-let $referencing.elements := $file//mei:*[@facs][@facs = $zone.ids or (contains(@facs,' ') and (some $ref in tokenize(normalize-space(@facs),' ') satisfies $ref = $zone.ids))]
+let $referencing.elements := 
+    for $zone.id in $zone.ids
+    let $measures := $file//mei:measure/@facs[ft:query(.,$zone.id)]/parent::node()
+    let $staves := $file//mei:staff/@facs[ft:query(.,$zone.id)]/parent::node()
+    return ($measures,$staves)
+
 let $references := distinct-values($canvas//mei:zone/tokenize(replace(normalize-space(@data),'#',''),' '))
 let $referenced.elements := for $reference in $references return $file/root()/id($reference)
 
@@ -72,7 +77,11 @@ let $zones :=
     for $zone in $canvas//mei:zone[@xml:id]
     let $zone.targets :=
         if($zone/@data)
-        then($referenced.elements[@xml:id = tokenize(replace(normalize-space($zone/@data),'#',''))])
+        then(
+            let $tokens := tokenize(replace(normalize-space($zone/@data),'#',''))
+            for $token in $tokens
+            return $file/root()/id($token)
+        )
         else if($referencing.elements[some $facs in tokenize(replace(normalize-space(./@facs),'#','')) satisfies $facs = $zone/@xml:id])
         then($referencing.elements[some $facs in tokenize(replace(normalize-space(./@facs),'#','')) satisfies $facs = $zone/@xml:id])
         else()
