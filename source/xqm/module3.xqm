@@ -47,16 +47,20 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     let $context := ef:getMeiByContextLink($file.id, $context.id, $source.id, $state.id)
     
     let $iiif := 
-        let $facsimile := $file//mei:facsimile[@decls = '#' || $source.id]
-        let $facsimile.zones := $facsimile//mei:zone
-        (:let $referencing.zones := $facsimile.zones[some $token in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $token = ($affected.measures/@xml:id, $affected.measures/mei:staff[@n = $affected.staves]/@xml:id)]
-        let $referenced.zones := $facsimile.zones[@xml:id = ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))]
+        let $facsimile := $file//mei:facsimile[replace(normalize-space(@decls),'#','') = $source.id]
+        
+        (:let $referencing.zones := $facsimile//mei:zone[some $token in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $token = ($affected.measures/@xml:id, $affected.measures/mei:staff[@n = $affected.staves]/@xml:id)]
+        let $referenced.zones := $facsimile//mei:zone[@xml:id = ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))]:)
+        
+        let $referencing.zones := $facsimile//mei:zone[@data = ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))]
+        
+        let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
+        let $root := $file/root()
+        let $referenced.zones := for $ref in $refs return $root/id($ref)[local-name() = 'zone']
+        
+        
         let $zones := ($referencing.zones,  $referenced.zones)
-        return iiif:getRectangle($file, $zones, true()):)
-        return map {
-            'id': $facsimile/string(@xml:id),
-            'zones': count($facsimile.zones)
-        }
+        return iiif:getRectangle($file, $zones, true())
         
     return map {
         'document': $source.id,

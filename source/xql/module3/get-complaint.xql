@@ -111,9 +111,19 @@ let $embodiments :=
     let $measure.facs := $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ')
     let $relevant.staves := $affected.measures/mei:staff[@n = $affected.staves]
     let $staff.facs := $relevant.staves/tokenize(replace(normalize-space(@facs),'#',''),' ')
-    let $measure.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/@xml:id]
+    
+    (:let $measure.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/@xml:id]
     let $measure.zones.by.facs := $doc.zones[@xml:id = $measure.facs]
     let $staff.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/mei:staff[@n = $affected.staves]/@xml:id]
+    let $staff.zones.by.facs := $doc.zones[@xml:id = $staff.facs]
+    
+    let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
+    let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id):)
+    
+    let $measure.zones.by.zone := $doc.zones[@data = $affected.measures/concat('#',@xml:id)]
+    let $measure.zones.by.facs := $doc.zones[@xml:id = $measure.facs]
+    let $staff.ids := $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id)
+    let $staff.zones.by.zone := $doc.zones[@data = $staff.ids]
     let $staff.zones.by.facs := $doc.zones[@xml:id = $staff.facs]
     
     let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
