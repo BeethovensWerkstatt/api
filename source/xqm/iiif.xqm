@@ -17,10 +17,11 @@ declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 
 declare function iiif:getRectangle($file as node(),$elements as node()*,$boundingRect as xs:boolean) as map(*)* {
-    
+
+    (: todo: this needs to move down – some files have more than one facsimile… :)
     let $document.id := $file/@xml:id
     let $manifest.uri := $config:iiif-basepath || 'document/' || $document.id || '/manifest.json'
-    
+
     let $maps :=
         if(count($elements) = 0)
         then()
@@ -29,20 +30,20 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
         then (
             let $zones := $elements[@xml:id]
             let $zone.ids := for $zone in $elements return '#' || $zone/@xml:id
-            
+
             (: these are notes / measures / etc., which reference the current set of zones, i.e. a connection through @facs :)
             (:let $referencing.elements := $file//mei:*[@facs][some $facs in tokenize(normalize-space(@facs),' ') satisfies $facs = $zone.ids]:)
-            
-            let $referencing.elements := 
+
+            let $referencing.elements :=
                 for $zone.id in $zone.ids
                 let $measures := $file//mei:measure/@facs[ft:query(.,$zone.id)]/parent::node()
                 let $staves := $file//mei:staff/@facs[ft:query(.,$zone.id)]/parent::node()
                 return ($measures, $staves)
-            
+
             let $references := for $zone in $zones return tokenize(normalize-space(replace($zone/@data,'#','')),' ')
             (: these are notes / measures / etc., which are references from the current set of zones, i.e. a connection through @data :)
             let $referenced.elements := for $reference in $references return $file/root()/id($reference)
-            
+
             let $rects :=
                 (: a single bounding box (per page) shall be returned :)
                 if ($boundingRect = true())
@@ -57,19 +58,19 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
                         let $relevant.referencing.elements := $referencing.elements[some $facs in tokenize(normalize-space(@facs),' ') satisfies $facs = $relevant.zone.ids]
                         let $relevant.references := for $zone in $relevant.zones return tokenize(normalize-space(replace($zone/@data,'#','')),' ')
                         let $relevant.referenced.elements := for $reference in $relevant.references return $file/root()/id($reference)
-                        
+
                         let $group.label := 'zones on p.' || $canvas/@n
-                        
+
                         let $region := iiif:getRegion($relevant.zones)
                         let $xywh := iiif:getXywh($region)
-                        
+
                         let $graphic := $canvas/mei:graphic[@target and starts-with(@target,'http')]
                         let $graphic.target := $graphic/string(@target)
                         let $graphic.target.id := $graphic.target || '/' || $region || '/full/0/default.jpg'
                         let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
-                        
+
                         return iiif:getIiifAnnotation($file/string(@xml:id), $elements[1]/string(@xml:id), $canvas.uri, $xywh, $manifest.uri, $group.label, $graphic.target.id)
-                        
+
                     return $canvases
                 )
                 (: individual boxes are returned :)
@@ -84,35 +85,35 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
                         else()
                     where exists($zone.target) and $zone.target/@xml:id
                     let $zone.target.label := iiif:getLabel($zone, true())
-                    
+
                     let $region := iiif:getRegion($zone)
                     let $xywh := iiif:getXywh($region)
-                    
+
                     let $graphic := $zone/ancestor::mei:surface/mei:graphic[@target and starts-with(@target,'http')]
                     let $graphic.target := $graphic/string(@target)
                     let $graphic.target.id := $graphic.target || '/' || $region || '/full/0/default.jpg'
                     let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
-                    
+
                     return iiif:getIiifAnnotation($file/string(@xml:id), $zone/string(@xml:id), $canvas.uri, $xywh, $manifest.uri, $zone.target.label, $graphic.target.id)
-                    
+
                 )
             return $rects
-            
+
         )
         else if (every $element in $elements satisfies local-name($element) = 'measure')
         then (
-        
+
             let $measures := $elements[@xml:id]
             let $measure.ids := for $measure in $measures return '#' || $measure/string(@xml:id)
-            
+
             (: these are zones which reference the current set of measures, i.e. a connection through @data :)
             let $referencing.zones := $file//mei:zone[@data][some $data in tokenize(normalize-space(@data),' ') satisfies $data = $measure.ids]
             let $references := for $measure in $measures return tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
             (: these are zones which are referenced from the current set of measures, i.e. a connection through @facs :)
             let $referenced.zones := for $reference in $references return $file/root()/id($reference)
-            
+
             let $zones := ($referenced.zones | $referencing.zones)
-            
+
             let $rects :=
                 (: a single bounding box (per page) shall be returned :)
                 if ($boundingRect = true())
@@ -129,17 +130,17 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
                         let $relevant.referencing.elements := for $reference in $relevant.references return $file/root()/id($reference)
                         :)
                         let $group.label := 'zones on p.' || $canvas/@n
-                        
+
                         let $region := iiif:getRegion($relevant.zones)
                         let $xywh := iiif:getXywh($region)
-                        
+
                         let $graphic := $canvas/mei:graphic[@target and starts-with(@target,'http')]
                         let $graphic.target := $graphic/string(@target)
                         let $graphic.target.id := $graphic.target || '/' || $region || '/full/0/default.jpg'
                         let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
-                        
+
                         return iiif:getIiifAnnotation($file/string(@xml:id), $elements[1]/string(@xml:id), $canvas.uri, $xywh, $manifest.uri, $group.label, $graphic.target.id)
-                        
+
                     return $canvases
                 )
                 (: individual boxes are returned :)
@@ -154,23 +155,23 @@ declare function iiif:getRectangle($file as node(),$elements as node()*,$boundin
                         else()
                     where exists($zone.target) and $zone.target/@xml:id
                     let $zone.target.label := iiif:getLabel($zone, true())
-                    
+
                     let $region := iiif:getRegion($zone)
                     let $xywh := iiif:getXywh($region)
-                    
+
                     let $graphic := $zone/ancestor::mei:surface/mei:graphic[@target and starts-with(@target,'http')]
                     let $graphic.target := $graphic/string(@target)
                     let $graphic.target.id := $graphic.target || '/' || $region || '/full/0/default.jpg'
                     let $graphic.target.full := $graphic.target || '/full/full/0/default.jpg'
-                    
+
                     return iiif:getIiifAnnotation($file/string(@xml:id), $zone/string(@xml:id), $canvas.uri, $xywh, $manifest.uri, $zone.target.label, $graphic.target.id)
-                    
+
                 )
             return $rects
-        ) 
+        )
         else if (every $element in $elements satisfies local-name($element) = 'staff')
         then (
-        
+
         )
         else (
         )
@@ -207,12 +208,12 @@ declare function iiif:getIiifAnnotation($file.id as xs:string, $annot.id as xs:s
         'target': map {
             'source' : $canvas.uri,
             'type' : 'dctypes:Image',
-            'selector' : array { 
+            'selector' : array {
                 map {
                    'type' : 'ImageSelector',
                    '@id' : $preview.uri
                 }
-            } 
+            }
         }
     }
 };
@@ -256,8 +257,8 @@ declare function iiif:getRegion($zones as element()+) as xs:string {
     let $y2 := max($zones/xs:integer(@lry))
     let $w := $x2 - $x
     let $h := $y2 - $y
-    
-    return $x || ',' || $y || ',' || $w || ',' || $h 
+
+    return $x || ',' || $y || ',' || $w || ',' || $h
 };
 
 declare function iiif:getXywh($region as xs:string) as xs:string {

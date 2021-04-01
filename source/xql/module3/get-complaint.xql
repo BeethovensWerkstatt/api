@@ -46,12 +46,12 @@ let $document.uri := $config:module3-basepath || $document.id || '.json'
 let $file := $database//mei:mei[@xml:id = $document.id]
 
 let $complaint := $file//mei:body//mei:metaMark[@xml:id = $complaint.id]
-    
+
 let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
 let $mdiv := $complaint/ancestor::mei:mdiv[@xml:id][1]
 let $mdiv.id := $mdiv/string(@xml:id)
 let $mdiv.uri := ef:getMdivLink($document.id, $mdiv/string(@xml:id))
-let $mdiv.n := 
+let $mdiv.n :=
     if($mdiv/@n)
     then($mdiv/string(@n))
     else(string(count($mdiv/preceding::mei:mdiv) + 1))
@@ -61,18 +61,18 @@ let $mdiv.label :=
     else if($mdiv/@n)
     then($mdiv/string(@n))
     else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
-    
+
 let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $complaint.id]
 
 let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
 
 let $affected.measures :=
     for $complaint in ($complaint, $dependent.complaints)
-    
+
     let $first.measure := $complaint/ancestor::mei:measure
-    
+
     (:how many additional measures do I need to pull?:)
-    let $range := 
+    let $range :=
         if($complaint/@tstamp2 and matches($complaint/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($complaint/@tstamp2,'m')) gt 0)
         then(xs:integer(substring-before($complaint/@tstamp2,'m')))
         else(0)
@@ -80,255 +80,48 @@ let $affected.measures :=
         if($range gt 0)
         then($first.measure/following::mei:measure[position() le $range])
         else()
-        
+
     return ($first.measure | $subsequent.measures)
 
 let $affected.staves := tokenize($complaint/normalize-space(@staff),' ')
 
-(: used for performance reasons :)
-let $doc.zones := $file//mei:zone
-
 let $revisionDoc.ids := $complaint/tokenize(replace(normalize-space(@source),'#',''),' ')
-let $revisionDocs := 
+let $revisionDocs :=
     for $source.id in $revisionDoc.ids
     return module3:getEmbodiment($document.id, $complaint, $source.id, 'revision', $affected.measures, $affected.staves)
-    
+
 let $anteDoc.ids := distinct-values($complaint/mei:relation[@rel = 'isRevisionOf']/tokenize(replace(normalize-space(@target),'#',''),' '))
-let $anteDocs := 
+let $anteDocs :=
     for $source.id in $anteDoc.ids
     return module3:getEmbodiment($document.id, $complaint, $source.id, 'ante', $affected.measures, $affected.staves)
 
 let $postDoc.ids := distinct-values($complaint/mei:relation[@rel = 'hasRevision']/tokenize(replace(normalize-space(@target),'#',''),' '))
-let $postDocs := 
+let $postDocs :=
     for $source.id in $postDoc.ids
     return module3:getEmbodiment($document.id, $complaint, $source.id, 'post', $affected.measures, $affected.staves)
 
-let $embodiments :=
-
-    
-
-
-    let $measure.facs := $affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' ')
-    let $relevant.staves := $affected.measures/mei:staff[@n = $affected.staves]
-    let $staff.facs := $relevant.staves/tokenize(replace(normalize-space(@facs),'#',''),' ')
-    
-    (:let $measure.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/@xml:id]
-    let $measure.zones.by.facs := $doc.zones[@xml:id = $measure.facs]
-    let $staff.zones.by.zone := $doc.zones[some $ref in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $ref = $affected.measures/mei:staff[@n = $affected.staves]/@xml:id]
-    let $staff.zones.by.facs := $doc.zones[@xml:id = $staff.facs]
-    
-    let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
-    let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id):)
-    
-    let $measure.ids := $affected.measures/concat('#',@xml:id)
-    let $measure.zones.by.zone := 
-        for $measure.id in $measure.ids
-        return $doc.zones/@data[ft:query(.,$measure.id)]/parent::node()
-        
-    let $measure.zones.by.facs := 
-        for $measure.fac in $measure.facs
-        return $file/root()/id($measure.fac)
-        
-    let $staff.ids := $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id)
-    
-    let $staff.zones.by.zone := 
-        for $staff.id in $staff.ids
-        return $doc.zones/@data[ft:query(.,$staff.id)]/parent::node()
-    
-    let $staff.zones.by.facs := 
-        for $staff.fac in $staff.facs
-        return $file/root()/id($staff.fac)
-        
-    let $relevant.zones := ($measure.zones.by.zone, $measure.zones.by.facs, $staff.zones.by.zone, $staff.zones.by.facs)
-    let $relevant.zones.ids := distinct-values($relevant.zones/@xml:id)
-    
-    let $facsimile.ids := distinct-values($relevant.zones/ancestor::mei:facsimile/@xml:id)
-    let $facsimiles := $file//mei:facsimile[@xml:id = $facsimile.ids]
-    
-    for $facsimile in $facsimiles
-        let $manifestation := $file//mei:manifestation[@xml:id = $facsimile/replace(normalize-space(@decls),'#','')]
-        let $label := $manifestation/string(@label)
-        
-        let $manifestation.classes := tokenize(normalize-space($manifestation/@class),' ')
-        let $text.status := 
-            if('#initialVersion' = $manifestation.classes)
-            then('initialVersion')
-            else if('#revisedVersion' = $manifestation.classes)
-            then('revisedVersion')
-            else if('#revisionList' = $manifestation.classes)
-            then('revisionInstruction')
-            else('unknown')
-            
-        let $current.zones := 
-            for $relevant.zone.id in $relevant.zones.ids
-            return $file/root()/id($relevant.zone.id)
-        
-        let $iiif := iiif:getRectangle($file, $current.zones, true())
-        (:let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
-        let $mei := ef:getMeiByAnnotsLink($manifestation.id, $relevant.annots/@xml:id):)
-        
-        let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile/@xml:id || '/manifest.json'
-        (:'measures': array {
-                $measures
-            },:)
-        return map {
-            'id': string($facsimile/@xml:id),
-            'label': $label,
-            'textStatus': $text.status,
-            'annots': array {
-                for $annot in distinct-values($annot.ids) return ef:getElementLink($document.id, $annot)
-            },
-            'iiif': map {
-                'manifest': $iiif.manifest,
-                'rects': array { $iiif }
-            }
-        }
-        
-(:        
-        
-let $embodiments := 
-    
-    let $embodied.annots := $database//mei:annot[mei:relation[@rel = 'isEmbodimentOf'][some $annot.id in $annot.ids satisfies contains(@target,'#' || $annot.id)]]
-    let $embodied.annot.ids := distinct-values($embodied.annots/string(@xml:id))
-    let $manifestation.ids := distinct-values($embodied.annots/ancestor::*[local-name() = ('mei','TEI')]/@xml:id)
-    for $manifestation.id in $manifestation.ids
-        let $manifestation := ($database//mei:mei[@xml:id = $manifestation.id] | $database//tei:TEI[@xml:id = $manifestation.id])
-        let $manifestation.namespace := namespace-uri($manifestation)
-        let $manifestation.filename := tokenize(document-uri($manifestation/root()),'/')[last()] 
-        let $manifestationRef := $file//mei:manifestation[@sameas ='./' || $manifestation.filename]
-        let $label := $manifestationRef/string(@label)
-        
-        let $manifestation.classes := tokenize(normalize-space($manifestationRef/@class),' ')
-        let $text.status := 
-            if('#initialVersion' = $manifestation.classes)
-            then('initialVersion')
-            else if('#revisedVersion' = $manifestation.classes)
-            then('revisedVersion')
-            else if('#revisionList' = $manifestation.classes)
-            then('revisionInstruction')
-            else('unknown')
-        
-        
-        
-        
-        let $relevant.annots := $embodied.annots[ancestor::*[local-name() = ('mei','TEI')][@xml:id = $manifestation.id]]
-        
-        
-        let $affected.measures :=
-            for $complaint in ($relevant.annots)
-            
-            let $first.measure := $complaint/ancestor::mei:measure
-            
-            (:how many additional measures do I need to pull?:)
-            let $range := 
-                if($complaint/@tstamp2 and matches($complaint/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($complaint/@tstamp2,'m')) gt 0)
-                then(xs:integer(substring-before($complaint/@tstamp2,'m')))
-                else(0)
-            let $subsequent.measures :=
-                if($range gt 0)
-                then($first.measure/following::mei:measure[position() le $range])
-                else()
-                
-            return ($first.measure | $subsequent.measures)
-        
-        let $doc.zones := $manifestation//mei:zone
-        
-        let $measures := 
-            for $measure in $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id]
-            let $measure.id := $measure/string(@xml:id)
-            let $measure.label := 
-                if($measure/@label)
-                then($measure/string(@label))
-                else if($measure/@n)
-                then($measure/string(@n))
-                else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
-            let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
-            let $iiif := 
-                
-                let $zones := 
-                    (:measure is referencing a zone:)
-                    if($measure/@facs and $doc.zones[@xml:id = $facs.refs])
-                    then(
-                        $doc.zones[@xml:id = $facs.refs]
-                    )
-                    (:a zone is referencing the measure:)
-                    else if($doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')])
-                    then(
-                        $doc.zones[$measure.id = tokenize(normalize-space(replace(@data,'#','')),' ')]
-                    )
-                    else()
-                let $annots := 
-                    if(count($zones) gt 0)
-                    then(
-                        iiif:getRectangle($manifestation, $zones, true())
-                    )
-                    else()
-                
-                return $annots
-            
-            return map {
-                'id': $measure.id,
-                'uri': ef:getElementLink($manifestation.id,$measure.id),
-                'label': $measure.label
-            }
-            
-        let $iiif := iiif:getRectangle($manifestation, $manifestation//mei:measure[@xml:id = $affected.measures/@xml:id], true())
-        let $ema := ema:buildLinkFromAnnots($manifestation, $affected.measures, $relevant.annots)
-        let $mei := ef:getMeiByAnnotsLink($manifestation.id, $relevant.annots/@xml:id)
-        
-        return map {
-            '@id': $manifestation.id,
-            'label': $label,
-            'file': map {
-                'uri': $config:file-basepath || $manifestation.id || '.xml',
-                '@ns': $manifestation.namespace,
-                'name': $manifestation.filename
-            },
-            'textStatus': $text.status,
-            'ema': $ema,
-            'mei': $mei,
-            'annots': array {
-                for $annot in distinct-values($relevant.annots/string(@xml:id)) return ef:getElementLink($manifestation.id, $annot)
-            },
-            'measures': array {
-                $measures
-            },
-            'iiif': array {
-                $iiif
-            }
-            
-        }:)
-    
-    (:return map {
-        'id': array { $embodied.annot.ids },
-        'uris': array { $documents }
-    }:)
-    
-
-
-let $measures := 
+let $measures :=
     for $measure.id in $affected.measures/string(@xml:id)
     let $measure := $file/root()/id($measure.id)
-    let $measure.label := 
+    let $measure.label :=
         if($measure/@label)
         then($measure/string(@label))
         else if($measure/@n)
         then($measure/string(@n))
         else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
-    let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ')
-    
+    (: let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ') :)
+
     return map {
         'id': $measure.id,
         'uri': ef:getElementLink($document.id,$measure.id),
         'label': $measure.label
     }
-    
+
 return map {
     '@id': $public.complaint.id,
     'label': $complaint/string(@label),
     '@work': $document.uri,
     'annots': array { for $annot in $annot.ids return ef:getElementLink($document.id,$annot)},
-    (:'embodiments': array { $embodiments },:)
     'movement': map {
         'id': $mdiv.id,
         'uri': ef:getElementLink($document.id,$mdiv.id),
@@ -341,4 +134,3 @@ return map {
     'anteDocs': array { $anteDocs },
     'postDocs': array { $postDocs }
 }
-

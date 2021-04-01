@@ -19,24 +19,24 @@ declare namespace tools="http://edirom.de/ns/tools";
 declare namespace ft="http://exist-db.org/xquery/lucene";
 
 declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*) as map(*) {
-    
+
     let $file := $complaint/root()
-    
-    let $context.id := 
+
+    let $context.id :=
         if ($role =  'revision')
         then (
             $complaint/@xml:id
         )
         else (
-            $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')    
+            $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
         )
-    
-    let $state.id := 
+
+    let $state.id :=
         if ($role = 'ante')
         then (
             let $provided.state.id := $complaint/replace(normalize-space(@state),'#','')
             let $provided.state := $file/id($provided.state.id)
-            
+
             (: TODO: the following needs to be more elaborate:)
             let $previous.state.id := $provided.state/preceding-sibling::mei:genState[1]/@xml:id
             return $previous.state.id
@@ -44,31 +44,24 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         else (
             $complaint/replace(normalize-space(@state),'#','')
         )
-    
+
     let $context := ef:getMeiByContextLink($file.id, $context.id, $source.id, $state.id)
-    
-    let $iiif := 
+
+    let $iiif :=
         let $facsimile := $file//mei:facsimile[replace(normalize-space(@decls),'#','') = $source.id]
-        
-        (:let $referencing.zones := $facsimile//mei:zone[some $token in tokenize(replace(normalize-space(@data),'#',''),' ') satisfies $token = ($affected.measures/@xml:id, $affected.measures/mei:staff[@n = $affected.staves]/@xml:id)]
-        let $referenced.zones := $facsimile//mei:zone[@xml:id = ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))]:)
-        
-        (:let $referencing.zones := $facsimile//mei:zone[@data = ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))]
-        :)
-        
+
         let $data.targets := ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))
-        let $referencing.zones := 
+        let $referencing.zones :=
             for $data.target in $data.targets
             return $facsimile//mei:zone/@data[ft:query(.,$data.target)]/parent::node()
-        
+
         let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
         let $root := $file/root()
         let $referenced.zones := for $ref in $refs return $root/id($ref)[local-name() = 'zone']
-        
-        
+
         let $zones := ($referencing.zones,  $referenced.zones)
-        return iiif:getRectangle($file, $zones, true())
-        
+        return iiif:getRectangle($file/mei:mei, $zones, true())
+
     return map {
         'document': $source.id,
         'role': $role,
