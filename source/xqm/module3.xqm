@@ -22,14 +22,12 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
 
     let $file := $complaint/root()
 
-    let $context.id :=
+    let $context.id := $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
+
+    let $focus.id :=
         if ($role =  'revision')
-        then (
-            $complaint/@xml:id
-        )
-        else (
-            $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
-        )
+        then ('')
+        else ($complaint/@xml:id)
 
     let $state.id :=
         if ($role = 'ante')
@@ -45,7 +43,7 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             $complaint/replace(normalize-space(@state),'#','')
         )
 
-    let $context := ef:getMeiByContextLink($file.id, $context.id, $source.id, $state.id)
+    let $context := ef:getMeiByContextLink($file.id, $context.id, $focus.id, $source.id, $state.id)
 
     let $iiif :=
         let $facsimile := $file//mei:facsimile[replace(normalize-space(@decls),'#','') = $source.id]

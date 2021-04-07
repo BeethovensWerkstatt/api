@@ -36,18 +36,38 @@ let $database := collection($config:module3-root)
 let $document.id := request:get-parameter('document.id','')
 
 (: get the ID of the requested complaint, as passed by the controller :)
-let $annot.ids.raw := request:get-parameter('annot.ids','')
+let $context.id := request:get-parameter('context.id','')
+
+let $source.id := request:get-parameter('source.id','')
+let $state.id := request:get-parameter('state.id','')
+let $focus.id := request:get-parameter('focus.id','')
 
 let $document.uri := $config:module3-basepath || $document.id || '.json'
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+(:let $file := ($database//mei:*[@xml:id = $document.id]/ancestor-or-self::mei:mei)[1]:)
+let $file := ($database//mei:mei/root()/id($document.id)/ancestor-or-self::mei:mei)[1]
 
 let $xslt := $config:xslt-basepath || '../xslt/module3/get-complaint-text-by-annot.xsl' 
 
 let $extract := transform:transform($file,
                doc($xslt), <parameters>
-                   <param name="annot.ids.joined" value="{$annot.ids.raw}"/>
+                   <param name="context.id" value="{$context.id}"/>
+                   <param name="source.id" value="{$source.id}"/>
+                   <param name="state.id" value="{$state.id}"/>
+                   <param name="focus.id" value="{$focus.id}"/>
                </parameters>)
 
 return $extract
+
+(:return
+    <params>
+        <document>{$document.id}</document>
+        <context>{$context.id}</context>
+        <hasContext>{exists($file/root()/id($context.id))}</hasContext>
+        <focus>{$focus.id}</focus>
+        <hasFocus>{exists($file/root()/id($focus.id))}</hasFocus>
+        <source>{$source.id}</source>
+        <state>{$state.id}</state>
+        <file>{exists($file)}</file>
+    </params>:)
