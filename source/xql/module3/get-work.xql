@@ -158,7 +158,7 @@ let $manifestations :=
     }
     
 let $complaints := 
-    for $annot in $file//mei:body//mei:annot[@xml:id] (:TODO: add in some @class:)
+    for $annot in $file//mei:body//mei:metaMark[contains(@class,'#bw_monitum')] (:TODO: add in some @class:)
     (: get only those annots that are the first occurence of something :)
     where not(replace($annot/@corresp,'#','') = $file//mei:annot/@xml:id)
     let $complaint.id := $annot/string(@xml:id)
