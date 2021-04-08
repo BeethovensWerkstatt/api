@@ -24,10 +24,7 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
 
     let $context.id := $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
 
-    let $focus.id :=
-        if ($role =  'revision')
-        then ('')
-        else ($complaint/@xml:id)
+    let $focus.id := $complaint/@xml:id
 
     let $state.id :=
         if ($role = 'ante')
