@@ -15,6 +15,11 @@
     </xd:doc>
     <xsl:output method="xml" indent="yes"/>
     
+    <xsl:include href="./../tools/addid.xsl"/>
+    <xsl:include href="./../tools/addtstamps.xsl"/>
+    
+    
+    
     <xd:doc>
         <xd:desc>
             <xd:p>The ID of the element that's indicating the snippet to be shown.</xd:p>
@@ -57,12 +62,11 @@
     <xsl:variable name="activated.states" select="$active.state | $active.state/preceding::mei:genState" as="node()*"/>
     <xsl:variable name="activated.states.ids" select="$activated.states/@xml:id" as="xs:string*"/>
     
-    <!-- this was happening in a    loop formerly -->
+    <!-- this was happening in a loop formerly -->
     <xsl:variable name="ranges" as="node()">
         <xsl:variable name="annot" select="$context" as="node()"/>
         <xsl:variable name="first.measure" select="$annot/ancestor::mei:measure" as="node()"/>
-        <xsl:variable name="tstamp" select="number($annot/@tstamp)" as="xs:double"/>
-        <xsl:variable name="end.tstamp" select="if(not(contains($annot/@tstamp2,'m+'))) then(number($annot/@tstamp2)) else(number(substring-after($annot/@tstamp2,'m+')))" as="xs:double"/>
+        
         <xsl:variable name="subsequent.measures" select="if(starts-with($annot/@tstamp2,'0m+') or not(contains($annot/@tstamp2,'m+'))) then() else(($first.measure/following::mei:measure)[position() le xs:integer(substring-before($annot/@tstamp2,'m+'))])" as="node()*"/>
         <xsl:variable name="affected.measures" select="$first.measure | $subsequent.measures" as="node()+"/>
         <xsl:variable name="staves.n" select="if($annot/@staff) then(tokenize(normalize-space($annot/@staff),' ')) else(distinct-values($first.measure/mei:staff/@n))" as="xs:string*"/>
@@ -303,7 +307,7 @@
                     </section>
                 </xsl:when>
                 <xsl:otherwise>
-                    <xsl:comment>TODO: Unable to correctly align  multiple ranges. Using only the first range.</xsl:comment>
+                    <xsl:comment>TODO: Unable to correctly align multiple ranges. Using only the first range.</xsl:comment>
                     <xsl:sequence select="$ranges[1]/mei:scoreDef | $ranges[1]/mei:section"/>
                 </xsl:otherwise>
             </xsl:choose>
@@ -323,6 +327,52 @@
         </xsl:apply-templates>
     </xsl:variable>
     
+    <xsl:variable name="context.highlighted" as="node()">
+        <xsl:variable name="added.id" as="node()*">
+            <xsl:apply-templates select="$condensed.score" mode="add.id"/>
+        </xsl:variable>
+        <xsl:variable name="added.tstamps" as="node()*">
+            <xsl:apply-templates select="$added.id" mode="add.tstamps"/>
+        </xsl:variable>
+        
+        <!-- get context and focus elements – those restrict what shall be shown -->
+        <xsl:variable name="context.elem" select="id($context.id)" as="node()"/>
+        <xsl:variable name="focus.elem" select="id($focus.id)" as="node()"/>
+        
+        <!-- retrieve timestamps for selecting snippets -->
+        <xsl:variable name="context.tstamp" select="number($context.elem/@tstamp)" as="xs:double"/>
+        <xsl:variable name="context.tstamp2" select="if(not(contains($context.elem/@tstamp2,'m+'))) then(number($context.elem/@tstamp2)) else(number(substring-after($context.elem/@tstamp2,'m+')))" as="xs:double"/>
+        <xsl:variable name="focus.tstamp" select="number($focus.elem/@tstamp)" as="xs:double"/>
+        <xsl:variable name="focus.tstamp2" select="if(not(contains($focus.elem/@tstamp2,'m+'))) then(number($focus.elem/@tstamp2)) else(number(substring-after($focus.elem/@tstamp2,'m+')))" as="xs:double"/>
+        <xsl:variable name="focus.first.measure.id" select="$focus.elem/ancestor::mei:measure/@xml:id" as="xs:string"/>
+        <xsl:variable name="focus.measures.after.first" select="
+            if(not(contains($focus.elem/@tstamp2,'m+'))) 
+            then(0) 
+            else(xs:integer(substring-before($focus.elem/@tstamp2,'m+')))" as="xs:integer"/>
+        <xsl:variable name="focus.last.measure.id" select="
+            if($focus.measures.after.first = 0) 
+            then($focus.first.measure.id) 
+            else($focus.elem/ancestor::mei:measure/following::mei:measure[$focus.measures.after.first]/@xml:id)" as="xs:string"/>
+        <xsl:variable name="focus.middle.measures.ids" select="
+            if($focus.measures.after.first gt 1)
+            then($added.tstamps//mei:measure[@xml:id = $focus.first.measure.id]/following::mei:measure[$focus.last.measure.id = following::mei:measure/@xml:id]/@xml:id)
+            else()" as="xs:string*"/>
+        <!-- aufteilen: 1. focus, letzter focus, mittlere focus -->
+        
+        <xsl:variable name="highlighted.context" as="node()*">
+            <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
+                <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
+                <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>
+                <xsl:with-param name="focus.tstamp" select="$focus.tstamp" tunnel="yes" as="xs:double"/>
+                <xsl:with-param name="focus.tstamp2" select="$focus.tstamp2" tunnel="yes" as="xs:double"/>
+                <xsl:with-param name="focus.first.measure.id" select="$focus.first.measure.id" tunnel="yes" as="xs:string"/>
+                <xsl:with-param name="focus.last.measure.id" select="$focus.last.measure.id" tunnel="yes" as="xs:string"/>
+                <xsl:with-param name="focus.middle.measures.ids" select="$focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
+            </xsl:apply-templates>
+        </xsl:variable>
+        <xsl:sequence select="$highlighted.context"/>
+    </xsl:variable>
+    
     <xd:doc scope="component">
         <xd:desc>
             <xd:p></xd:p>
@@ -336,7 +386,9 @@
             <xsl:comment select="'source: ' || $source.id"/>
             <body>
                 <mdiv>
-                    <xsl:sequence select="$condensed.score"/>
+                    <xsl:comment select="'focus.id: ' || $focus.id"/>
+                    <xsl:comment select="'context.id: ' || $context.id"/>
+                    <xsl:sequence select="$context.highlighted"/>
                 </mdiv>
             </body>
         </music>
@@ -482,6 +534,22 @@
     
     <xd:doc>
         <xd:desc>
+            <xd:p>drop source attribute – not needed anymore </xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="@source" mode="get.source"/>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>gets choices out of the way</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:choice[every $child in child::mei:* satisfies $child/@source]" mode="get.source">
+        <xsl:apply-templates select="node()" mode="#current"/>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
             <xd:p>resolves states</xd:p>
         </xd:desc>
     </xd:doc>
@@ -490,6 +558,13 @@
         <xsl:variable name="local.state" select="replace(@state,'#','')" as="xs:string"/>
         
         <xsl:choose>
+            <xsl:when test="$name = ('add','supplied','corr','sic') and $local.state = $state.id">
+                <!-- this is the very state which is looked at right now. It is kept for highlighting purposes. -->
+                <xsl:copy>
+                    <xsl:attribute name="type" select="normalize-space(@type || ' currentAction ' || local-name())"/>
+                    <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
+                </xsl:copy>
+            </xsl:when>
             <xsl:when test="$name = 'add' and $local.state = $activated.states.ids">
                 <xsl:apply-templates select="child::node()" mode="#current"/>
             </xsl:when>
@@ -516,7 +591,228 @@
         </xsl:choose>
     </xsl:template>
     
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Drop all facs attributes</xd:p>
+        </xd:desc>
+    </xd:doc>
     <xsl:template match="@facs" mode="#all"/>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Decides if a measure needs to be cut down to context / focus</xd:p>
+        </xd:desc>
+        <xd:param name="context.tstamp"></xd:param>
+        <xd:param name="context.tstamp2"></xd:param>
+        <xd:param name="focus.tstamp"></xd:param>
+        <xd:param name="focus.tstamp2"></xd:param>
+        <xd:param name="focus.measures.ids"></xd:param>
+    </xd:doc>
+    <xsl:template match="mei:measure" mode="highlight.context">
+        <xsl:param name="context.tstamp" tunnel="yes" as="xs:double"/>
+        <xsl:param name="context.tstamp2" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.first.measure.id" tunnel="yes" as="xs:string"/>
+        <xsl:param name="focus.last.measure.id" tunnel="yes" as="xs:string"/>
+        <xsl:param name="focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
+        
+        <xsl:choose>
+            <xsl:when test="not(preceding::mei:measure) and not(following::mei:measure) and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="not(preceding::mei:measure) and following::mei:measure and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="not(preceding::mei:measure) and following::mei:measure and @xml:id = $focus.first.measure.id and not(@xml:id = $focus.last.measure.id)">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="not(preceding::mei:measure) and following::mei:measure and not(@xml:id = $focus.first.measure.id)">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="preceding::mei:measure and $focus.first.measure.id = following::mei:measure/@xml:id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="preceding::mei:measure and not(following::mei:measure) and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="preceding::mei:measure and following::mei:measure and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="preceding::mei:measure and following::mei:measure and @xml:id = $focus.first.measure.id and not(@xml:id = $focus.last.measure.id)">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="@xml:id = $focus.middle.measures.ids">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="not(following::mei:measure) and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="following::mei:measure and @xml:id = $focus.last.measure.id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="following::mei:measure and $focus.last.measure.id = preceding::mei:measure/@xml:id">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:when test="not(following::mei:measure) and not(@xml:id = $focus.last.measure.id)">
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:comment select="'Problem!!!'"/>
+                <xsl:next-match/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>resolve events for context highlighting</xd:p>
+        </xd:desc>
+        <xd:param name="context.start"></xd:param>
+        <xd:param name="context.complete"></xd:param>
+        <xd:param name="focus.start"></xd:param>
+        <xd:param name="focus.complete"></xd:param>
+        <xd:param name="focus.end"></xd:param>
+        <xd:param name="context.end"></xd:param>
+        <xd:param name="context.tstamp"></xd:param>
+        <xd:param name="context.tstamp2"></xd:param>
+        <xd:param name="focus.tstamp"></xd:param>
+        <xd:param name="focus.tstamp2"></xd:param>
+    </xd:doc>
+    <xsl:template match="mei:staff//mei:*[@tstamp]" mode="highlight.context">
+        <xsl:param name="context.start" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="context.complete" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="focus.start" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="focus.complete" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="focus.end" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="context.end" tunnel="yes" as="xs:boolean"/>
+        
+        <xsl:param name="context.tstamp" tunnel="yes" as="xs:double"/>
+        <xsl:param name="context.tstamp2" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double"/>
+        
+        <xsl:variable name="tstamp" select="number(@tstamp)" as="xs:double"/>
+        
+        <xsl:variable name="existing.type" select="string(@type)" as="xs:string?"/>
+        <xsl:variable name="new.type" as="xs:string?">
+            <xsl:choose>
+                <xsl:when test="$focus.complete"/>
+                <xsl:when test="$focus.start and $focus.end and $tstamp ge $focus.tstamp and $tstamp lt $focus.tstamp2"/>
+                <xsl:when test="$focus.start and $tstamp ge $focus.tstamp"/>
+                <xsl:when test="$focus.end and $tstamp lt $focus.tstamp2"/>
+                <xsl:when test="$context.complete">out-focus</xsl:when>
+                <xsl:when test="not($context.start) and $focus.start and $tstamp lt $focus.tstamp">out-focus</xsl:when>
+                <xsl:when test="$context.start and $focus.start and $tstamp ge $context.tstamp and $tstamp lt $focus.tstamp">out-focus</xsl:when>
+                <xsl:when test="$context.start and not($focus.start) and $tstamp ge $context.tstamp">out-focus</xsl:when>
+                <xsl:when test="not($context.end) and $focus.end and $tstamp gt $focus.tstamp2">out-focus</xsl:when>
+                <xsl:when test="$context.end and $focus.end and $tstamp ge $focus.tstamp2 and $tstamp lt $context.tstamp2">out-focus</xsl:when>
+                <xsl:when test="$context.end and not($focus.end) and $tstamp lt $context.tstamp2">out-focus</xsl:when>
+                <xsl:when test="$context.start and $tstamp lt $context.tstamp">out-context</xsl:when>
+                <xsl:when test="$context.end and $tstamp gt $context.tstamp2">out-context</xsl:when>
+            </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="type" select="normalize-space(string-join(($existing.type, $new.type), ' '))" as="xs:string?"/>
+        <xsl:copy>
+            <xsl:apply-templates select="@* except @type" mode="#current"/>
+            <xsl:if test="$type">
+                <xsl:attribute name="type" select="$type"/>
+            </xsl:if>
+            <xsl:apply-templates select="node()" mode="#current"/>
+        </xsl:copy>
+        
+    </xsl:template>
     
     <xd:doc>
         <xd:desc>
