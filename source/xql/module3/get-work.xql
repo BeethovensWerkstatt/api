@@ -19,6 +19,7 @@ declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace map = "http://www.w3.org/2005/xpath-functions/map";
+declare namespace xi = "http://www.w3.org/2001/XInclude";
 
 (: set output to JSON:)
 declare option output:method "json";
@@ -36,16 +37,20 @@ let $document.id := request:get-parameter('document.id','')
 let $document.uri := $config:module3-basepath || $document.id || '.json'
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+let $complete.file := $database//mei:meiCorpus[@xml:id = $document.id]
+
+let $corpus.head := $complete.file/mei:meiHead
+let $text.file := ($complete.file//mei:mei[.//mei:encodingDesc[@class='#bw_module3_textFile']])[1]
+let $document.files := $complete.file//mei:mei[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
 
 let $title := 
-    for $title in $file//mei:fileDesc/mei:titleStmt/mei:title
+    for $title in $text.file//mei:fileDesc/mei:titleStmt/mei:title
     return map {
       'title': $title/text(),
       '@lang': $title/string(@xml:lang)
     }
     
-let $composer.elem := $file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
+let $composer.elem := $text.file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
 let $composer := map {
     'name': $composer.elem/text(),
     '@id': $composer.elem/string(@auth.uri) || $composer.elem/string(@codedval),
@@ -97,7 +102,7 @@ let $manifestations :=
 :)
 
 let $mdivs := 
-    map:merge(for $mdiv in $file//mei:mdiv[@xml:id]
+    map:merge(for $mdiv in $text.file//mei:mdiv[@xml:id]
     let $mdiv.id := $mdiv/string(@xml:id)
     let $mdiv.n := 
         if($mdiv/@n)
@@ -133,13 +138,14 @@ let $mdivs :=
     
     
 let $manifestations := 
-    for $manifestation in $file//mei:manifestation
-    let $facsimile := $file//mei:facsimile[@decls = concat('#',$manifestation/@xml:id)]
+    for $manifestation in $document.files//mei:manifestation
+    let $facsimile := $manifestation/ancestor::mei:mei//mei:facsimile
+    let $source.id := $manifestation/ancestor::mei:mei/string(@xml:id)
     
     where exists($facsimile) (:TODO: Decide how to deal with TEI files… :)
     
     let $label := $manifestation/string(@label)
-    let $facsimile.id := $facsimile/string(@xml:id)
+    let $facsimile.id := $source.id
     
     (:let $manifestation.namespace := namespace-uri($manifestation.file):)
     let $manifestation.external.id := $config:module3-basepath || $document.id || '/manifestation/' || $facsimile.id || '.json'
@@ -158,23 +164,19 @@ let $manifestations :=
     }
     
 let $complaints := 
-    for $annot in $file//mei:body//mei:metaMark[contains(@class,'#bw_monitum')] (:TODO: add in some @class:)
+    for $complaint in $complete.file//mei:body//mei:metaMark[contains(@class,'#bw_monitum')] (:TODO: add in some @class:)
     (: get only those annots that are the first occurence of something :)
-    where not(replace($annot/@corresp,'#','') = $file//mei:annot/@xml:id)
-    let $complaint.id := $annot/string(@xml:id)
+    (: where not(replace($annot/@corresp,'#','') = $file//mei:annot/@xml:id) :)
+    
+    let $complaint.id := $complaint/string(@xml:id)
     let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
-    let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
-    let $mdiv.id := $mdiv/string(@xml:id)
-    
-    let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $complaint.id]
-    
-    let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
+    let $complaint.document.id := $complaint/ancestor::mei:mei/string(@xml:id)
+    let $text.file.annot := $text.file//mei:annot[mei:relation[@rel = 'hasRevFocus'][substring-after(@target,'#') = $complaint.id]]
     
     let $affected.measures :=
-        for $complaint in ($annot, $dependent.complaints)
+        for $annot in $text.file.annot
         
-        
-        let $first.measure := $complaint/ancestor::mei:measure
+        let $first.measure := $annot/ancestor::mei:measure
         
         (:how many additional measures do I need to pull?:)
         let $range := 
@@ -188,25 +190,32 @@ let $complaints :=
             
         return ($first.measure | $subsequent.measures)
     
-    let $measures := 
-        for $measure.id in $affected.measures/string(@xml:id)
-        let $measure := $file/root()/id($measure.id)
-        let $measure.label := 
-            if($measure/@label)
-            then($measure/string(@label))
-            else if($measure/@n)
-            then($measure/string(@n))
-            else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
+    let $mdivs := 
+        for $mdiv.id in distinct-values($affected.measures/ancestor::mei:mdiv/string(@xml:id))
+        
+        let $mdiv := $affected.measures/ancestor::mei:mdiv[@xml:id = $mdiv.id]
+    
+        let $measures := 
+            for $measure in $affected.measures[ancestor::mei:mdiv/@xml:id = $mdiv.id]
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label := 
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+            return map {
+                'id': $measure.id,
+                'label': $measure.label
+            }
         return map {
-            'id': $measure.id,
-            'label': $measure.label
+            'id': $mdiv.id,
+            'measures': array { $measures }
         }
         
     return map {
         '@id': $public.complaint.id,
-        'annots': array { $annot.ids },
-        'mdiv': $mdiv.id,
-        'measures': array { $measures }
+        'mdivs': array { $mdivs }
     }
 
 
@@ -216,7 +225,8 @@ return map {
     'composer': $composer,
     'manifestations': array { $manifestations },
     'complaints': array { $complaints },
-    'movements': $mdivs
+    'movements': $mdivs,
+    'avail': count($complete.file//mei:note)
 }
 
 

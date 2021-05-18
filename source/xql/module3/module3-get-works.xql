@@ -34,13 +34,13 @@ let $database := collection($config:module3-root)
     - have no facsimiles in them (TODO: find a better way to identify work files, maybe using @class)
 :)
 let $files :=
-  for $file in $database//mei:mei[@xml:id][.//mei:seriesStmt/mei:identifier[@auth.uri = 'https://beethovens-werkstatt.de/modul-3/']]
-  let $file.id := $file/string(@xml:id)
-  let $external.id := $config:module3-basepath || $file.id || '.json'
+  for $file in $database//mei:meiCorpus[@xml:id]
+  let $workCorpus.id := $file/string(@xml:id)
+  let $external.id := $config:module3-basepath || $workCorpus.id || '.json'
   let $title := 
-    for $title in $file//mei:fileDesc/mei:titleStmt/mei:title
+    for $title in $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']
     return map {
-      'title': $title/text(),
+      'title': $title/text() || ' (corpus file)',
       '@lang': $title/string(@xml:lang)
     }
     
