@@ -100,6 +100,32 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
     </dispatch>
 ) else
 
+(: get info about mdiv :)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/mdiv/[\da-zA-Z-_\.]+\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-mdiv.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="mdiv.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: get info about measure :)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/measure/[\da-zA-Z-_\.]+\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-measure.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="measure.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
+        </forward>
+    </dispatch>
+) else
+
 (: get specific complaint:)
 if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/complaints/[\da-zA-Z-_\.]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),

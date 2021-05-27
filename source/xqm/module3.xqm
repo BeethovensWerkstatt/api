@@ -18,6 +18,11 @@ declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 declare namespace ft="http://exist-db.org/xquery/lucene";
 
+declare function module3:getComplaintLink($file.id as xs:string, $complaint.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/complaints/' || $complaint.id || '.json'
+    return $link
+};
+
 declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*) as map(*) {
 
     let $file := $complaint/root()

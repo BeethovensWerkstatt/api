@@ -22,7 +22,12 @@ declare function ef:getFileLink($file.id as xs:string) as xs:string {
 };
 
 declare function ef:getMdivLink($file.id as xs:string, $mdiv.id as xs:string) as xs:string {
-    let $link := $config:file-basepath || $file.id || '/mdiv/' || $mdiv.id || '.xml'
+    let $link := $config:module3-basepath || $file.id || '/mdiv/' || $mdiv.id || '.json'
+    return $link
+};
+
+declare function ef:getMeasureLink($file.id as xs:string, $measure.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/measure/' || $measure.id || '.json'
     return $link
 };
 

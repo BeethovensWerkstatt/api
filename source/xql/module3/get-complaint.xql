@@ -23,6 +23,7 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace xi = "http://www.w3.org/2001/XInclude";
 
 (: set output to JSON:)
 declare option output:method "json";
@@ -43,11 +44,26 @@ let $complaint.id := request:get-parameter('complaint.id','')
 let $document.uri := $config:module3-basepath || $document.id || '.json'
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+let $complete.file := $database//mei:meiCorpus[@xml:id = $document.id]
 
-let $complaint := $file//mei:body//mei:metaMark[@xml:id = $complaint.id]
+let $inclusion.base.uri := string-join(tokenize(document-uri($complete.file/root()),'/')[position() lt last()],'/')
+
+let $corpus.head := $complete.file/mei:meiHead
+
+let $mei.files := 
+    for $link in $complete.file/xi:include/string(@href)
+    return doc($inclusion.base.uri || '/' || $link)//mei:mei
+
+let $text.file := ($mei.files[.//mei:encodingDesc[@class='#bw_module3_textFile']])[1]
+let $document.files := $mei.files[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
+
+
+let $complaint := $database//mei:metaMark[@xml:id = $complaint.id]
 
 let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
+
+(: I need to get the mdiv in text first – find annot pointing to metaMark, then ancestor mdiv :)
+
 let $mdiv := $complaint/ancestor::mei:mdiv[@xml:id][1]
 let $mdiv.id := $mdiv/string(@xml:id)
 let $mdiv.uri := ef:getMdivLink($document.id, $mdiv/string(@xml:id))
