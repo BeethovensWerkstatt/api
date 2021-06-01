@@ -117,14 +117,14 @@ let $mdivs :=
         then($mdiv/string(@n))
         else(string(count($mdiv/preceding::mei:mdiv) + 1))
     order by xs:integer($mdiv.n) ascending
-    let $mdiv.label :=
+    (:let $mdiv.label :=
         if($mdiv/@label)
         then($mdiv/string(@label))
         else if($mdiv/@n)
         then($mdiv/string(@n))
-        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
+        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')'):)
         
-    let $staves := 
+    (:let $staves := 
         for $staff in distinct-values($mdiv//mei:staffDef/@n)
         let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text())
         let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text())
@@ -133,7 +133,7 @@ let $mdivs :=
             'n': $staff,
             'label': $staff.label,
             'abbr': $staff.labelAbbr
-        }
+        }:)
         
     
     return ef:getMdivLink($document.id, $mdiv.id)
@@ -142,29 +142,10 @@ let $mdivs :=
     
 let $manifestations := 
     for $manifestation in $document.files//mei:manifestation
-    let $facsimile := $manifestation/ancestor::mei:mei//mei:facsimile
-    let $source.id := $manifestation/ancestor::mei:mei/string(@xml:id)
+    let $source.id := $manifestation/string(@xml:id)
     
-    where exists($facsimile) (:TODO: Decide how to deal with TEI files… :)
-    
-    let $label := $manifestation/string(@label)
-    let $facsimile.id := $source.id
-    
-    (:let $manifestation.namespace := namespace-uri($manifestation.file):)
-    let $manifestation.external.id := $config:module3-basepath || $document.id || '/manifestation/' || $facsimile.id || '.json'
-    
-    let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile.id || '/manifest.json'
-    
-    return map {
-      'id': $facsimile.id,
-      'label': $label,
-      'frbr': map {
-        'level': 'manifestation'
-      },
-      'iiif': map {
-        'manifest': $iiif.manifest
-      }
-    }
+    let $manifestation.external.id := ef:getManifestationLink($document.id, $source.id)
+    return $manifestation.external.id
     
 let $complaints := 
     for $complaint in $document.files//mei:metaMark['#bw_monitum' = tokenize(normalize-space(@class),' ')]

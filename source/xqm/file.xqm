@@ -26,6 +26,26 @@ declare function ef:getMdivLink($file.id as xs:string, $mdiv.id as xs:string) as
     return $link
 };
 
+declare function ef:getManifestationLink($file.id as xs:string, $source.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '.json'
+    return $link
+};
+
+declare function ef:getManifestationMeasuresLink($file.id as xs:string, $source.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json'
+    return $link
+};
+
+declare function ef:getMeasuresInPartLink($file.id as xs:string, $source.id as xs:string, $mdiv.id as xs:string, $part.n as xs:integer) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json?scope=part&amp;mdivId=' || $mdiv.id || '&amp;part=' || xs:string($part.n) 
+    return $link
+};
+
+declare function ef:getMeasuresInScoreLink($file.id as xs:string, $source.id as xs:string, $mdiv.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json?scope=scores&amp;mdivId=' || $mdiv.id
+    return $link
+};
+
 declare function ef:getMeasureLink($file.id as xs:string, $measure.id as xs:string) as xs:string {
     let $link := $config:module3-basepath || $file.id || '/measure/' || $measure.id || '.json'
     return $link

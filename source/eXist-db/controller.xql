@@ -100,6 +100,19 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
     </dispatch>
 ) else
 
+(: get info about manifestation / source :)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-manifestation.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="manifestation.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
+        </forward>
+    </dispatch>
+) else
+
 (: get info about mdiv :)
 if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/mdiv/[\da-zA-Z-_\.]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
@@ -109,6 +122,28 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/mdiv/[\da-zA-Z-_\.]+\.json')) t
           (: pass in the UUID of the document passed in the URI :)
           <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
           <add-parameter name="mdiv.id" value="{substring-before(tokenize($exist:path,'/')[last()],'.json')}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: get measures in an mdiv :)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+/measures\.json$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    
+    let $scope := request:get-parameter('scope', '')
+    let $mdiv.id := request:get-parameter('mdivId', '')
+    let $part.n := request:get-parameter('part', '')
+    
+    return
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-measures-in-mdiv.xql">
+          (: pass in the UUID of the document passed in the URI :)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+          <add-parameter name="manifestation.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+          <add-parameter name="scope" value="{$scope}"/>
+          <add-parameter name="mdiv.id" value="{$mdiv.id}"/>
+          <add-parameter name="part.n" value="{$part.n}"/>
         </forward>
     </dispatch>
 ) else
