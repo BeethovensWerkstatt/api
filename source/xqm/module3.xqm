@@ -24,9 +24,13 @@ declare function module3:getComplaintLink($file.id as xs:string, $complaint.id a
 };
 
 declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*) as map(*) {
-
+    
+    let $work.uri := $config:module3-basepath || $file.id || '.json'
+    
     let $file := $complaint/root()
-
+    
+    
+    (: all this needs to come from elsewhere now :)
     let $context.id := $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
 
     let $focus.id := $complaint/@xml:id
@@ -45,7 +49,7 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             $complaint/replace(normalize-space(@state),'#','')
         )
 
-    let $context := ef:getMeiByContextLink($file.id, $context.id, $focus.id, $source.id, $state.id)
+    (:let $context := ef:getMeiByContextLink($file.id, $context.id, $focus.id, $source.id, $state.id):)
 
     let $iiif :=
         let $facsimile := $file//mei:facsimile[replace(normalize-space(@decls),'#','') = $source.id]

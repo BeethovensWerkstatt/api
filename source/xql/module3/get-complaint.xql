@@ -50,7 +50,7 @@ let $inclusion.base.uri := string-join(tokenize(document-uri($complete.file/root
 
 let $corpus.head := $complete.file/mei:meiHead
 
-let $mei.files := 
+let $mei.files :=
     for $link in $complete.file/xi:include/string(@href)
     return doc($inclusion.base.uri || '/' || $link)//mei:mei
 
@@ -58,94 +58,250 @@ let $text.file := ($mei.files[.//mei:encodingDesc[@class='#bw_module3_textFile']
 let $document.files := $mei.files[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
 
 
-let $complaint := $database//mei:metaMark[@xml:id = $complaint.id]
+let $complaint.metamark := $database//mei:metaMark[@xml:id = $complaint.id]
 
-let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
+let $public.complaint.id := module3:getComplaintLink($document.id, $complaint.id)
 
-(: I need to get the mdiv in text first – find annot pointing to metaMark, then ancestor mdiv :)
+let $complaint.document.id := $complaint.metamark/ancestor::mei:mei//mei:manifestation/string(@xml:id)
+let $text.file.annots := $text.file//mei:relation[substring-after(@target,'#') = $complaint.id][@rel = 'constituent']/parent::mei:annot
 
-let $mdiv := $complaint/ancestor::mei:mdiv[@xml:id][1]
-let $mdiv.id := $mdiv/string(@xml:id)
-let $mdiv.uri := ef:getMdivLink($document.id, $mdiv/string(@xml:id))
-let $mdiv.n :=
-    if($mdiv/@n)
-    then($mdiv/string(@n))
-    else(string(count($mdiv/preceding::mei:mdiv) + 1))
-let $mdiv.label :=
-    if($mdiv/@label)
-    then($mdiv/string(@label))
-    else if($mdiv/@n)
-    then($mdiv/string(@n))
-    else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
+let $affects :=
+    for $annot in $text.file.annots
+    let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
+    let $mdiv.id := $mdiv/string(@xml:id)
+    let $mdiv.link := ef:getMdivLink($document.id, $mdiv.id)
 
-let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $complaint.id]
-
-let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
-
-let $affected.measures :=
-    for $complaint in ($complaint, $dependent.complaints)
-
-    let $first.measure := $complaint/ancestor::mei:measure
+    let $first.measure := $annot/ancestor::mei:measure
 
     (:how many additional measures do I need to pull?:)
     let $range :=
-        if($complaint/@tstamp2 and matches($complaint/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($complaint/@tstamp2,'m')) gt 0)
-        then(xs:integer(substring-before($complaint/@tstamp2,'m')))
+        if($annot/@tstamp2 and matches($annot/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($annot/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($annot/@tstamp2,'m')))
         else(0)
     let $subsequent.measures :=
         if($range gt 0)
         then($first.measure/following::mei:measure[position() le $range])
         else()
 
-    return ($first.measure | $subsequent.measures)
+    let $affected.measures := ($first.measure | $subsequent.measures)
 
-let $affected.staves := tokenize($complaint/normalize-space(@staff),' ')
+    let $measure.refs :=
+        for $measure in $affected.measures
+        return ef:getMeasureLink($document.id, $measure/string(@xml:id))
 
-let $revisionDoc.ids := $complaint/tokenize(replace(normalize-space(@source),'#',''),' ')
-let $revisionDocs :=
-    for $source.id in $revisionDoc.ids
-    return module3:getEmbodiment($document.id, $complaint, $source.id, 'revision', $affected.measures, $affected.staves)
+    let $measure.summary :=
+        let $base.labels :=
+            for $measure in $affected.measures
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label :=
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+            order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+            return $measure.label
 
-let $anteDoc.ids := distinct-values($complaint/mei:relation[@rel = 'isRevisionOf']/tokenize(replace(normalize-space(@target),'#',''),' '))
-let $anteDocs :=
-    for $source.id in $anteDoc.ids
-    return module3:getEmbodiment($document.id, $complaint, $source.id, 'ante', $affected.measures, $affected.staves)
+        let $summary :=
+            if(count($base.labels) gt 2)
+            then($base.labels[1] || '–' || $base.labels[last()])
+            else if(count($base.labels) eq 2)
+            then($base.labels[1] || ', ' || $base.labels[last()])
+            else($base.labels[1])
+        return $summary
 
-let $postDoc.ids := distinct-values($complaint/mei:relation[@rel = 'hasRevision']/tokenize(replace(normalize-space(@target),'#',''),' '))
-let $postDocs :=
-    for $source.id in $postDoc.ids
-    return module3:getEmbodiment($document.id, $complaint, $source.id, 'post', $affected.measures, $affected.staves)
-
-let $measures :=
-    for $measure.id in $affected.measures/string(@xml:id)
-    let $measure := $file/root()/id($measure.id)
-    let $measure.label :=
-        if($measure/@label)
-        then($measure/string(@label))
-        else if($measure/@n)
-        then($measure/string(@n))
-        else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
-    (: let $facs.refs := tokenize(normalize-space(replace($measure/@facs,'#','')),' ') :)
+    let $staves :=
+        for $staff in tokenize(normalize-space($annot/@staff),' ')
+        let $value := xs:integer($staff)
+        order by $value ascending
+        return $value
 
     return map {
-        'id': $measure.id,
-        'uri': ef:getElementLink($document.id,$measure.id),
-        'label': $measure.label
+        'mdiv': ef:getMdivLink($document.id, $mdiv.id),
+        'measures': map {
+            'refs': array { $measure.refs },
+            'label': $measure.summary
+        },
+        'staves': array { $staves }
     }
+
+let $revDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'original']/replace(normalize-space(@target),'#','')]
+
+let $revisionDocs :=
+    for $context in $revDoc.contextAnnots
+    let $source.id := $context/ancestor::mei:mei//mei:manifestation/string(@xml:id)
+
+    let $mdiv := $context/ancestor::mei:mdiv[@xml:id][1]
+    let $mdiv.id := $mdiv/string(@xml:id)
+    let $mdiv.link := ef:getMdivLink($document.id, $mdiv.id)
+
+    let $first.measure := $context/ancestor::mei:measure
+
+    (:how many additional measures do I need to pull?:)
+    let $range :=
+        if($context/@tstamp2 and matches($context/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($context/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($context/@tstamp2,'m')))
+        else(0)
+    let $subsequent.measures :=
+        if($range gt 0)
+        then($first.measure/following::mei:measure[position() le $range])
+        else()
+
+    let $affected.measures := ($first.measure | $subsequent.measures)
+
+    let $measure.refs :=
+        for $measure in $affected.measures
+        return ef:getMeasureLink($document.id, $measure/string(@xml:id))
+
+    let $measure.summary :=
+        let $base.labels :=
+            for $measure in $affected.measures
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label :=
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+            order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+            return $measure.label
+
+        let $summary :=
+            if(count($base.labels) gt 2)
+            then($base.labels[1] || '–' || $base.labels[last()])
+            else if(count($base.labels) eq 2)
+            then($base.labels[1] || ', ' || $base.labels[last()])
+            else($base.labels[1])
+        return $summary
+
+    let $staves :=
+        for $staff in tokenize(normalize-space($context/@staff),' ')
+        let $value := xs:integer($staff)
+        order by $value ascending
+        return $value
+
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'revision', $affected.measures, $staves)
+
+
+let $anteDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'succeeding']/replace(normalize-space(@target),'#','')]
+
+let $anteDocs :=
+    for $context in $anteDoc.contextAnnots
+    let $source.id := $context/ancestor::mei:mei//mei:manifestation/string(@xml:id)
+
+    let $mdiv := $context/ancestor::mei:mdiv[@xml:id][1]
+    let $mdiv.id := $mdiv/string(@xml:id)
+    let $mdiv.link := ef:getMdivLink($document.id, $mdiv.id)
+
+    let $first.measure := $context/ancestor::mei:measure
+
+    (:how many additional measures do I need to pull?:)
+    let $range :=
+        if($context/@tstamp2 and matches($context/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($context/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($context/@tstamp2,'m')))
+        else(0)
+    let $subsequent.measures :=
+        if($range gt 0)
+        then($first.measure/following::mei:measure[position() le $range])
+        else()
+
+    let $affected.measures := ($first.measure | $subsequent.measures)
+
+    let $measure.refs :=
+        for $measure in $affected.measures
+        return ef:getMeasureLink($document.id, $measure/string(@xml:id))
+
+    let $measure.summary :=
+        let $base.labels :=
+            for $measure in $affected.measures
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label :=
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+            order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+            return $measure.label
+
+        let $summary :=
+            if(count($base.labels) gt 2)
+            then($base.labels[1] || '–' || $base.labels[last()])
+            else if(count($base.labels) eq 2)
+            then($base.labels[1] || ', ' || $base.labels[last()])
+            else($base.labels[1])
+        return $summary
+
+    let $staves :=
+        for $staff in tokenize(normalize-space($context/@staff),' ')
+        let $value := xs:integer($staff)
+        order by $value ascending
+        return $value
+
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'ante', $affected.measures, $staves)
+
+let $postDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'preceding']/replace(normalize-space(@target),'#','')]
+
+let $postDocs :=
+    for $context in $postDoc.contextAnnots
+    let $source.id := $context/ancestor::mei:mei//mei:manifestation/string(@xml:id)
+
+    let $mdiv := $context/ancestor::mei:mdiv[@xml:id][1]
+    let $mdiv.id := $mdiv/string(@xml:id)
+    let $mdiv.link := ef:getMdivLink($document.id, $mdiv.id)
+
+    let $first.measure := $context/ancestor::mei:measure
+
+    (:how many additional measures do I need to pull?:)
+    let $range :=
+        if($context/@tstamp2 and matches($context/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($context/@tstamp2,'m')) gt 0)
+        then(xs:integer(substring-before($context/@tstamp2,'m')))
+        else(0)
+    let $subsequent.measures :=
+        if($range gt 0)
+        then($first.measure/following::mei:measure[position() le $range])
+        else()
+
+    let $affected.measures := ($first.measure | $subsequent.measures)
+
+    let $measure.refs :=
+        for $measure in $affected.measures
+        return ef:getMeasureLink($document.id, $measure/string(@xml:id))
+
+    let $measure.summary :=
+        let $base.labels :=
+            for $measure in $affected.measures
+            let $measure.id := $measure/string(@xml:id)
+            let $measure.label :=
+                if($measure/@label)
+                then($measure/string(@label))
+                else if($measure/@n)
+                then($measure/string(@n))
+                else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+            order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+            return $measure.label
+
+        let $summary :=
+            if(count($base.labels) gt 2)
+            then($base.labels[1] || '–' || $base.labels[last()])
+            else if(count($base.labels) eq 2)
+            then($base.labels[1] || ', ' || $base.labels[last()])
+            else($base.labels[1])
+        return $summary
+
+    let $staves :=
+        for $staff in tokenize(normalize-space($context/@staff),' ')
+        let $value := xs:integer($staff)
+        order by $value ascending
+        return $value
+
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves)
 
 return map {
     '@id': $public.complaint.id,
-    'label': $complaint/string(@label),
+    'label': $complaint.metamark/string(@label),
     '@work': $document.uri,
-    'annots': array { for $annot in $annot.ids return ef:getElementLink($document.id,$annot)},
-    'movement': map {
-        'id': $mdiv.id,
-        'uri': ef:getElementLink($document.id,$mdiv.id),
-        'n': $mdiv.n,
-        'label': $mdiv.label
-    },
-    'measures': array { $measures },
-    'staves': array { $affected.staves },
+    'affects': $affects,
     'revisionDocs': array { $revisionDocs },
     'anteDocs': array { $anteDocs },
     'postDocs': array { $postDocs }
