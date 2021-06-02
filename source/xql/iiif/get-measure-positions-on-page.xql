@@ -41,9 +41,9 @@ let $document.id := request:get-parameter('document.id','')
 let $canvas.id := request:get-parameter('canvas.id','')
 
 (: get file from database :)
-let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei)
+let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei | $database//mei:manifestation[@xml:id = $document.id]/ancestor::mei:mei)
 (: is this a link to a facsimile only, or to a document :)
-let $is.facsimile.id := not($file/@xml:id = $document.id)
+let $is.facsimile.id := exists($file//mei:facsimile/@xml:id = $document.id)
 
 let $canvas := $file//mei:surface[@xml:id = $canvas.id]
 
