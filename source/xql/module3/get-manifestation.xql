@@ -156,7 +156,7 @@ let $output :=
     then(
         map {
         '@id': $manifestation.external.id,
-        'document': $document.uri,
+        'work': $document.uri,
         'label': $manifestation.label,
         'frbr': map {
             'level': 'manifestation'

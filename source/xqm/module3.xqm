@@ -63,9 +63,16 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         return iiif:getRectangle($file/mei:mei, $zones, true())
 
     return map {
-        'document': $source.id,
+        'work': $work.uri,
         'role': $role,
-        'mei': $context,
-        'iiif': array { $iiif }
+        'mei': '$context',
+        'iiif': array { $iiif },
+        'test': map {
+            'fileId': string($file.id),
+            'contextId': string($context.id),
+            'focusId': string($focus.id),
+            'sourceId': string($source.id),
+            'stateId': string($state.id)
+        }
     }
 };

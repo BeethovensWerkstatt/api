@@ -81,7 +81,7 @@ let $output :=
         'mdiv': $mdiv.link,
         'label': $measure.label,
         'staves': array { $staves },
-        'document': $document.uri
+        'work': $document.uri
     }
     ) else (
         (: TODO: add RESSOURCE NOT FOUND:)

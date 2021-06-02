@@ -70,7 +70,7 @@ let $output :=
     if($scope = 'score')
     then(
         map {
-            'document': $document.uri,
+            'work': $document.uri,
             'mdiv': $mdiv.uri,
             'manifestation': $manifestation.external.id,
             'scope': 'score',
@@ -80,7 +80,7 @@ let $output :=
     else if($scope = 'part')
     then(
         map {
-            'document': $document.uri,
+            'work': $document.uri,
             'mdiv': $mdiv.uri,
             'manifestation': $manifestation.external.id,
             'scope': 'part',
@@ -91,7 +91,7 @@ let $output :=
     else if($scope = '')
     then(
         map {
-            'document': $document.uri,
+            'work': $document.uri,
             'manifestation': $manifestation.external.id,
             'scope': 'manifestation',
             'measures': array { $measures } 
