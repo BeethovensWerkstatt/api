@@ -180,7 +180,7 @@ let $revisionDocs :=
         order by $value ascending
         return $value
 
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'revision', $affected.measures, $staves)
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'revision', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
 
 
 let $anteDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'succeeding']/replace(normalize-space(@target),'#','')]
@@ -238,7 +238,7 @@ let $anteDocs :=
         order by $value ascending
         return $value
 
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'ante', $affected.measures, $staves)
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'ante', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
 
 let $postDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'preceding']/replace(normalize-space(@target),'#','')]
 
@@ -295,7 +295,7 @@ let $postDocs :=
         order by $value ascending
         return $value
 
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves)
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
 
 return map {
     '@id': $public.complaint.id,
