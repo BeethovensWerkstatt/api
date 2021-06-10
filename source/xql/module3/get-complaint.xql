@@ -179,8 +179,10 @@ let $revisionDocs :=
         let $value := xs:integer($staff)
         order by $value ascending
         return $value
+        
+    let $text.annot := $text.file.annots[mei:relation[@rel = 'original'][@target = '#' || $context/@xml:id]]    
 
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'revision', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'revision', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei, $text.annot, $context)
 
 
 let $anteDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'succeeding']/replace(normalize-space(@target),'#','')]
@@ -237,8 +239,10 @@ let $anteDocs :=
         let $value := xs:integer($staff)
         order by $value ascending
         return $value
+        
+    let $text.annot := $text.file.annots[mei:relation[@rel = 'succeeding'][@target = '#' || $context/@xml:id]]
 
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'ante', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'ante', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei, $text.annot, $context)
 
 let $postDoc.contextAnnots := $document.files//mei:annot[@xml:id = $text.file.annots/mei:relation[@rel = 'preceding']/replace(normalize-space(@target),'#','')]
 
@@ -294,8 +298,10 @@ let $postDocs :=
         let $value := xs:integer($staff)
         order by $value ascending
         return $value
-
-    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei)
+    
+    let $text.annot := $text.file.annots[mei:relation[@rel = 'preceding'][@target = '#' || $context/@xml:id]]
+    
+    return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei, $text.annot, $context)
 
 return map {
     '@id': $public.complaint.id,

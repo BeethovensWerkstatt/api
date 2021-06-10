@@ -23,7 +23,7 @@ declare function module3:getComplaintLink($file.id as xs:string, $complaint.id a
     return $link
 };
 
-declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*, $text.file as node(), $document.file as node()) as map(*) {
+declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*, $text.file as node(), $document.file as node(), $text.annot as node(), $doc.annot as node()) as map(*) {
     (: 
         allowed values for $role: 
         - 'ante'
@@ -34,12 +34,6 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     
     let $file := $text.file/root()
     
-    
-    (: all this needs to come from elsewhere now :)
-    let $context.id := $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
-
-    let $focus.id := $complaint/@xml:id
-
     let $state.id :=
         if ($role = 'ante')
         then (
@@ -53,8 +47,13 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         else (
             $complaint/replace(normalize-space(@state),'#','')
         )
-
-    (:let $context := ef:getMeiByContextLink($file.id, $context.id, $focus.id, $source.id, $state.id):)
+    
+    let $focus.link := 
+        if($role = 'revision')
+        then($complaint/string(@xml:id))
+        else('')
+    
+    let $context := ef:getMeiByContextLink($file.id, $doc.annot/string(@xml:id), $focus.link, $source.id, $state.id)
 
     let $iiif :=
         let $facsimile := $document.file//mei:facsimile
@@ -80,16 +79,18 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     return map {
         'work': $work.uri,
         'role': $role,
-        'mei': '--$context',
-        'iiif': array { $iiif }(:,
+        'mei': $context,
+        'iiif': array { $iiif },
         'test': map {
             'fileId': string($file.id),
-            'contextId': string($context.id),
-            'focusId': string($focus.id),
+            'focusLink': string($focus.link),
             'sourceId': string($source.id),
             'stateId': string($state.id),
             'hasFacs': count($file//mei:facsimile),
-            'measures': string-join($affected.measures/string(@xml:id),', ')
-        }:)
+            'measures': string-join($affected.measures/string(@xml:id),', '),
+            'complaintId': local-name($complaint) || ' - ' || $complaint/string(@xml:id),
+            'textAnnotId': $text.annot/string(@xml:id),
+            'docAnnotId': $doc.annot/string(@xml:id)
+        }
     }
 };
