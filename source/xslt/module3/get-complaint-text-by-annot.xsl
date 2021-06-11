@@ -228,6 +228,12 @@
         </xsl:variable>
         <xsl:variable name="generated.section" as="node()">
             <section xmlns="http://www.music-encoding.org/ns/mei">
+                <!-- debug attributes:
+                    measures="{count($search.space//mei:measure)}" 
+                    elements="{string-join(distinct-values($search.space/descendant-or-self::mei:*/local-name()), ', ')}" 
+                    meter.counts="{count($search.space//@meter.count) || ': ' || string-join(distinct-values($search.space//string(@meter.count)),', ')}"
+                    scoreDefs="{string-join(distinct-values($search.space//mei:scoreDef/string(@xml:id)),', ')}"
+                -->
                 <xsl:variable name="region" as="node()*">
                     <xsl:apply-templates select="$affected.measures" mode="get.selected.staves">
                         <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
@@ -419,6 +425,19 @@
     <xsl:template match="mei:measure" mode="get.search.space">
         <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
         <xsl:if test="following::mei:measure[@xml:id = $measure.id]">
+            <xsl:copy-of select="."/>
+        </xsl:if>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>This template is used to delimit the search room for features relevant for a given music snippet</xd:p>
+        </xd:desc>
+        <xd:param name="measure.id"></xd:param>
+    </xd:doc>
+    <xsl:template match="mei:section" mode="get.search.space">
+        <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
+        <xsl:if test="following::mei:measure[@xml:id = $measure.id] or descendant::mei:measure[@xml:id = $measure.id]">
             <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
