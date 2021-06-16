@@ -78,6 +78,20 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/list/[\da-zA-Z-_\.]+_zone
 
 ) else
 
+(: retrieves an SVG file with the overlays for a given page :)
+if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/overlays/[\da-zA-Z-_\.]+\.svg$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/file/get-svg-file.xql">
+          (\: pass in the UUID of the document passed in the URI :\)
+          <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+          <add-parameter name="svg.file.name" value="{tokenize($exist:path,'/')[last()]}"/>
+        </forward>
+    </dispatch>
+
+) else
+
 (: endpoint for works from module 3 :)
 if(matches($exist:path,'/module3/works\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
