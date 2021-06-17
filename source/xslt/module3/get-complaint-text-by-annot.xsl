@@ -652,6 +652,22 @@
         <xsl:param name="focus.last.measure.id" tunnel="yes" as="xs:string?"/>
         <xsl:param name="focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
         
+        <!--<xsl:comment>
+            <xsl:value-of select="'$context.tstamp=' || $context.tstamp"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$context.tstamp2=' || $context.tstamp2"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.tstamp=' || $focus.tstamp"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.tstamp2=' || $focus.tstamp2"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.first.measure.id=' || $focus.first.measure.id"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.last.measure.id=' || $focus.last.measure.id"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.middle.measures.ids=' || string-join($focus.middle.measures.ids,' ')"/>
+        </xsl:comment>-->
+        
         <xsl:choose>
             <xsl:when test="not(preceding::mei:measure) and not(following::mei:measure) and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
                 <xsl:next-match>
@@ -783,8 +799,22 @@
                     <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
                 </xsl:next-match>
             </xsl:when>
+            <xsl:when test="preceding::mei:measure and following::mei:measure and not($focus.first.measure.id) and not($focus.last.measure.id)">
+                <!-- this is necessary when no focus-id is handed over -->
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
             <xsl:otherwise>
                 <xsl:comment select="'Problem!!!'"/>
+                <!--<xsl:comment>HIER LIEGT DER HUND IM PFEFFER</xsl:comment>-->
+                <xsl:copy-of select="."></xsl:copy-of>
+                <!--<xsl:comment>UND HIER KOMMT ER WIEDER RAUS</xsl:comment>-->
                 <xsl:next-match/>
             </xsl:otherwise>
         </xsl:choose>
