@@ -146,7 +146,7 @@
                                 <xsl:variable name="initial.staffDef" select="($search.space//mei:staffDef[@n = $current.staff.n])[1]" as="node()"/>
                                 <xsl:variable name="pos.in.group" select="count($initial.staffDef/preceding-sibling::mei:staffDef) + 1" as="xs:integer"/>
                                 
-                                <xsl:if test="$pos.in.group = 1">
+                                <xsl:if test="$pos.in.group = 1 or not($initial.staffDef/preceding-sibling::mei:staffDef/string(@n) = $staves.n)">
                                     <xsl:variable name="following.staffDefs" select="$initial.staffDef/following-sibling::mei:staffDef[@n = $staves.n]" as="node()*"/>
                                     
                                     <xsl:choose>
