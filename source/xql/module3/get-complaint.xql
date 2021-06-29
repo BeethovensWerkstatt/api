@@ -303,6 +303,9 @@ let $postDocs :=
     
     return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei, $text.annot, $context)
 
+let $ante.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', 'anteRevision')
+let $post.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', 'postRevision')
+
 return map {
     '@id': $public.complaint.id,
     'label': $complaint.metamark/string(@label),
@@ -310,5 +313,9 @@ return map {
     'affects': $affects,
     'revisionDocs': array { $revisionDocs },
     'anteDocs': array { $anteDocs },
-    'postDocs': array { $postDocs }
+    'postDocs': array { $postDocs },
+    'text': map {
+        'ante': $ante.text,
+        'post': $post.text
+    }
 }
