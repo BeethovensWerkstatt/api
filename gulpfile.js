@@ -121,7 +121,7 @@ gulp.task('data', gulp.series(
     },
     function(){
         /*return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp', {'--branch': 'revise-structure'})*/
-        return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp', {})
+        return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp')
     },
     function(){
       return gulp.src('./build/tmp/data/**/*')
