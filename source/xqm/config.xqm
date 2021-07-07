@@ -26,17 +26,19 @@ declare variable $config:app-root :=
         substring-before($modulePath, '/resources/')
 ;
 
+declare variable $config:public-base-uri := 'http://localhost:8080/exist/apps/api'; (:'https://api.beethovens-werkstatt.de';:)
+
 declare variable $config:data-root := $config:app-root || '/data/';
 
 declare variable $config:module3-root := $config:data-root || '/module3/';
 
-declare variable $config:iiif-basepath := 'https://api.beethovens-werkstatt.de/iiif/';
+declare variable $config:iiif-basepath := $config:public-base-uri || '/iiif/';
 
-declare variable $config:file-basepath := 'https://api.beethovens-werkstatt.de/file/';
+declare variable $config:file-basepath := $config:public-base-uri || '/file/';
 
-declare variable $config:ema-basepath := 'https://api.beethovens-werkstatt.de/ema/';
+declare variable $config:ema-basepath := $config:public-base-uri || '/ema/';
 
-declare variable $config:module3-basepath := 'https://api.beethovens-werkstatt.de/module3/';
+declare variable $config:module3-basepath := $config:public-base-uri || '/module3/';
 
 declare variable $config:xslt-basepath := $config:app-root || '/resources/xslt/';
 

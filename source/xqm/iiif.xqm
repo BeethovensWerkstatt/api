@@ -15,6 +15,7 @@ declare namespace mei="http://www.music-encoding.org/ns/mei";
 declare namespace util="http://exist-db.org/xquery/util";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
+declare namespace ft="http://exist-db.org/xquery/lucene";
 
 declare function iiif:getRectangle($file as node(),$elements as node()*,$boundingRect as xs:boolean) as map(*)* {
 

@@ -22,7 +22,32 @@ declare function ef:getFileLink($file.id as xs:string) as xs:string {
 };
 
 declare function ef:getMdivLink($file.id as xs:string, $mdiv.id as xs:string) as xs:string {
-    let $link := $config:file-basepath || $file.id || '/mdiv/' || $mdiv.id || '.xml'
+    let $link := $config:module3-basepath || $file.id || '/mdiv/' || $mdiv.id || '.json'
+    return $link
+};
+
+declare function ef:getManifestationLink($file.id as xs:string, $source.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '.json'
+    return $link
+};
+
+declare function ef:getManifestationMeasuresLink($file.id as xs:string, $source.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json'
+    return $link
+};
+
+declare function ef:getMeasuresInPartLink($file.id as xs:string, $source.id as xs:string, $mdiv.id as xs:string, $part.n as xs:integer) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json?scope=part&amp;mdivId=' || $mdiv.id || '&amp;part=' || xs:string($part.n) 
+    return $link
+};
+
+declare function ef:getMeasuresInScoreLink($file.id as xs:string, $source.id as xs:string, $mdiv.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/manifestation/' || $source.id || '/measures.json?scope=scores&amp;mdivId=' || $mdiv.id
+    return $link
+};
+
+declare function ef:getMeasureLink($file.id as xs:string, $measure.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/measure/' || $measure.id || '.json'
     return $link
 };
 
@@ -36,7 +61,11 @@ declare function ef:getMeiByAnnotsLink($file.id as xs:string, $annot.ids as xs:s
     return $link
 };
 
-declare function ef:getMeiByContextLink($file.id as xs:string, $context.id as xs:string, $focus.id as xs:string, $source.id as xs:string, $state.id as xs:string) as xs:string {
-    let $link := $config:module3-basepath || $file.id || '/snippet/' || $context.id || '.mei?source=' || $source.id || '&amp;state=' || $state.id || '&amp;focus=' || $focus.id
+declare function ef:getMeiByContextLink($file.id as xs:string, $context.id as xs:string, $focus.link as xs:string, $source.id as xs:string, $state.id as xs:string) as xs:string {
+    let $focus :=
+        if($focus.link != '')
+        then('&amp;focus=' || $focus.link)
+        else()
+    let $link := $config:module3-basepath || $file.id || '/snippet/' || $context.id || '.mei?source=' || $source.id || '&amp;state=' || $state.id || $focus
     return $link
 };

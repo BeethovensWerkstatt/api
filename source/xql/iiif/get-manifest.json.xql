@@ -20,6 +20,7 @@ declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace f = "http://local.link";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
+declare namespace xi = "http://www.w3.org/2001/XInclude";
 
 declare function f:addConditionally($map, $key, $data) as map(*) {
   if (exists($data)) then map:put($map, $key, $data) else $map
@@ -41,9 +42,9 @@ let $document.id := request:get-parameter('document.id','')
 let $document.uri := $config:iiif-basepath || 'document/' || $document.id || '/'
 
 (: get file from database :)
-let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei)
+let $file := ($database//mei:mei[@xml:id = $document.id] | $database//mei:facsimile[@xml:id = $document.id]/ancestor::mei:mei | $database//mei:manifestation[@xml:id = $document.id]/ancestor::mei:mei)
 (: is this a link to a facsimile only, or to a document :)
-let $is.facsimile.id := not($file/@xml:id = $document.id)
+let $is.facsimile.id := exists($file//mei:facsimile[@xml:id = $document.id])
 
 (: build variable for file:)
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
@@ -129,15 +130,30 @@ let $sequences :=
         else()
     
     let $otherContent := 
-        if($canvas/mei:zone)
-        then(
-            map {
-              '@id': $document.uri || 'list/' || (if($canvas/@xml:id) then($canvas/@xml:id) else($canvas.index)) || '_zones',
-              '@type': 'sc:AnnotationList',
-              'label': 'measure positions'
-            }
-        )
-        else()
+    
+        let $zoneContent := 
+    
+            if($canvas/mei:zone)
+            then(
+                map {
+                  '@id': $document.uri || 'list/' || (if($canvas/@xml:id) then($canvas/@xml:id) else($canvas.index)) || '_zones',
+                  '@type': 'sc:AnnotationList',
+                  'label': 'measure positions'
+                }
+            )
+            else()
+        
+        let $svgContent :=
+            if($canvas/xi:include)
+            then(
+                map {
+                    '@id': $document.uri || 'overlays/' || $canvas/xi:include/tokenize(normalize-space(@href),'/')[last()],
+                    '@type': 'oa:SvgSelector',
+                    'label': 'svg shapes'
+                }
+            )
+            else()
+        return array { $zoneContent, $svgContent }
     
     let $canvas.map :=
         if($folium/@width and $folium/@height and $folium/@unit)
@@ -149,7 +165,7 @@ let $sequences :=
                 'images': array { $images },
                 'width': $canvas.width,
                 'height': $canvas.height,
-                'otherContent': array { $otherContent },
+                'otherContent': $otherContent,
                 'service': $canvas.service
             }
         )

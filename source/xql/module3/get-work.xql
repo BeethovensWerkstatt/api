@@ -9,6 +9,7 @@ xquery version "3.1";
 (: import shared ressources, mainly path to data folder :)
 import module namespace config="https://api.beethovens-werkstatt.de" at "../../xqm/config.xqm";
 import module namespace ef="https://edirom.de/file" at "../../xqm/file.xqm";
+import module namespace module3="https://beethovens-werkstatt/ns/module3" at "../../xqm/module3.xqm";
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
@@ -19,6 +20,7 @@ declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace map = "http://www.w3.org/2005/xpath-functions/map";
+declare namespace xi = "http://www.w3.org/2001/XInclude";
 
 (: set output to JSON:)
 declare option output:method "json";
@@ -36,18 +38,29 @@ let $document.id := request:get-parameter('document.id','')
 let $document.uri := $config:module3-basepath || $document.id || '.json'
 
 (: get file from database :)
-let $file := $database//mei:mei[@xml:id = $document.id]
+let $complete.file := $database//mei:meiCorpus[@xml:id = $document.id]
+
+let $inclusion.base.uri := string-join(tokenize(document-uri($complete.file/root()),'/')[position() lt last()],'/')
+
+let $corpus.head := $complete.file/mei:meiHead
+
+let $mei.files := 
+    for $link in $complete.file/xi:include/string(@href)
+    return doc($inclusion.base.uri || '/' || $link)//mei:mei
+
+let $text.file := ($mei.files[.//mei:encodingDesc[@class='#bw_module3_textFile']])[1]
+let $document.files := $mei.files[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
 
 let $title := 
-    for $title in $file//mei:fileDesc/mei:titleStmt/mei:title
+    for $title in $text.file//mei:fileDesc/mei:titleStmt/mei:title
     return map {
       'title': $title/text(),
       '@lang': $title/string(@xml:lang)
     }
     
-let $composer.elem := $file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
+let $composer.elem := $text.file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
 let $composer := map {
-    'name': $composer.elem/text(),
+    'name': $composer.elem/normalize-space(text()),
     '@id': $composer.elem/string(@auth.uri) || $composer.elem/string(@codedval),
     'internalId': $composer.elem/string(@xml:id)
 }
@@ -97,20 +110,21 @@ let $manifestations :=
 :)
 
 let $mdivs := 
-    map:merge(for $mdiv in $file//mei:mdiv[@xml:id]
+    for $mdiv in $text.file//mei:mdiv[@xml:id]
     let $mdiv.id := $mdiv/string(@xml:id)
     let $mdiv.n := 
         if($mdiv/@n)
         then($mdiv/string(@n))
         else(string(count($mdiv/preceding::mei:mdiv) + 1))
-    let $mdiv.label :=
+    order by xs:integer($mdiv.n) ascending
+    (:let $mdiv.label :=
         if($mdiv/@label)
         then($mdiv/string(@label))
         else if($mdiv/@n)
         then($mdiv/string(@n))
-        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
+        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')'):)
         
-    let $staves := 
+    (:let $staves := 
         for $staff in distinct-values($mdiv//mei:staffDef/@n)
         let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text())
         let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text())
@@ -119,63 +133,37 @@ let $mdivs :=
             'n': $staff,
             'label': $staff.label,
             'abbr': $staff.labelAbbr
-        }
+        }:)
         
     
-    return map:entry(
-        $mdiv.id, map {
-            '@id': ef:getMdivLink($document.id, $mdiv.id),
-            'label': $mdiv.label,
-            'n': $mdiv.n,
-            'staves': array { $staves }
-        }
-    ))
+    return ef:getMdivLink($document.id, $mdiv.id)
+    
     
     
 let $manifestations := 
-    for $manifestation in $file//mei:manifestation
-    let $facsimile := $file//mei:facsimile[@decls = concat('#',$manifestation/@xml:id)]
+    for $manifestation in $document.files//mei:manifestation
+    let $source.id := $manifestation/string(@xml:id)
     
-    where exists($facsimile) (:TODO: Decide how to deal with TEI files… :)
-    
-    let $label := $manifestation/string(@label)
-    let $facsimile.id := $facsimile/string(@xml:id)
-    
-    (:let $manifestation.namespace := namespace-uri($manifestation.file):)
-    let $manifestation.external.id := $config:module3-basepath || $document.id || '/manifestation/' || $facsimile.id || '.json'
-    
-    let $iiif.manifest := $config:iiif-basepath || 'document/' || $facsimile.id || '/manifest.json'
-    
-    return map {
-      'id': $facsimile.id,
-      'label': $label,
-      'frbr': map {
-        'level': 'manifestation'
-      },
-      'iiif': map {
-        'manifest': $iiif.manifest
-      }
-    }
+    let $manifestation.external.id := ef:getManifestationLink($document.id, $source.id)
+    return $manifestation.external.id
     
 let $complaints := 
-    for $annot in $file//mei:body//mei:metaMark[contains(@class,'#bw_monitum')] (:TODO: add in some @class:)
-    (: get only those annots that are the first occurence of something :)
-    where not(replace($annot/@corresp,'#','') = $file//mei:annot/@xml:id)
-    let $complaint.id := $annot/string(@xml:id)
-    let $public.complaint.id := $config:module3-basepath || $document.id || '/complaints/' || $complaint.id || '.json'
-    let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
-    let $mdiv.id := $mdiv/string(@xml:id)
+    for $complaint in $document.files//mei:metaMark['#bw_monitum' = tokenize(normalize-space(@class),' ')]
+    let $complaint.id := $complaint/string(@xml:id)
+    let $complaint.classes := tokenize(normalize-space($complaint/@class),' ')
+    let $public.complaint.id := module3:getComplaintLink($document.id, $complaint.id)
     
-    let $dependent.complaints := $file//mei:annot[@xml:id][@corresp = '#' || $complaint.id]
+    let $complaint.document.id := $complaint/ancestor::mei:mei//mei:manifestation/string(@xml:id)
+    let $text.file.annots := $text.file//mei:annot[mei:relation[@rel = 'constituent'][substring-after(@target,'#') = $complaint.id]]
     
-    let $annot.ids := distinct-values(($complaint.id, $dependent.complaints/string(@xml:id)))[string-length(.) gt 0]
+    let $affects :=
+        for $annot in $text.file.annots
+        let $mdiv := $annot/ancestor::mei:mdiv[@xml:id][1]
+        let $mdiv.id := $mdiv/string(@xml:id)
+        let $mdiv.link := ef:getMdivLink($document.id, $mdiv.id)
+        
+        let $first.measure := $annot/ancestor::mei:measure
     
-    let $affected.measures :=
-        for $complaint in ($annot, $dependent.complaints)
-        
-        
-        let $first.measure := $complaint/ancestor::mei:measure
-        
         (:how many additional measures do I need to pull?:)
         let $range := 
             if($annot/@tstamp2 and matches($annot/@tstamp2, '(\d)+m\+(\d)+(\.\d+)?') and xs:integer(substring-before($annot/@tstamp2,'m')) gt 0)
@@ -186,31 +174,54 @@ let $complaints :=
             then($first.measure/following::mei:measure[position() le $range])
             else()
             
-        return ($first.measure | $subsequent.measures)
-    
-    let $measures := 
-        for $measure.id in $affected.measures/string(@xml:id)
-        let $measure := $file/root()/id($measure.id)
-        let $measure.label := 
-            if($measure/@label)
-            then($measure/string(@label))
-            else if($measure/@n)
-            then($measure/string(@n))
-            else('(' || string(count($measure/preceding::mei:measure) + 1) || ')')
+        let $affected.measures := ($first.measure | $subsequent.measures)
+        
+        let $measure.refs := 
+            for $measure in $affected.measures
+            return ef:getMeasureLink($document.id, $measure/string(@xml:id))
+            
+        let $measure.summary :=
+            let $base.labels :=
+                for $measure in $affected.measures
+                let $measure.id := $measure/string(@xml:id)
+                let $measure.label := 
+                    if($measure/@label)
+                    then($measure/string(@label))
+                    else if($measure/@n)
+                    then($measure/string(@n))
+                    else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
+                order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+                return $measure.label
+            
+            let $summary := 
+                if(count($base.labels) gt 2)
+                then($base.labels[1] || '–' || $base.labels[last()])
+                else if(count($base.labels) eq 2)
+                then($base.labels[1] || ', ' || $base.labels[last()])
+                else($base.labels[1])
+            return $summary
+            
+        let $staves := 
+            for $staff in tokenize(normalize-space($annot/@staff),' ')
+            let $value := xs:integer($staff)
+            order by $value ascending
+            return $value
+        
         return map {
-            'id': $measure.id,
-            'label': $measure.label
+            'mdiv': ef:getMdivLink($document.id, $mdiv.id),
+            'measures': map {
+                'refs': array { $measure.refs },
+                'label': $measure.summary
+            },
+            'staves': array { $staves }
         }
         
     return map {
         '@id': $public.complaint.id,
-        'annots': array { $annot.ids },
-        'mdiv': $mdiv.id,
-        'measures': array { $measures }
+        'affects': array { $affects }
     }
 
-
-return map {
+let $output := map {
     '@id': $document.uri,
     'title': array { $title },
     'composer': $composer,
@@ -219,4 +230,4 @@ return map {
     'movements': $mdivs
 }
 
-
+return $output

@@ -34,8 +34,6 @@
     </xd:doc>
     <xsl:param name="focus.id" as="xs:string"/>
     
-    <xsl:variable name="focus" select="id($focus.id)" as="node()"/>
-    
     <xd:doc>
         <xd:desc>
             <xd:p>The ID of the source for which the text is to be shown.</xd:p>
@@ -50,6 +48,9 @@
     </xd:doc>
     <xsl:param name="state.id" as="xs:string"/>
     
+    <xsl:param name="text.file" as="xs:string"/>
+    <xsl:variable name="text.doc" select="parse-xml($text.file)" as="node()"/>
+
     <xd:doc>
         <xd:desc>
             <xd:p>The annot / metaMark element which delimit the content that is to be retrieved</xd:p>
@@ -58,7 +59,7 @@
     <xsl:variable name="context" select="id($context.id)" as="node()"/>
     <!--<xsl:variable name="start.measures" select="for $annot in $annots return ancestor::mei:measure" as="node()*"/>-->
     
-    <xsl:variable name="active.state" select="id($state.id)" as="node()"/>
+    <xsl:variable name="active.state" select="$text.doc/id($state.id)" as="node()"/>
     <xsl:variable name="activated.states" select="$active.state | $active.state/preceding::mei:genState" as="node()*"/>
     <xsl:variable name="activated.states.ids" select="$activated.states/@xml:id" as="xs:string*"/>
     
@@ -145,7 +146,7 @@
                                 <xsl:variable name="initial.staffDef" select="($search.space//mei:staffDef[@n = $current.staff.n])[1]" as="node()"/>
                                 <xsl:variable name="pos.in.group" select="count($initial.staffDef/preceding-sibling::mei:staffDef) + 1" as="xs:integer"/>
                                 
-                                <xsl:if test="$pos.in.group = 1">
+                                <xsl:if test="$pos.in.group = 1 or not($initial.staffDef/preceding-sibling::mei:staffDef/string(@n) = $staves.n)">
                                     <xsl:variable name="following.staffDefs" select="$initial.staffDef/following-sibling::mei:staffDef[@n = $staves.n]" as="node()*"/>
                                     
                                     <xsl:choose>
@@ -227,6 +228,12 @@
         </xsl:variable>
         <xsl:variable name="generated.section" as="node()">
             <section xmlns="http://www.music-encoding.org/ns/mei">
+                <!-- debug attributes:
+                    measures="{count($search.space//mei:measure)}" 
+                    elements="{string-join(distinct-values($search.space/descendant-or-self::mei:*/local-name()), ', ')}" 
+                    meter.counts="{count($search.space//@meter.count) || ': ' || string-join(distinct-values($search.space//string(@meter.count)),', ')}"
+                    scoreDefs="{string-join(distinct-values($search.space//mei:scoreDef/string(@xml:id)),', ')}"
+                -->
                 <xsl:variable name="region" as="node()*">
                     <xsl:apply-templates select="$affected.measures" mode="get.selected.staves">
                         <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
@@ -337,39 +344,54 @@
         
         <!-- get context and focus elements – those restrict what shall be shown -->
         <xsl:variable name="context.elem" select="id($context.id)" as="node()"/>
-        <xsl:variable name="focus.elem" select="id($focus.id)" as="node()"/>
-        
         <!-- retrieve timestamps for selecting snippets -->
         <xsl:variable name="context.tstamp" select="number($context.elem/@tstamp)" as="xs:double"/>
         <xsl:variable name="context.tstamp2" select="if(not(contains($context.elem/@tstamp2,'m+'))) then(number($context.elem/@tstamp2)) else(number(substring-after($context.elem/@tstamp2,'m+')))" as="xs:double"/>
-        <xsl:variable name="focus.tstamp" select="number($focus.elem/@tstamp)" as="xs:double"/>
-        <xsl:variable name="focus.tstamp2" select="if(not(contains($focus.elem/@tstamp2,'m+'))) then(number($focus.elem/@tstamp2)) else(number(substring-after($focus.elem/@tstamp2,'m+')))" as="xs:double"/>
-        <xsl:variable name="focus.first.measure.id" select="$focus.elem/ancestor::mei:measure/@xml:id" as="xs:string"/>
-        <xsl:variable name="focus.measures.after.first" select="
-            if(not(contains($focus.elem/@tstamp2,'m+'))) 
-            then(0) 
-            else(xs:integer(substring-before($focus.elem/@tstamp2,'m+')))" as="xs:integer"/>
-        <xsl:variable name="focus.last.measure.id" select="
-            if($focus.measures.after.first = 0) 
-            then($focus.first.measure.id) 
-            else($focus.elem/ancestor::mei:measure/following::mei:measure[$focus.measures.after.first]/@xml:id)" as="xs:string"/>
-        <xsl:variable name="focus.middle.measures.ids" select="
-            if($focus.measures.after.first gt 1)
-            then($added.tstamps//mei:measure[@xml:id = $focus.first.measure.id]/following::mei:measure[$focus.last.measure.id = following::mei:measure/@xml:id]/@xml:id)
-            else()" as="xs:string*"/>
-        <!-- aufteilen: 1. focus, letzter focus, mittlere focus -->
+        
+        <!-- see if a focus is requested independent from the context (may only happen for rev lists) -->
+        <xsl:variable name="focus.elem" select="if($focus.id ne '') then(id($focus.id)) else()" as="node()?"/>
         
         <xsl:variable name="highlighted.context" as="node()*">
-            <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
-                <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
-                <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>
-                <xsl:with-param name="focus.tstamp" select="$focus.tstamp" tunnel="yes" as="xs:double"/>
-                <xsl:with-param name="focus.tstamp2" select="$focus.tstamp2" tunnel="yes" as="xs:double"/>
-                <xsl:with-param name="focus.first.measure.id" select="$focus.first.measure.id" tunnel="yes" as="xs:string"/>
-                <xsl:with-param name="focus.last.measure.id" select="$focus.last.measure.id" tunnel="yes" as="xs:string"/>
-                <xsl:with-param name="focus.middle.measures.ids" select="$focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
-            </xsl:apply-templates>
+            <xsl:choose>
+                <xsl:when test="exists($focus.elem)">
+                    <xsl:variable name="focus.tstamp" select="number($focus.elem/@tstamp)" as="xs:double"/>
+                    <xsl:variable name="focus.tstamp2" select="if(not(contains($focus.elem/@tstamp2,'m+'))) then(number($focus.elem/@tstamp2)) else(number(substring-after($focus.elem/@tstamp2,'m+')))" as="xs:double"/>
+                    <xsl:variable name="focus.first.measure.id" select="$focus.elem/ancestor::mei:measure/@xml:id" as="xs:string"/>
+                    <xsl:variable name="focus.measures.after.first" select="
+                        if(not(contains($focus.elem/@tstamp2,'m+'))) 
+                        then(0) 
+                        else(xs:integer(substring-before($focus.elem/@tstamp2,'m+')))" as="xs:integer"/>
+                    <xsl:variable name="focus.last.measure.id" select="
+                        if($focus.measures.after.first = 0) 
+                        then($focus.first.measure.id) 
+                        else($focus.elem/ancestor::mei:measure/following::mei:measure[$focus.measures.after.first]/@xml:id)" as="xs:string"/>
+                    <xsl:variable name="focus.middle.measures.ids" select="
+                        if($focus.measures.after.first gt 1)
+                        then($added.tstamps//mei:measure[@xml:id = $focus.first.measure.id]/following::mei:measure[$focus.last.measure.id = following::mei:measure/@xml:id]/@xml:id)
+                        else()" as="xs:string*"/>
+                    <!-- aufteilen: 1. focus, letzter focus, mittlere focus -->
+                    
+                    
+                    <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
+                        <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
+                        <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>
+                        <xsl:with-param name="focus.tstamp" select="$focus.tstamp" tunnel="yes" as="xs:double"/>
+                        <xsl:with-param name="focus.tstamp2" select="$focus.tstamp2" tunnel="yes" as="xs:double"/>
+                        <xsl:with-param name="focus.first.measure.id" select="$focus.first.measure.id" tunnel="yes" as="xs:string"/>
+                        <xsl:with-param name="focus.last.measure.id" select="$focus.last.measure.id" tunnel="yes" as="xs:string"/>
+                        <xsl:with-param name="focus.middle.measures.ids" select="$focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
+                    </xsl:apply-templates>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
+                        <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
+                        <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>                        
+                    </xsl:apply-templates>
+                </xsl:otherwise>
+            </xsl:choose>
+            
         </xsl:variable>
+        
         <xsl:sequence select="$highlighted.context"/>
     </xsl:variable>
     
@@ -381,7 +403,7 @@
     <xsl:template match="/" mode="#unnamed">
         <music xmlns="http://www.music-encoding.org/ns/mei">
             <xsl:comment select="'context: ' || local-name($context) || ' '  || $context.id"/>
-            <xsl:comment select="'focus: ' || local-name($focus) || ' '  || $focus.id"/>
+            <xsl:comment select="'focus: ' || $focus.id"/>
             <xsl:comment select="'state: ' || $state.id || ' (' || string-join($activated.states.ids,', ') || ')'"/>
             <xsl:comment select="'source: ' || $source.id"/>
             <body>
@@ -403,6 +425,19 @@
     <xsl:template match="mei:measure" mode="get.search.space">
         <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
         <xsl:if test="following::mei:measure[@xml:id = $measure.id]">
+            <xsl:copy-of select="."/>
+        </xsl:if>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>This template is used to delimit the search room for features relevant for a given music snippet</xd:p>
+        </xd:desc>
+        <xd:param name="measure.id"></xd:param>
+    </xd:doc>
+    <xsl:template match="mei:section" mode="get.search.space">
+        <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
+        <xsl:if test="following::mei:measure[@xml:id = $measure.id] or descendant::mei:measure[@xml:id = $measure.id]">
             <xsl:copy-of select="."/>
         </xsl:if>
     </xsl:template>
@@ -611,11 +646,27 @@
     <xsl:template match="mei:measure" mode="highlight.context">
         <xsl:param name="context.tstamp" tunnel="yes" as="xs:double"/>
         <xsl:param name="context.tstamp2" tunnel="yes" as="xs:double"/>
-        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double"/>
-        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double"/>
-        <xsl:param name="focus.first.measure.id" tunnel="yes" as="xs:string"/>
-        <xsl:param name="focus.last.measure.id" tunnel="yes" as="xs:string"/>
+        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double?"/>
+        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double?"/>
+        <xsl:param name="focus.first.measure.id" tunnel="yes" as="xs:string?"/>
+        <xsl:param name="focus.last.measure.id" tunnel="yes" as="xs:string?"/>
         <xsl:param name="focus.middle.measures.ids" tunnel="yes" as="xs:string*"/>
+        
+        <!--<xsl:comment>
+            <xsl:value-of select="'$context.tstamp=' || $context.tstamp"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$context.tstamp2=' || $context.tstamp2"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.tstamp=' || $focus.tstamp"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.tstamp2=' || $focus.tstamp2"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.first.measure.id=' || $focus.first.measure.id"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.last.measure.id=' || $focus.last.measure.id"/><xsl:text>
+</xsl:text>
+            <xsl:value-of select="'$focus.middle.measures.ids=' || string-join($focus.middle.measures.ids,' ')"/>
+        </xsl:comment>-->
         
         <xsl:choose>
             <xsl:when test="not(preceding::mei:measure) and not(following::mei:measure) and @xml:id = $focus.first.measure.id and @xml:id = $focus.last.measure.id">
@@ -748,8 +799,22 @@
                     <xsl:with-param name="context.end" select="true()" tunnel="yes" as="xs:boolean"/>
                 </xsl:next-match>
             </xsl:when>
+            <xsl:when test="preceding::mei:measure and following::mei:measure and not($focus.first.measure.id) and not($focus.last.measure.id)">
+                <!-- this is necessary when no focus-id is handed over -->
+                <xsl:next-match>
+                    <xsl:with-param name="context.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.complete" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.start" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.complete" select="true()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="focus.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                    <xsl:with-param name="context.end" select="false()" tunnel="yes" as="xs:boolean"/>
+                </xsl:next-match>
+            </xsl:when>
             <xsl:otherwise>
                 <xsl:comment select="'Problem!!!'"/>
+                <!--<xsl:comment>HIER LIEGT DER HUND IM PFEFFER</xsl:comment>-->
+                <xsl:copy-of select="."></xsl:copy-of>
+                <!--<xsl:comment>UND HIER KOMMT ER WIEDER RAUS</xsl:comment>-->
                 <xsl:next-match/>
             </xsl:otherwise>
         </xsl:choose>
@@ -773,15 +838,15 @@
     <xsl:template match="mei:staff//mei:*[@tstamp]" mode="highlight.context">
         <xsl:param name="context.start" tunnel="yes" as="xs:boolean"/>
         <xsl:param name="context.complete" tunnel="yes" as="xs:boolean"/>
-        <xsl:param name="focus.start" tunnel="yes" as="xs:boolean"/>
-        <xsl:param name="focus.complete" tunnel="yes" as="xs:boolean"/>
-        <xsl:param name="focus.end" tunnel="yes" as="xs:boolean"/>
-        <xsl:param name="context.end" tunnel="yes" as="xs:boolean"/>
+        <xsl:param name="focus.start" tunnel="yes" as="xs:boolean?"/>
+        <xsl:param name="focus.complete" tunnel="yes" as="xs:boolean?"/>
+        <xsl:param name="focus.end" tunnel="yes" as="xs:boolean?"/>
+        <xsl:param name="context.end" tunnel="yes" as="xs:boolean?"/>
         
         <xsl:param name="context.tstamp" tunnel="yes" as="xs:double"/>
         <xsl:param name="context.tstamp2" tunnel="yes" as="xs:double"/>
-        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double"/>
-        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double"/>
+        <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double?"/>
+        <xsl:param name="focus.tstamp2" tunnel="yes" as="xs:double?"/>
         
         <xsl:variable name="tstamp" select="number(@tstamp)" as="xs:double"/>
         

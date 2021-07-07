@@ -18,14 +18,22 @@ declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 declare namespace ft="http://exist-db.org/xquery/lucene";
 
-declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*) as map(*) {
+declare function module3:getComplaintLink($file.id as xs:string, $complaint.id as xs:string) as xs:string {
+    let $link := $config:module3-basepath || $file.id || '/complaints/' || $complaint.id || '.json'
+    return $link
+};
 
-    let $file := $complaint/root()
-
-    let $context.id := $complaint/mei:relation[@rel = 'hasContext']/replace(normalize-space(@target),'#','')
-
-    let $focus.id := $complaint/@xml:id
-
+declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*, $text.file as node(), $document.file as node(), $text.annot as node(), $doc.annot as node()) as map(*) {
+    (: 
+        allowed values for $role: 
+        - 'ante'
+        - 'post'
+        - 'revision'
+    :)
+    let $work.uri := $config:module3-basepath || $file.id || '.json'
+    
+    let $file := $text.file/root()
+    
     let $state.id :=
         if ($role = 'ante')
         then (
@@ -39,11 +47,16 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         else (
             $complaint/replace(normalize-space(@state),'#','')
         )
-
-    let $context := ef:getMeiByContextLink($file.id, $context.id, $focus.id, $source.id, $state.id)
+    
+    let $focus.link := 
+        if($role = 'revision')
+        then($complaint/string(@xml:id))
+        else('')
+    
+    let $context := ef:getMeiByContextLink($file.id, $doc.annot/string(@xml:id), $focus.link, $source.id, $state.id)
 
     let $iiif :=
-        let $facsimile := $file//mei:facsimile[replace(normalize-space(@decls),'#','') = $source.id]
+        let $facsimile := $document.file//mei:facsimile
 
         let $data.targets := ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))
         let $referencing.zones :=
@@ -51,16 +64,33 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             return $facsimile//mei:zone/@data[ft:query(.,$data.target)]/parent::node()
 
         let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
-        let $root := $file/root()
+        let $root := $document.file/root()
         let $referenced.zones := for $ref in $refs return $root/id($ref)[local-name() = 'zone']
 
         let $zones := ($referencing.zones,  $referenced.zones)
-        return iiif:getRectangle($file/mei:mei, $zones, true())
+        return iiif:getRectangle($document.file, $zones, true()) (:map {
+            'zones': count($zones),
+            'dataTargets': count($data.targets),
+            'refs': string-join($refs,' - '),
+            'referencedZones': count($referenced.zones),
+            'fileId': $file.id
+        }:)
 
     return map {
-        'document': $source.id,
+        'work': $work.uri,
         'role': $role,
         'mei': $context,
-        'iiif': array { $iiif }
+        'iiif': array { $iiif },
+        'test': map {
+            'fileId': string($file.id),
+            'focusLink': string($focus.link),
+            'sourceId': string($source.id),
+            'stateId': string($state.id),
+            'hasFacs': count($file//mei:facsimile),
+            'measures': string-join($affected.measures/string(@xml:id),', '),
+            'complaintId': local-name($complaint) || ' - ' || $complaint/string(@xml:id),
+            'textAnnotId': $text.annot/string(@xml:id),
+            'docAnnotId': $doc.annot/string(@xml:id)
+        }
     }
 };
