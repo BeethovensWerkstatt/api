@@ -26,7 +26,7 @@ declare variable $config:app-root :=
         substring-before($modulePath, '/resources/')
 ;
 
-declare variable $config:public-base-uri := 'http://localhost:8080/exist/apps/api'; (:'https://api.beethovens-werkstatt.de';:)
+declare variable $config:public-base-uri := 'https://api.beethovens-werkstatt.de'; (: 'http://localhost:8080/exist/apps/api'; :)
 
 declare variable $config:data-root := $config:app-root || '/data/';
 
