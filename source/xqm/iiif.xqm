@@ -226,8 +226,7 @@ declare function iiif:getImageResource($width as xs:integer, $height as xs:integ
         'service': map {
           '@context': 'http://iiif.io/api/image/2/context.json',
           '@id': $url,
-          'profile': 'http://iiif.io/api/image/2/level2.json',
-          'protocol': 'http://iiif.io/api/image'
+          'profile': 'http://iiif.io/api/image/2/level2.json'
         },
         'format': 'image/jpeg',
         'width': $width,
