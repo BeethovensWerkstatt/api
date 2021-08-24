@@ -138,7 +138,11 @@ let $sequences :=
                 map {
                   '@id': $document.uri || 'list/' || (if($canvas/@xml:id) then($canvas/@xml:id) else($canvas.index)) || '_zones',
                   '@type': 'sc:AnnotationList',
-                  'label': 'measure positions'
+                  'within': map {
+                    '@id': $document.uri || 'layer/measureZones',
+                    '@type': 'sc:Layer',
+                    'label': 'measure positions'
+                  }
                 }
             )
             else()
@@ -148,8 +152,12 @@ let $sequences :=
             then(
                 map {
                     '@id': $document.uri || 'overlays/' || $canvas/xi:include/tokenize(normalize-space(@href),'/')[last()],
-                    '@type': 'oa:SvgSelector',
-                    'label': 'svg shapes'
+                    '@type': 'sc:AnnotationList',
+                    'within': map {
+                        '@id': $document.uri || 'layer/svgShapes',
+                        '@type': 'sc:Layer',
+                        'label': 'svg shapes'
+                      }
                 }
             )
             else()
