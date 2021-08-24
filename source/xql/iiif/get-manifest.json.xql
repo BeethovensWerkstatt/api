@@ -279,7 +279,7 @@ return map {
   'license': $license,
   'attribution': $attribution,
   'sequences': array { $sequences },
-  'structures': $structures,
+  (:'structures': $structures,:)
   'viewingDirection': $viewingDirection,
   'viewingHint': $viewingHint
 }
