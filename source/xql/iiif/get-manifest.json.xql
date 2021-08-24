@@ -265,7 +265,7 @@ let $structures :=
             'ranges': $pages
         }
     
-    (:TODO: ensure proper order of score and parts:)
+    (:TODO: ensure proper ordering of score and parts:)
     
     return array { ($scores, $parts) }
     
