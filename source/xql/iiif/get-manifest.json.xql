@@ -109,7 +109,7 @@ let $sequences :=
                 
             let $scale := round(xs:decimal($folium/@height) * xs:decimal($factor) div xs:decimal($canvas.height) * 10000) div 10000
             return map {
-                (:'@id': $canvas.id || '_physdim',:)
+                '@id': $canvas.id || '_physdim',
                 '@context': 'http://iiif.io/api/annex/services/physdim/1/context.json',
                 'profile': 'http://iiif.io/api/annex/services/physdim',
                 'physicalScale': $scale,
