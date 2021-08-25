@@ -50,8 +50,8 @@ let $is.facsimile.id := exists($file//mei:facsimile[@xml:id = $document.id])
 let $file.context := 'http://iiif.io/api/presentation/2/context.json'
 let $file.type := 'sc:Manifest'
 let $id := $document.uri || 'manifest.json'
-let $label := normalize-space(string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ')) || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
-let $navDate := 'tbd' (: TODO :)
+let $label := $file//mei:manifestation/mei:physLoc/mei:repository/mei:identifier[@auth = 'RISM']/text() || ' ' || $file//mei:manifestation/mei:physLoc/mei:identifier/text() 
+let $description := normalize-space(string-join($file//mei:fileDesc/mei:titleStmt/mei:composer//text(),' ')) || ': ' ||  string-join($file//mei:fileDesc/mei:titleStmt/mei:title//normalize-space(text()),' / ')
 let $license := 'http://rightsstatements.org/vocab/CNE/1.0/' (: TODO: this should be made more specific, if possible :)
 let $attribution := 'Beethovens Werkstatt'
 let $viewingDirection := 'left-to-right'
@@ -79,7 +79,14 @@ let $sequences :=
         else if($canvas/@n)
         then($canvas/string(@n))
         else(string($canvas.index))
-
+    
+    let $canvas.width := $canvas/mei:graphic[@width][1]/xs:integer(@width)
+    let $canvas.height := $canvas/mei:graphic[@height][1]/xs:integer(@height)
+    let $folium := (
+        $file//mei:folium[(@recto = '#' || $canvas/@xml:id) or (@verso = '#' || $canvas/@xml:id)] | 
+        $file//mei:bifolium[(@inner.recto = '#' || $canvas/@xml:id) or (@inner.verso = '#' || $canvas/@xml:id) or (@outer.recto = '#' || $canvas/@xml:id) or (@outer.verso = '#' || $canvas/@xml:id)]
+    )[1]
+    
     (: build variables for images = graphics:)
     let $images :=
       for $image in $canvas/mei:graphic
@@ -88,28 +95,9 @@ let $sequences :=
       let $image.width := $image/xs:integer(@width)
       let $image.height := $image/xs:integer(@height)
       
-      let $image.resource := iiif:getImageResource($image.width, $image.height, $image/string(@target))
-      
-      
-      let $image.on := $canvas.id
-      return map {
-        '@type': $image.type,
-        'motivation': $image.motivation,
-        'resource': $image.resource,
-        'on': $image.on
-      }
-    let $canvas.width := $canvas/mei:graphic[@width][1]/xs:integer(@width)
-    let $canvas.height := $canvas/mei:graphic[@height][1]/xs:integer(@height)
-    
-    let $folium := (
-        $file//mei:folium[(@recto = '#' || $canvas/@xml:id) or (@verso = '#' || $canvas/@xml:id)] | 
-        $file//mei:bifolium[(@inner.recto = '#' || $canvas/@xml:id) or (@inner.verso = '#' || $canvas/@xml:id) or (@outer.recto = '#' || $canvas/@xml:id) or (@outer.verso = '#' || $canvas/@xml:id)]
-    )[1]
-    
-    let $canvas.service := 
+      let $image.service := 
         if($folium/@width and $folium/@height and $folium/@unit)
         then(
-            
             let $factor := 
                 if($folium/@unit = 'mm')
                 then(1)
@@ -121,7 +109,7 @@ let $sequences :=
                 
             let $scale := round(xs:decimal($folium/@height) * xs:decimal($factor) div xs:decimal($canvas.height) * 10000) div 10000
             return map {
-                '@id': $canvas.id || '_physdim',
+                (:'@id': $canvas.id || '_physdim',:)
                 '@context': 'http://iiif.io/api/annex/services/physdim/1/context.json',
                 'profile': 'http://iiif.io/api/annex/services/physdim',
                 'physicalScale': $scale,
@@ -129,6 +117,20 @@ let $sequences :=
             }
         )
         else()
+      
+      let $image.resource := 
+        if(exists($image.service))
+        then(iiif:getImageResourceWithService($image.width, $image.height, $image/string(@target), $image.service))
+        else(iiif:getImageResource($image.width, $image.height, $image/string(@target)))
+      
+      
+      let $image.on := $canvas.id
+      return map {
+        '@type': $image.type,
+        'motivation': $image.motivation,
+        'resource': $image.resource,
+        'on': $image.on
+      }
     
     let $otherContent := 
     
@@ -165,30 +167,15 @@ let $sequences :=
         return array { $zoneContent, $svgContent }
     
     let $canvas.map :=
-        if($folium/@width and $folium/@height and $folium/@unit)
-        then(
-            map {
-                '@id': $canvas.id,
-                '@type': $canvas.type,
-                'label': $canvas.label,
-                'images': array { $images },
-                'width': $canvas.width,
-                'height': $canvas.height,
-                'otherContent': $otherContent,
-                'service': $canvas.service
-            }
-        )
-        else(
-            map {
-                '@id': $canvas.id,
-                '@type': $canvas.type,
-                'label': $canvas.label,
-                'images': array { $images },
-                'width': $canvas.width,
-                'height': $canvas.height,
-                'otherContent': array { $otherContent }
-            }
-        )
+        map {
+            '@id': $canvas.id,
+            '@type': $canvas.type,
+            'label': $canvas.label,
+            'images': array { $images },
+            'width': $canvas.width,
+            'height': $canvas.height,
+            'otherContent': array { $otherContent }
+        }
     
     return $canvas.map
     
@@ -275,11 +262,11 @@ return map {
   '@type': $file.type,
   '@id': $id,
   'label': $label,
-  'navDate': $navDate,
   'license': $license,
   'attribution': $attribution,
   'sequences': array { $sequences },
-  (:'structures': $structures,:)
+  'description': $description,
+  'structures': $structures,
   'viewingDirection': $viewingDirection,
   'viewingHint': $viewingHint
 }

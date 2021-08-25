@@ -234,6 +234,22 @@ declare function iiif:getImageResource($width as xs:integer, $height as xs:integ
     }
 };
 
+declare function iiif:getImageResourceWithService($width as xs:integer, $height as xs:integer, $url as xs:string, $service as map(*)) as map(*) {
+    map {
+        '@id': $url || '/full/full/0/default.jpg',
+        '@type': 'dctypes:Image',
+        'service': map {
+          '@context': 'http://iiif.io/api/image/2/context.json',
+          '@id': $url,
+          'profile': 'http://iiif.io/api/image/2/level2.json',
+          'service': $service
+        },
+        'format': 'image/jpeg',
+        'width': $width,
+        'height': $height
+    }
+};
+
 declare function iiif:getLabel($elem as element(), $withLocalName as xs:boolean) as xs:string {
     let $label :=
         if($withLocalName and $elem/@label)
