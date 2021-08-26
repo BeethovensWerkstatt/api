@@ -174,7 +174,7 @@ let $sequences :=
             'images': array { $images },
             'width': $canvas.width,
             'height': $canvas.height,
-            'otherContent': array { $otherContent }
+            'otherContent': $otherContent
         }
     
     return $canvas.map
