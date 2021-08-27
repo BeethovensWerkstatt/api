@@ -67,6 +67,8 @@ let $relevantFacsimiles :=
 let $sequences :=
   for $facsimile in $relevantFacsimiles
   let $sequence.type := 'sc:Sequence'
+  let $sequence.id := $document.uri || 'seq1'
+  let $sequence.viewingDir := 'left-to-right'
 
   (: build variables for canvases = surfaces :)
   let $canvases :=
@@ -180,7 +182,9 @@ let $sequences :=
     return $canvas.map
     
   return map {
+    '@id': $sequence.id,
     '@type': $sequence.type,
+    'viewingDirection': $sequence.viewingDir,
     'canvases': array { $canvases }
   }
 
