@@ -200,16 +200,10 @@ let $structures :=
             for $token in $facs.tokens
             return $file/id($token)
             
-        let $pages := 
+        let $canvases := 
             for $page in ($zones/ancestor::mei:surface)
             let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
-            let $page.label := 'Page ' || $page/string(@n)
-            let $page.type := 'sc:Canvas'
-            return map {
-                '@id': $page.id,
-                '@type': $page.type,
-                'label': $page.label
-            }
+            return $page.id
         
         let $id := $document.uri || 'range/' || 'part_' || $part.n
         let $type := 'sc:Range'
@@ -219,7 +213,7 @@ let $structures :=
             '@id': $id, 
             '@type': $type,
             'label': $label,
-            'ranges': $pages
+            'canvases': array { $canvases }
         }
     
     let $scores := 
@@ -235,22 +229,16 @@ let $structures :=
             for $token in $facs.tokens
             return $file/id($token)
             
-        let $pages := 
+        let $canvases := 
             for $page in ($zones/ancestor::mei:surface)
             let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
-            let $page.label := 'Page ' || $page/string(@n)
-            let $page.type := 'sc:Canvas'
-            return map {
-                '@id': $page.id,
-                '@type': $page.type,
-                'label': $page.label
-            }
+            return $page.id
         
         return map {
             '@id': $id, 
             '@type': $type,
             'label': $label,
-            'ranges': $pages
+            'canvases': array { $canvases }
         }
     
     (:TODO: ensure proper ordering of score and parts:)
