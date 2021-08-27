@@ -8,7 +8,7 @@ LABEL maintainer="Johannes Kepper"
 
 ENV API_BUILD_HOME="/opt/api-build"
 
-ADD https://deb.nodesource.com/setup_10.x /tmp/nodejs_setup
+ADD https://deb.nodesource.com/setup_14.x /tmp/nodejs_setup
 
 WORKDIR ${API_BUILD_HOME}
 
