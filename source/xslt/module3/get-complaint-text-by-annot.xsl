@@ -99,7 +99,7 @@
         <xsl:variable name="is.score" select="exists($first.measure/ancestor::mei:score)" as="xs:boolean"/>
         
         <xsl:variable name="generated.scoreDef" as="node()">
-            <scoreDef xmlns="http://www.music-encoding.org/ns/mei">
+            <scoreDef xmlns="http://www.music-encoding.org/ns/mei" type="supplied">
                 <xsl:attribute name="meter.count" select="$meter.count"/>
                 <xsl:attribute name="meter.unit" select="$meter.unit"/>
                 <xsl:if test="$meter.sym">
@@ -126,7 +126,6 @@
                                 <xsl:variable name="trans.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@trans.semi and @trans.diat])[last()]" as="node()?"/>
                                 <xsl:variable name="trans.semi" select="if($trans.elem) then($trans.elem/@trans.semi) else()" as="xs:string?"/>
                                 <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
-                                
                                 
                                 <staffDef n="{$current.staff.n}" lines="5">
                                     <xsl:attribute name="label" select="$staff.label"/>
@@ -395,6 +394,11 @@
         <xsl:sequence select="$highlighted.context"/>
     </xsl:variable>
     
+    <!-- this is used to take care of measure numbers etc. -->
+    <xsl:variable name="final.text" as="node()">
+        <xsl:apply-templates select="$context.highlighted" mode="final.fixes"/>
+    </xsl:variable>
+    
     <xd:doc scope="component">
         <xd:desc>
             <xd:p></xd:p>
@@ -410,7 +414,7 @@
                 <mdiv>
                     <xsl:comment select="'focus.id: ' || $focus.id"/>
                     <xsl:comment select="'context.id: ' || $context.id"/>
-                    <xsl:sequence select="$context.highlighted"/>
+                    <xsl:sequence select="$final.text"/>
                 </mdiv>
             </body>
         </music>
@@ -877,6 +881,53 @@
             <xsl:apply-templates select="node()" mode="#current"/>
         </xsl:copy>
         
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>This takes care of measure numbers</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:measure" mode="final.fixes">
+        <xsl:choose>
+            <xsl:when test="preceding::mei:measure">
+                <xsl:next-match/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:copy>
+                    <xsl:apply-templates select="@*" mode="#current"/>
+                    <mNum type="supplied" xmlns="http://www.music-encoding.org/ns/mei"><xsl:value-of select="if(@label) then(@label) else(@n)"/></mNum>
+                    <xsl:apply-templates select="node()" mode="#current"/>
+                </xsl:copy>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    <xsl:template match="mei:staffDef[ancestor::mei:scoreDef/@type='supplied']" mode="final.fixes">
+        <xsl:copy>
+            <xsl:apply-templates select="@* except (@meter.sig, @key.sig, @clef.line, @clef.shape, @label, @label)" mode="#current"/>
+            <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                <xsl:attribute name="count" select="ancestor-or-self::mei:*[@meter.count][1]/@meter.count"/>
+                <xsl:attribute name="unit" select="ancestor-or-self::mei:*[@meter.unit][1]/@meter.unit"/>
+            </meterSig>
+            <xsl:if test="ancestor-or-self::mei:*/@key.sig">
+                <keySig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                    <xsl:attribute name="sig" select="ancestor-or-self::mei:*[@key.sig][1]/@key.sig"/>
+                </keySig>
+            </xsl:if>
+            <xsl:if test="@clef.line">
+                <clef type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                    <xsl:attribute name="line" select="ancestor-or-self::mei:*[@clef.line][1]/@clef.line"/>
+                    <xsl:attribute name="shape" select="ancestor-or-self::mei:*[@clef.shape][1]/@clef.shape"/>
+                </clef>
+            </xsl:if>
+            <xsl:if test="@label">
+                <label type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                    <xsl:value-of select="@label"/>
+                </label>
+            </xsl:if>
+            <xsl:apply-templates select="node()" mode="#current"/>
+        </xsl:copy>
     </xsl:template>
     
     <xd:doc>
