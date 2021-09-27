@@ -23,6 +23,32 @@ declare function module3:getComplaintLink($file.id as xs:string, $complaint.id a
     return $link
 };
 
+declare function module3:getMeasureLabel($measure as element(mei:measure)) as xs:string {
+    let $label := if(count($measure//mei:mNum) = 1)
+                  then(normalize-space(string-join($measure//mei:mNum//text(),' ')))
+                  else if($measure/@label)
+                  then($measure/string(@label))
+                  else if($measure/@n)
+                  then($measure/string(@n))
+                  else(string(count($measure/preceding::mei:measure) + 1))
+    return $label
+};
+
+declare function module3:getPageLabelBySurface($file as node(), $surfaceId as xs:string) as xs:string {
+    
+    let $surface := $file//mei:surface[@xml:id = $surfaceId]
+    
+    let $all.folia := $file//mei:folium
+    let $all.bifolia := $file//mei:bifolium
+    
+    let $label := if($all.folia[@recto = '#' || $surface/@xml:id])
+                  then($all.folia[@recto = '#' || $surface/@xml:id]/string(@n) || 'r')
+                  else if($all.folia[@verso = '#' || $surface/@xml:id])
+                  then($all.folia[@verso = '#' || $surface/@xml:id]/string(@n) || 'v')
+                  else ($surface/string(@n))
+    return string($label)
+};
+
 declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*, $text.file as node(), $document.file as node(), $text.annot as node(), $doc.annot as node()) as map(*) {
     (: 
         allowed values for $role: 
@@ -33,6 +59,18 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     let $work.uri := $config:module3-basepath || $file.id || '.json'
     
     let $file := $text.file/root()
+    
+    let $facsimile := $document.file//mei:facsimile
+    let $data.targets := ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))
+    let $referencing.zones :=
+        for $data.target in $data.targets
+        return $facsimile//mei:zone/@data[ft:query(.,$data.target)]/parent::node()
+
+    let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
+    let $root := $document.file/root()
+    let $referenced.zones := for $ref in $refs return $root/id($ref)[local-name() = 'zone']
+
+    let $zones := ($referencing.zones,  $referenced.zones)
     
     let $state.id :=
         if ($role = 'ante')
@@ -55,20 +93,7 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     
     let $context := ef:getMeiByContextLink($file.id, $doc.annot/string(@xml:id), $focus.link, $source.id, $state.id)
 
-    let $iiif :=
-        let $facsimile := $document.file//mei:facsimile
-
-        let $data.targets := ($affected.measures/concat('#',@xml:id), $affected.measures/mei:staff[@n = $affected.staves]/concat('#',@xml:id))
-        let $referencing.zones :=
-            for $data.target in $data.targets
-            return $facsimile//mei:zone/@data[ft:query(.,$data.target)]/parent::node()
-
-        let $refs := ($affected.measures/tokenize(replace(normalize-space(@facs),'#',''),' '), $affected.measures/mei:staff/tokenize(replace(normalize-space(@facs),'#',''),' '))
-        let $root := $document.file/root()
-        let $referenced.zones := for $ref in $refs return $root/id($ref)[local-name() = 'zone']
-
-        let $zones := ($referencing.zones,  $referenced.zones)
-        return iiif:getRectangle($document.file, $zones, true()) (:map {
+    let $iiif := iiif:getRectangle($document.file, $zones, true()) (:map {
             'zones': count($zones),
             'dataTargets': count($data.targets),
             'refs': string-join($refs,' - '),
@@ -76,12 +101,18 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             'fileId': $file.id
         }:)
 
+    let $measureLabels := array { for $measure in $affected.measures return module3:getMeasureLabel($measure) }
+    
+    let $all.pages.ids := distinct-values(for $zone in $zones return ($zone/ancestor::mei:surface/@xml:id))
+    let $pageLabels := array { for $page.id in $all.pages.ids return module3:getPageLabelBySurface($document.file, $page.id) }
+    
+        
     return map {
         'work': $work.uri,
         'role': $role,
         'mei': $context,
         'iiif': array { $iiif },
-        'test': map {
+        (:'test': map {
             'fileId': string($file.id),
             'focusLink': string($focus.link),
             'sourceId': string($source.id),
@@ -91,6 +122,11 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             'complaintId': local-name($complaint) || ' - ' || $complaint/string(@xml:id),
             'textAnnotId': $text.annot/string(@xml:id),
             'docAnnotId': $doc.annot/string(@xml:id)
+        },:)
+        'labels': map {
+            'source': replace($source.id,'_',' '),
+            'measures': $measureLabels,
+            'pages': $pageLabels
         }
     }
 };
