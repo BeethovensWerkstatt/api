@@ -74,9 +74,11 @@
         
         <!-- delimit the area in which relevant features can be found -->
         <xsl:variable name="search.space" as="node()">
+            
             <xsl:variable name="file.region" as="node()">
-                <xsl:apply-templates select="$first.measure/ancestor::mei:*[local-name() = ('score','part')]" mode="get.search.space">
+                <xsl:apply-templates select="$first.measure/ancestor::mei:*[local-name() = ('score','part')]" mode="getSearchSpace">
                     <xsl:with-param name="measure.id" select="$first.measure/@xml:id" tunnel="yes"/>
+                    <xsl:with-param name="measure.n" select="$first.measure/@n" tunnel="yes"/>
                 </xsl:apply-templates>
             </xsl:variable>
             <xsl:variable name="source.resolved" as="node()">
@@ -138,6 +140,7 @@
                                         <xsl:attribute name="trans.semi" select="$trans.semi"/>
                                         <xsl:attribute name="trans.diat" select="$trans.diat"/>
                                     </xsl:if>
+                                    <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
                                 </staffDef>
                             </xsl:when>
                             <xsl:when test="$is.multi.staff">
@@ -183,6 +186,7 @@
                                                             <xsl:attribute name="trans.semi" select="$trans.semi"/>
                                                             <xsl:attribute name="trans.diat" select="$trans.diat"/>
                                                         </xsl:if>
+                                                        <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
                                                     </staffDef>
                                                 </xsl:for-each>
                                             </staffGrp>
@@ -213,6 +217,7 @@
                                                     <xsl:attribute name="trans.semi" select="$trans.semi"/>
                                                     <xsl:attribute name="trans.diat" select="$trans.diat"/>
                                                 </xsl:if>
+                                                <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
                                             </staffDef>
                                         </xsl:otherwise>
                                     </xsl:choose>
@@ -247,7 +252,6 @@
                 <xsl:sequence select="$state.resolved"/>
             </section>
         </xsl:variable>
-        
         <range 
             first.measure="{normalize-space($first.measure/string(@label))}" 
             all.measures="{normalize-space(string-join($affected.measures/@label,' '))}" 
@@ -415,6 +419,7 @@
                     <xsl:comment select="'focus.id: ' || $focus.id"/>
                     <xsl:comment select="'context.id: ' || $context.id"/>
                     <xsl:sequence select="$final.text"/>
+                    <!--<xsl:sequence select="$ranges"/>-->
                 </mdiv>
             </body>
         </music>
@@ -425,12 +430,21 @@
             <xd:p>This template is used to delimit the search room for features relevant for a given music snippet</xd:p>
         </xd:desc>
         <xd:param name="measure.id"></xd:param>
+        <xd:param name="measure.n"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:measure" mode="get.search.space">
+    <xsl:template match="mei:measure" mode="getSearchSpace">
         <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
-        <xsl:if test="following::mei:measure[@xml:id = $measure.id]">
-            <xsl:copy-of select="."/>
-        </xsl:if>
+        <xsl:param name="measure.n" tunnel="yes" as="xs:string"/>
+        <xsl:choose>
+            <xsl:when test="following::mei:measure[@xml:id = $measure.id] and xs:integer(@n) lt xs:integer($measure.n)">
+                <!--<xsl:comment select="'measure ' || @label || ' passed test'"/>-->
+                <xsl:copy-of select="."/>
+            </xsl:when>
+            <xsl:otherwise>
+                <!--<xsl:comment select="'skipping measure ' || @label"/>-->
+            </xsl:otherwise>
+        </xsl:choose>
+        
     </xsl:template>
     
     <xd:doc>
