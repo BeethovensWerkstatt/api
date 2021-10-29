@@ -281,3 +281,123 @@ declare function iiif:getXywh($region as xs:string) as xs:string {
     let $xywh := 'xywh=' || $region
     return $xywh
 };
+
+declare function iiif:getStructures_iiifPresentationAPI2($file as node(), $document.uri as xs:string) as array(*) {
+    
+    (: this will serve as starting point in the structures, and everything else will be linked from here :)
+    let $primary := 
+        let $has.score := exists($file//mei:mdiv/mei:score)
+        let $has.parts := exists($file//mei:mdiv/mei:parts)
+        
+        let $scoreIDs :=
+            for $mdiv in $file//mei:mdiv[@xml:id and mei:score]
+            return $document.uri || 'range/' || $mdiv/string(@xml:id)
+            
+        let $partIDs := 
+            for $part.n in distinct-values($file//mei:part/xs:integer(@n))
+            order by $part.n ascending
+            return $document.uri || 'range/' || 'part_' || $part.n
+            
+        let $first.level.objects := array { ($scoreIDs, $partIDs) } 
+        return map {
+            '@id': $document.uri || 'range/' || 'toc',
+            '@type': 'sc:Range',
+            'viewingHint': 'top',
+            'label': 'TOC',
+            'ranges': $first.level.objects
+        }
+    
+    let $parts := 
+        (: TODO: this is a dramatic simplification, because some parts may be missing for some movements :)
+        let $part.n.values := distinct-values($file//mei:part/xs:integer(@n))
+        for $part.n in $part.n.values
+        order by $part.n ascending
+        let $part.elems := $file//mei:part[string(@n) = string($part.n)]
+        let $part.labels := distinct-values($part.elems/string(@label))
+        
+        (:let $measures := $part.elems//mei:measure
+        let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
+        let $zones := 
+            for $token in $facs.tokens
+            return $file/id($token)
+            
+        let $canvases := 
+            for $page in ($zones/ancestor::mei:surface)
+            let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
+            return $page.id:)
+        
+        let $part.mdivs := 
+            for $mdiv in $part.elems/parent::mei:parts/parent::mei:mdiv
+            return $document.uri || 'range/' || $mdiv/string(@xml:id) || '_part' || $part.n 
+        
+        let $id := $document.uri || 'range/' || 'part_' || $part.n
+        let $type := 'sc:Range'
+        let $label := array {$part.labels}
+        
+        return map {
+            '@id': $id, 
+            '@type': $type,
+            'description': 'Part ' || $part.n,
+            'label': $label,
+            'ranges': array { $part.mdivs }
+        }
+        
+    let $part.mdivs := 
+        for $part in $file//mei:part
+        order by count($part/parent::mei:parts/parent::mei:mdiv/preceding::mei:mdiv) ascending
+        order by $part/xs:integer(@n) ascending
+        let $part.n := $part/@n
+        let $mdiv := $part/parent::mei:parts/parent::mei:mdiv
+        let $mdiv.id := $mdiv/string(@xml:id)
+        let $mdiv.label := if($mdiv/@label) then($mdiv/string(@label)) else if($mdiv/@n) then('Movement ' || $mdiv/string(@n)) else('Movement ' || string(count($mdiv/preceding::mei:mdiv) + 1))
+        let $id := $document.uri || 'range/' || $mdiv.id || '_part' || $part.n 
+        let $label := $part/string(@label)
+        
+        let $measures := $part//mei:measure
+        let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
+        let $zones := 
+            for $token in $facs.tokens
+            return $file/id($token)
+            
+        let $canvases := 
+            for $page in ($zones/ancestor::mei:surface)
+            let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
+            return $page.id
+        
+        return map {
+            '@id': $id, 
+            '@type': 'sc:Range',
+            'description': $mdiv.label || ', ' || $label,
+            'label': $label,
+            'canvases': array { $canvases }
+        }
+    
+    let $scores := 
+        for $mdiv in $file//mei:mdiv[mei:score] 
+        
+        let $id := $document.uri || 'range/' || $mdiv/string(@xml:id)
+        let $type := 'sc:Range'
+        let $label := if($mdiv/@label) then($mdiv/string(@label)) else if($mdiv/@n) then('Movement ' || $mdiv/string(@n)) else('Movement ' || string(count($mdiv/preceding::mei:mdiv) + 1))
+        
+        let $measures := $mdiv//mei:measure
+        let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
+        let $zones := 
+            for $token in $facs.tokens
+            return $file/id($token)
+            
+        let $canvases := 
+            for $page in ($zones/ancestor::mei:surface)
+            let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
+            return $page.id
+        
+        return map {
+            '@id': $id, 
+            '@type': $type,
+            'label': $label,
+            'canvases': array { $canvases }
+        }
+    
+    (:TODO: ensure proper ordering of score and parts:)
+    
+    return array { ($primary, $scores, $parts, $part.mdivs) }
+};

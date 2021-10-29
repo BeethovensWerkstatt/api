@@ -189,65 +189,7 @@ let $sequences :=
   }
 
 (: content structures like movements :)
-let $structures := 
-    
-    let $parts := 
-        (: TODO: this is a dramatic simplification, because some parts may be missing for some movements :)
-        let $part.n.values := distinct-values($file//mei:part/xs:integer(@n))
-        for $part.n in $part.n.values
-        order by $part.n ascending
-        let $part.elems := $file//mei:part[string(@n) = string($part.n)]
-        let $part.labels := $part.elems/string(@label)
-        let $measures := $part.elems//mei:measure
-        let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
-        let $zones := 
-            for $token in $facs.tokens
-            return $file/id($token)
-            
-        let $canvases := 
-            for $page in ($zones/ancestor::mei:surface)
-            let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
-            return $page.id
-        
-        let $id := $document.uri || 'range/' || 'part_' || $part.n
-        let $type := 'sc:Range'
-        let $label := array {$part.labels}
-        
-        return map {
-            '@id': $id, 
-            '@type': $type,
-            'label': $label,
-            'canvases': array { $canvases }
-        }
-    
-    let $scores := 
-        for $mdiv in $file//mei:mdiv[mei:score] 
-        
-        let $id := $document.uri || 'range/' || $mdiv/string(@xml:id)
-        let $type := 'sc:Range'
-        let $label := if($mdiv/@label) then($mdiv/string(@label)) else if($mdiv/@n) then('Movement ' || $mdiv/string(@n)) else('Movement ' || string(count($mdiv/preceding::mei:mdiv) + 1))
-        
-        let $measures := $mdiv//mei:measure
-        let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
-        let $zones := 
-            for $token in $facs.tokens
-            return $file/id($token)
-            
-        let $canvases := 
-            for $page in ($zones/ancestor::mei:surface)
-            let $page.id := $document.uri || 'canvas/' || $page/string(@xml:id)
-            return $page.id
-        
-        return map {
-            '@id': $id, 
-            '@type': $type,
-            'label': $label,
-            'canvases': array { $canvases }
-        }
-    
-    (:TODO: ensure proper ordering of score and parts:)
-    
-    return array { ($scores, $parts) }
+let $structures := iiif:getStructures_iiifPresentationAPI2($file, $document.uri)
     
 return map {
   '@context': $file.context,
