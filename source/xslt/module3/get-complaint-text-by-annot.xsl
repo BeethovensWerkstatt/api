@@ -108,6 +108,7 @@
                     <xsl:attribute name="meter.sym" select="$meter.sym"/>
                 </xsl:if>
                 <xsl:attribute name="key.sig" select="$general.key.sig"/>
+                
                 <staffGrp bar.thru="{if($is.score) then('true') else('false')}">
                     <xsl:for-each select="$staves.n">
                         <xsl:variable name="current.staff.n" select="." as="xs:string"/>
@@ -239,7 +240,7 @@
                     scoreDefs="{string-join(distinct-values($search.space//mei:scoreDef/string(@xml:id)),', ')}"
                 -->
                 <xsl:variable name="region" as="node()*">
-                    <xsl:apply-templates select="$affected.measures" mode="get.selected.staves">
+                    <xsl:apply-templates select="$affected.measures" mode="getSelectedStaves">
                         <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
                     </xsl:apply-templates>
                 </xsl:variable>
@@ -444,7 +445,6 @@
                 <!--<xsl:comment select="'skipping measure ' || @label"/>-->
             </xsl:otherwise>
         </xsl:choose>
-        
     </xsl:template>
     
     <xd:doc>
@@ -453,7 +453,7 @@
         </xd:desc>
         <xd:param name="measure.id"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:section" mode="get.search.space">
+    <xsl:template match="mei:section" mode="getSearchSpace">
         <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
         <xsl:if test="following::mei:measure[@xml:id = $measure.id] or descendant::mei:measure[@xml:id = $measure.id]">
             <xsl:copy-of select="."/>
@@ -466,7 +466,7 @@
         </xd:desc>
         <xd:param name="staves"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:staff" mode="get.selected.staves">
+    <xsl:template match="mei:staff" mode="getSelectedStaves">
         <xsl:param name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:if test="@n = $staves">
             <xsl:next-match/>
@@ -479,7 +479,7 @@
         </xd:desc>
         <xd:param name="staves"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:measure/mei:*[@staff]" mode="get.selected.staves">
+    <xsl:template match="mei:measure/mei:*[@staff]" mode="getSelectedStaves">
         <xsl:param name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:if test="some $n in tokenize(normalize-space(@staff),' ') satisfies $n = $staves">
             <xsl:next-match/>
@@ -492,7 +492,7 @@
         </xd:desc>
         <xd:param name="staves"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:measure/mei:*/@staff" mode="get.selected.staves">
+    <xsl:template match="mei:measure/mei:*/@staff" mode="getSelectedStaves">
         <xsl:param  name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:variable name="relevant.staves" select="for $n in tokenize(normalize-space(.),' ') return (if($n = $staves) then($n) else())" as="xs:string*"/>
         <xsl:attribute name="staff" select="string-join($relevant.staves,' ')"/>
@@ -506,7 +506,7 @@
         </xd:desc>
         <xd:param name="staves"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:measure/mei:*[not(local-name() = 'staff')][not(@staff)][@startid or @plist]" mode="get.selected.staves">
+    <xsl:template match="mei:measure/mei:*[not(local-name() = 'staff')][not(@staff)][@startid or @plist]" mode="getSelectedStaves">
         <xsl:param  name="staves" tunnel="yes" as="xs:string*"/>
         <xsl:variable name="ref" select="if(@startid) then(replace(@startid,'#','')) else(replace(tokenize(normalize-space(@plist),' ')[1],'#',''))" as="xs:string"/>
         <xsl:variable name="staff.n" select="ancestor::mei:measure//mei:*[@xml:id = $ref]/ancestor::mei:staff/@n" as="xs:string?"/>
