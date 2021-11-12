@@ -109,7 +109,63 @@
                 </xsl:if>
                 <xsl:attribute name="key.sig" select="$general.key.sig"/>
                 
-                <staffGrp bar.thru="{if($is.score) then('true') else('false')}">
+                <xsl:variable name="relevant.staffGrp" select="$search.space//mei:scoreDef//mei:staffGrp[(every $n in $staves.n satisfies ./mei:staffDef[@n = $n]) and @symbol]" as="node()*"/>
+                
+                <xsl:variable name="staffGrp.symbol" as="xs:string">
+                    <xsl:choose>
+                        <xsl:when test="count($staves.n) = 1">
+                            <xsl:value-of select="'none'"/>
+                        </xsl:when>
+                        <xsl:when test="exists($relevant.staffGrp)">
+                            <xsl:value-of select="$relevant.staffGrp[last()]/string(@symbol)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="'none'"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
+                
+                <xsl:variable name="staffGrp.label" as="element()?">
+                    <xsl:choose>
+                        <xsl:when test="count($staves.n) = 1"/>
+                        <xsl:when test="exists($relevant.staffGrp/(mei:labelAbbr | mei:label))">
+                            <xsl:variable name="labels" select="$relevant.staffGrp[mei:labelAbbr or mei:label][last()]/(mei:labelAbbr | mei:label)" as="node()+"/>
+                            
+                            <xsl:choose>
+                                <xsl:when test="$labels/self::mei:labelAbbr">
+                                    <label type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                                        <xsl:apply-templates select="$labels/self::mei:labelAbbr/(node() | @*)" mode="#unnamed"/>
+                                    </label>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <label type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                                        <xsl:apply-templates select="$labels/self::mei:label/(node() | @*)" mode="#unnamed"/>
+                                    </label>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:when>
+                        <xsl:otherwise/>
+                    </xsl:choose>
+                </xsl:variable>
+                
+                <xsl:comment select="'search.space measures:' || count($search.space//mei:measure)"/>
+                <xsl:comment select="'$search.space/@xml:id: ' || $search.space/@xml:id"/>
+                <xsl:comment select="'$first.measure/@xml:id: ' || $first.measure/@xml:id"/>
+                <xsl:comment select="'measures: ' || count($search.space//mei:measure[following::mei:measure[@xml:id = $first.measure/@xml:id]])"/>
+                
+                <!--<test>
+                    <xsl:apply-templates select="$first.measure/ancestor::mei:*[local-name() = ('score','part')]" mode="getSearchSpace">
+                        <xsl:with-param name="measure.id" select="$first.measure/@xml:id" tunnel="yes"/>
+                        <xsl:with-param name="measure.n" select="$first.measure/@n" tunnel="yes"/>
+                    </xsl:apply-templates>
+                </test>-->
+                
+                
+                <staffGrp bar.thru="{if($is.score) then('true') else('false')}" symbol="{$staffGrp.symbol}">
+                    <xsl:if test="$relevant.staffGrp">
+                        <xsl:attribute name="xml:id" select="$relevant.staffGrp[last()]/string(@xml:id)"/>
+                    </xsl:if>
+                    <xsl:sequence select="$staffGrp.label"/>
                     <xsl:for-each select="$staves.n">
                         <xsl:variable name="current.staff.n" select="." as="xs:string"/>
                         
@@ -131,7 +187,9 @@
                                 <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                 
                                 <staffDef n="{$current.staff.n}" lines="5">
-                                    <xsl:attribute name="label" select="$staff.label"/>
+                                    <xsl:if test="not($staffGrp.symbol)">
+                                        <xsl:attribute name="label" select="$staff.label"/>    
+                                    </xsl:if>
                                     <xsl:attribute name="clef.shape" select="$clef.shape"/>
                                     <xsl:attribute name="clef.line" select="$clef.line"/>
                                     <xsl:if test="exists($staff.key.sig)">
@@ -152,61 +210,24 @@
                                 <xsl:if test="$pos.in.group = 1 or not($initial.staffDef/preceding-sibling::mei:staffDef/string(@n) = $staves.n)">
                                     <xsl:variable name="following.staffDefs" select="$initial.staffDef/following-sibling::mei:staffDef[@n = $staves.n]" as="node()*"/>
                                     
-                                    <xsl:choose>
-                                        <!-- a staffGrp is necessary for the excerpt -->
-                                        <xsl:when test="count($following.staffDefs) gt 0">
-                                            <staffGrp>
-                                                <xsl:apply-templates select="$initial.staffDef/parent::mei:staffGrp/@*"  mode="#unnamed"/>
-                                                <xsl:apply-templates select="$initial.staffDef/parent::mei:staffGrp/mei:label" mode="#unnamed"/>
-                                                
-                                                <xsl:for-each select="$current.staff.n, $following.staffDefs/@n">
-                                                    <xsl:sort select="." data-type="number"/>
-                                                    <xsl:variable name="current.staff.n.in.group" select="." as="xs:string"/>
-                                                    
-                                                    <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text())[1]" as="xs:string?"/>
-                                                    
-                                                    <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n.in.group]//mei:clef)[last()]" as="node()"/>
-                                                    <xsl:variable name="clef.shape" select="$clef.elem/@clef.shape | $clef.elem/@shape" as="xs:string"/>
-                                                    <xsl:variable name="clef.line" select="$clef.elem/@clef.line | $clef.elem/@line" as="xs:string"/>
-                                                    
-                                                    <xsl:variable name="trans.elem" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group][@trans.semi and @trans.diat])[last()]" as="node()?"/>
-                                                    <xsl:variable name="trans.semi" select="if($trans.elem) then($trans.elem/@trans.semi) else()" as="xs:string?"/>
-                                                    <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
-                                                    
-                                                    
-                                                    <staffDef n="{$current.staff.n.in.group}" lines="5">
-                                                        <xsl:if test="exists($staff.label)">
-                                                            <xsl:attribute name="label" select="$staff.label"/>
-                                                        </xsl:if>
-                                                        <xsl:attribute name="clef.shape" select="$clef.shape"/>
-                                                        <xsl:attribute name="clef.line" select="$clef.line"/>
-                                                        <xsl:if test="exists($staff.key.sig)">
-                                                            <xsl:attribute name="key.sig" select="$staff.key.sig"/>
-                                                        </xsl:if>
-                                                        <xsl:if test="exists($trans.elem)">
-                                                            <xsl:attribute name="trans.semi" select="$trans.semi"/>
-                                                            <xsl:attribute name="trans.diat" select="$trans.diat"/>
-                                                        </xsl:if>
-                                                        <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
-                                                    </staffDef>
-                                                </xsl:for-each>
-                                            </staffGrp>
-                                        </xsl:when>
-                                        <!-- just one staff of the staffGrp is required -->
-                                        <xsl:otherwise>
-                                            <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text())[1]" as="xs:string?"/>
+                                    <xsl:variable name="staffDefs" as="node()+">
+                                        <xsl:for-each select="$current.staff.n, $following.staffDefs/@n">
+                                            <xsl:sort select="." data-type="number"/>
+                                            <xsl:variable name="current.staff.n.in.group" select="." as="xs:string"/>
                                             
-                                            <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n]//mei:clef)[last()]" as="node()"/>
+                                            <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text())[1]" as="xs:string?"/>
+                                            
+                                            <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n.in.group]//mei:clef)[last()]" as="node()"/>
                                             <xsl:variable name="clef.shape" select="$clef.elem/@clef.shape | $clef.elem/@shape" as="xs:string"/>
                                             <xsl:variable name="clef.line" select="$clef.elem/@clef.line | $clef.elem/@line" as="xs:string"/>
                                             
-                                            <xsl:variable name="trans.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@trans.semi and @trans.diat])[last()]" as="node()?"/>
+                                            <xsl:variable name="trans.elem" select="($search.space//mei:staffDef[@n = $current.staff.n.in.group][@trans.semi and @trans.diat])[last()]" as="node()?"/>
                                             <xsl:variable name="trans.semi" select="if($trans.elem) then($trans.elem/@trans.semi) else()" as="xs:string?"/>
                                             <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                             
                                             
-                                            <staffDef n="{$current.staff.n}" lines="5">
-                                                <xsl:if test="exists($staff.label)">
+                                            <staffDef n="{$current.staff.n.in.group}" lines="5">
+                                                <xsl:if test="exists($staff.label) and not($staffGrp.symbol)">
                                                     <xsl:attribute name="label" select="$staff.label"/>
                                                 </xsl:if>
                                                 <xsl:attribute name="clef.shape" select="$clef.shape"/>
@@ -220,8 +241,9 @@
                                                 </xsl:if>
                                                 <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
                                             </staffDef>
-                                        </xsl:otherwise>
-                                    </xsl:choose>
+                                        </xsl:for-each>
+                                    </xsl:variable>
+                                    <xsl:sequence select="$staffDefs"/>
                                     
                                 </xsl:if>
                                 
@@ -280,7 +302,7 @@
                                 <xsl:variable name="pos" select="position()" as="xs:integer"/>
                                 <xsl:variable name="offset" select="$pos * 100" as="xs:integer"/>
                                 <xsl:variable name="current.range" select="$ranges[$pos]" as="node()"/>
-                                <xsl:apply-templates select="$current.range/mei:scoreDef/mei:staffGrp/node()" mode="offsetStaves">
+                                <xsl:apply-templates select="$current.range/mei:scoreDef/mei:staffGrp/(node() | @*)" mode="offsetStaves">
                                     <xsl:with-param name="offset" select="$offset" as="xs:integer" tunnel="yes"/>
                                 </xsl:apply-templates>
                             </xsl:for-each>
@@ -456,7 +478,7 @@
     <xsl:template match="mei:section" mode="getSearchSpace">
         <xsl:param name="measure.id" tunnel="yes" as="xs:string"/>
         <xsl:if test="following::mei:measure[@xml:id = $measure.id] or descendant::mei:measure[@xml:id = $measure.id]">
-            <xsl:copy-of select="."/>
+            <xsl:next-match/>
         </xsl:if>
     </xsl:template>
     
@@ -932,6 +954,9 @@
             <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
                 <xsl:attribute name="count" select="ancestor-or-self::mei:*[@meter.count][1]/@meter.count"/>
                 <xsl:attribute name="unit" select="ancestor-or-self::mei:*[@meter.unit][1]/@meter.unit"/>
+                <xsl:if test="ancestor-or-self::mei:*[@meter.sym]">
+                    <xsl:attribute name="sym" select="ancestor-or-self::mei:*[@meter.sym][1]/@meter.sym"/>
+                </xsl:if>
             </meterSig>
             <xsl:if test="ancestor-or-self::mei:*/@key.sig">
                 <keySig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
