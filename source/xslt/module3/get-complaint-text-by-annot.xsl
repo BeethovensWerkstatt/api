@@ -475,6 +475,15 @@
     
     <xd:doc>
         <xd:desc>
+            <xd:p>This template preserves metaMarks, which are considered to be always relevant. TODO: See if we should add a @class for this.</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:metaMark[@place]" mode="getSelectedStaves" priority="1">
+        <xsl:copy-of select="."/>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
             <xd:p>This template filters out control events on staves which aren't required for the current range</xd:p>
         </xd:desc>
         <xd:param name="staves"></xd:param>
@@ -942,6 +951,35 @@
             </xsl:if>
             <xsl:apply-templates select="node()" mode="#current"/>
         </xsl:copy>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>If there are metaMarks with @place=rightmar, this will render them</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:measure[not(following::mei:measure)]" mode="finalFixes">
+        <xsl:next-match/>
+        <xsl:variable name="metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='rightmar'] | .//mei:metaMark[@place='rightmar'])" as="element(mei:metaMark)*"/>
+        
+        <xsl:if test="exists($metaMarks)">
+            <measure xmlns="http://www.music-encoding.org/ns/mei">
+                <xsl:attribute name="type" select="'invis'"/>
+                <xsl:for-each select="./mei:staff">
+                    <staff n="{position()}">
+                        <layer n="1">
+                            <mSpace/>
+                        </layer>
+                    </staff>
+                </xsl:for-each>
+                <xsl:for-each select="$metaMarks">
+                    <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
+                        <xsl:apply-templates select="node()" mode="#current"/>
+                    </dir> 
+                </xsl:for-each>
+            </measure>
+        </xsl:if>
+        
     </xsl:template>
     
     <xd:doc>
