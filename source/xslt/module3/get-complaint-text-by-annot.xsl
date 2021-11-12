@@ -82,10 +82,10 @@
                 </xsl:apply-templates>
             </xsl:variable>
             <xsl:variable name="source.resolved" as="node()">
-                <xsl:apply-templates select="$file.region" mode="get.source"/>
+                <xsl:apply-templates select="$file.region" mode="getSource"/>
             </xsl:variable>
             <xsl:variable name="state.resolved" as="node()">
-                <xsl:apply-templates select="$source.resolved" mode="get.state"/>
+                <xsl:apply-templates select="$source.resolved" mode="getState"/>
             </xsl:variable>
             <xsl:sequence select="$state.resolved"/>
         </xsl:variable>
@@ -245,10 +245,10 @@
                     </xsl:apply-templates>
                 </xsl:variable>
                 <xsl:variable name="source.resolved" as="node()*">
-                    <xsl:apply-templates select="$region" mode="get.source"/>
+                    <xsl:apply-templates select="$region" mode="getSource"/>
                 </xsl:variable>
                 <xsl:variable name="state.resolved" as="node()*">
-                    <xsl:apply-templates select="$source.resolved" mode="get.state"/>
+                    <xsl:apply-templates select="$source.resolved" mode="getState"/>
                 </xsl:variable>
                 <xsl:sequence select="$state.resolved"/>
             </section>
@@ -280,7 +280,7 @@
                                 <xsl:variable name="pos" select="position()" as="xs:integer"/>
                                 <xsl:variable name="offset" select="$pos * 100" as="xs:integer"/>
                                 <xsl:variable name="current.range" select="$ranges[$pos]" as="node()"/>
-                                <xsl:apply-templates select="$current.range/mei:scoreDef/mei:staffGrp/node()" mode="offset.staves">
+                                <xsl:apply-templates select="$current.range/mei:scoreDef/mei:staffGrp/node()" mode="offsetStaves">
                                     <xsl:with-param name="offset" select="$offset" as="xs:integer" tunnel="yes"/>
                                 </xsl:apply-templates>
                             </xsl:for-each>
@@ -297,7 +297,7 @@
                                     <xsl:variable name="offset" select="$pos * 100" as="xs:integer"/>
                                     <xsl:variable name="current.range" select="$ranges[$pos]" as="node()"/>
                                     <xsl:variable name="current.measure" select="($current.range//mei:measure)[$measure.pos]" as="node()"/>
-                                    <xsl:apply-templates select="$current.measure/mei:staff" mode="offset.staves">
+                                    <xsl:apply-templates select="$current.measure/mei:staff" mode="offsetStaves">
                                         <xsl:with-param name="offset" select="$offset" as="xs:integer" tunnel="yes"/>
                                     </xsl:apply-templates>
                                 </xsl:for-each>
@@ -309,7 +309,7 @@
                                     <xsl:variable name="offset" select="$pos * 100" as="xs:integer"/>
                                     <xsl:variable name="current.range" select="$ranges[$pos]" as="node()"/>
                                     <xsl:variable name="current.measure" select="($current.range//mei:measure)[$measure.pos]" as="node()"/>
-                                    <xsl:apply-templates select="$current.measure/mei:*[not(local-name() = 'staff')]" mode="offset.staves">
+                                    <xsl:apply-templates select="$current.measure/mei:*[not(local-name() = 'staff')]" mode="offsetStaves">
                                         <xsl:with-param name="offset" select="$offset" as="xs:integer" tunnel="yes"/>
                                     </xsl:apply-templates>
                                 </xsl:for-each>
@@ -333,17 +333,17 @@
                 <mapping old="{.}" new="{$new}"/>
             </xsl:for-each>
         </xsl:variable>
-        <xsl:apply-templates select="$excerpted.score" mode="condense.score">
+        <xsl:apply-templates select="$excerpted.score" mode="condenseScore">
             <xsl:with-param name="mappings" select="$mappings" tunnel="yes" as="node()+"/>
         </xsl:apply-templates>
     </xsl:variable>
     
     <xsl:variable name="context.highlighted" as="node()">
         <xsl:variable name="added.id" as="node()*">
-            <xsl:apply-templates select="$condensed.score" mode="add.id"/>
+            <xsl:apply-templates select="$condensed.score" mode="addId"/>
         </xsl:variable>
         <xsl:variable name="added.tstamps" as="node()*">
-            <xsl:apply-templates select="$added.id" mode="add.tstamps"/>
+            <xsl:apply-templates select="$added.id" mode="addTstamps"/>
         </xsl:variable>
         
         <!-- get context and focus elements – those restrict what shall be shown -->
@@ -376,7 +376,7 @@
                     <!-- aufteilen: 1. focus, letzter focus, mittlere focus -->
                     
                     
-                    <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
+                    <xsl:apply-templates select="$added.tstamps" mode="highlightContext">
                         <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
                         <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>
                         <xsl:with-param name="focus.tstamp" select="$focus.tstamp" tunnel="yes" as="xs:double"/>
@@ -387,7 +387,7 @@
                     </xsl:apply-templates>
                 </xsl:when>
                 <xsl:otherwise>
-                    <xsl:apply-templates select="$added.tstamps" mode="highlight.context">
+                    <xsl:apply-templates select="$added.tstamps" mode="highlightContext">
                         <xsl:with-param name="context.tstamp" select="$context.tstamp" tunnel="yes" as="xs:double"/>
                         <xsl:with-param name="context.tstamp2" select="$context.tstamp2" tunnel="yes" as="xs:double"/>                        
                     </xsl:apply-templates>
@@ -401,7 +401,7 @@
     
     <!-- this is used to take care of measure numbers etc. -->
     <xsl:variable name="final.text" as="node()">
-        <xsl:apply-templates select="$context.highlighted" mode="final.fixes"/>
+        <xsl:apply-templates select="$context.highlighted" mode="finalFixes"/>
     </xsl:variable>
     
     <xd:doc scope="component">
@@ -521,7 +521,7 @@
         </xd:desc>
         <xd:param name="offset"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:staff/@n | mei:staffDef/@n" mode="offset.staves">
+    <xsl:template match="mei:staff/@n | mei:staffDef/@n" mode="offsetStaves">
         <xsl:param name="offset" tunnel="yes" as="xs:integer"/>
         <xsl:attribute name="n" select="xs:integer(normalize-space(.)) + $offset"/>
     </xsl:template>
@@ -532,7 +532,7 @@
         </xd:desc>
         <xd:param name="offset"></xd:param>
     </xd:doc>
-    <xsl:template match="@staff" mode="offset.staves">
+    <xsl:template match="@staff" mode="offsetStaves">
         <xsl:param name="offset" tunnel="yes" as="xs:integer"/>
         <xsl:variable name="old.tokens" select="tokenize(normalize-space(.),' ')" as="xs:string*"/>
         <xsl:variable name="new.tokens" select="for $token in $old.tokens return string(xs:integer($token) + $offset)" as="xs:string*"/>
@@ -545,7 +545,7 @@
         </xd:desc>
         <xd:param name="mappings"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:staff/@n | mei:staffDef/@n" mode="condense.score">
+    <xsl:template match="mei:staff/@n | mei:staffDef/@n" mode="condenseScore">
         <xsl:param name="mappings" tunnel="yes" as="node()+"/>
         <xsl:variable name="old" select="." as="xs:string"/>
         <xsl:variable name="new" select="$mappings[@old = $old]/@new" as="xs:string"/>
@@ -558,7 +558,7 @@
         </xd:desc>
         <xd:param name="mappings"></xd:param>
     </xd:doc>
-    <xsl:template match="@staff" mode="condense.score">
+    <xsl:template match="@staff" mode="condenseScore">
         <xsl:param name="mappings" tunnel="yes" as="node()+"/>
         <xsl:variable name="old.tokens" select="tokenize(normalize-space(.),' ')" as="xs:string*"/>
         <xsl:variable name="new.tokens" select="for $old in $old.tokens return $mappings[@old = $old]/@new" as="xs:string*"/>
@@ -570,7 +570,7 @@
             <xd:p>resolves mei:app elements</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:app" mode="get.source">
+    <xsl:template match="mei:app" mode="getSource">
         <xsl:apply-templates select="child::mei:*['#' || $source.id = tokenize(normalize-space(@source),' ')]/node()" mode="#current"/>
     </xsl:template>
     
@@ -579,7 +579,7 @@
             <xd:p>resolves elements that apply to a given source only</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:*[@source]" mode="get.source">
+    <xsl:template match="mei:*[@source]" mode="getSource">
         <xsl:if test="'#' || $source.id = tokenize(normalize-space(@source),' ')">
             <xsl:next-match/>
         </xsl:if>
@@ -590,14 +590,14 @@
             <xd:p>drop source attribute – not needed anymore </xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="@source" mode="get.source"/>
+    <xsl:template match="@source" mode="getSource"/>
     
     <xd:doc>
         <xd:desc>
             <xd:p>gets choices out of the way</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:choice[every $child in child::mei:* satisfies $child/@source]" mode="get.source">
+    <xsl:template match="mei:choice[every $child in child::mei:* satisfies $child/@source]" mode="getSource">
         <xsl:apply-templates select="node()" mode="#current"/>
     </xsl:template>
     
@@ -606,7 +606,7 @@
             <xd:p>resolves states</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:*[@state]" mode="get.state">
+    <xsl:template match="mei:*[@state]" mode="getState">
         <xsl:variable name="name" select="local-name()" as="xs:string"/>
         <xsl:variable name="local.state" select="replace(@state,'#','')" as="xs:string"/>
         
@@ -661,7 +661,7 @@
         <xd:param name="focus.tstamp2"></xd:param>
         <xd:param name="focus.measures.ids"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:measure" mode="highlight.context">
+    <xsl:template match="mei:measure" mode="highlightContext">
         <xsl:param name="context.tstamp" tunnel="yes" as="xs:double"/>
         <xsl:param name="context.tstamp2" tunnel="yes" as="xs:double"/>
         <xsl:param name="focus.tstamp" tunnel="yes" as="xs:double?"/>
@@ -853,7 +853,7 @@
         <xd:param name="focus.tstamp"></xd:param>
         <xd:param name="focus.tstamp2"></xd:param>
     </xd:doc>
-    <xsl:template match="mei:staff//mei:*[@tstamp]" mode="highlight.context">
+    <xsl:template match="mei:staff//mei:*[@tstamp]" mode="highlightContext">
         <xsl:param name="context.start" tunnel="yes" as="xs:boolean"/>
         <xsl:param name="context.complete" tunnel="yes" as="xs:boolean"/>
         <xsl:param name="focus.start" tunnel="yes" as="xs:boolean?"/>
@@ -902,7 +902,7 @@
             <xd:p>This takes care of measure numbers</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:measure" mode="final.fixes">
+    <xsl:template match="mei:measure" mode="finalFixes">
         <xsl:choose>
             <xsl:when test="preceding::mei:measure">
                 <xsl:next-match/>
@@ -917,7 +917,7 @@
         </xsl:choose>
     </xsl:template>
     
-    <xsl:template match="mei:staffDef[ancestor::mei:scoreDef/@type='supplied']" mode="final.fixes">
+    <xsl:template match="mei:staffDef[ancestor::mei:scoreDef/@type='supplied']" mode="finalFixes">
         <xsl:copy>
             <xsl:apply-templates select="@* except (@meter.sig, @key.sig, @clef.line, @clef.shape, @label, @label)" mode="#current"/>
             <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">

@@ -17,7 +17,7 @@
         </xd:desc>
     </xd:doc>
     <xsl:include href="uuid.xsl"/>
-    <xsl:template match="mei:*[not(@xml:id)]" mode="add.id">
+    <xsl:template match="mei:*[not(@xml:id)]" mode="addId">
         <xsl:copy>
             <xsl:attribute name="xml:id" select="generate-id(.)"/>
             <xsl:apply-templates select="node() | @*" mode="#current"/>

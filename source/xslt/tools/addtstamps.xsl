@@ -9,7 +9,7 @@
         </xd:desc>
     </xd:doc>
     <xsl:output method="xml" indent="yes"/>
-    <xsl:template match="mei:measure" mode="add.tstamps">
+    <xsl:template match="mei:measure" mode="addTstamps">
         <xsl:variable name="meter.count" select="preceding::mei:scoreDef[@meter.count][1]/xs:integer(@meter.count)" as="xs:integer"/>
         <xsl:variable name="meter.unit" select="preceding::mei:scoreDef[@meter.unit][1]/xs:integer(@meter.unit)" as="xs:integer"/>
         <xsl:copy>
@@ -21,7 +21,7 @@
             </xsl:apply-templates>
         </xsl:copy>
     </xsl:template>
-    <xsl:template match="mei:layer" mode="add.tstamps">
+    <xsl:template match="mei:layer" mode="addTstamps">
         <xsl:param name="meter.count" tunnel="yes"/>
         <xsl:param name="meter.unit" tunnel="yes"/>
         <xsl:variable name="events" select=".//mei:*[(@dur and not((ancestor::mei:*[@dur] or ancestor::mei:bTrem or ancestor::mei:fTrem)) and not(@grace)) or (local-name() = ('bTrem','fTrem','beatRpt','halfmRpt'))]"/>
@@ -51,7 +51,7 @@
             </xsl:apply-templates>
         </xsl:copy>
     </xsl:template>
-    <xsl:template match="mei:layer//mei:*[(@dur and not((ancestor::mei:*[@dur] or ancestor::mei:bTrem or ancestor::mei:fTrem)) and not(@grace)) or (local-name() = ('bTrem','fTrem','beatRpt','halfmRpt'))]" mode="add.tstamps">
+    <xsl:template match="mei:layer//mei:*[(@dur and not((ancestor::mei:*[@dur] or ancestor::mei:bTrem or ancestor::mei:fTrem)) and not(@grace)) or (local-name() = ('bTrem','fTrem','beatRpt','halfmRpt'))]" mode="addTstamps">
         <xsl:param name="tstamps" tunnel="yes"/>
         <xsl:param name="meter.count" tunnel="yes"/>
         <xsl:param name="meter.unit" tunnel="yes"/>
@@ -109,7 +109,7 @@
         
     </xsl:template>
     
-    <xsl:template match="mei:layer//mei:note[(@dur and parent::mei:chord[@dur])]" mode="add.tstamps">
+    <xsl:template match="mei:layer//mei:note[(@dur and parent::mei:chord[@dur])]" mode="addTstamps">
         <xsl:param name="tstamps" tunnel="yes"/>
         <xsl:param name="meter.count" tunnel="yes"/>
         <xsl:param name="meter.unit" tunnel="yes"/>
@@ -164,21 +164,21 @@
         </xsl:choose>
     </xsl:template>
     
-    <xsl:template match="mei:mRest" mode="add.tstamps">
+    <xsl:template match="mei:mRest" mode="addTstamps">
         <xsl:copy>
             <xsl:apply-templates select="@*" mode="#current"/>
             <xsl:attribute name="tstamp" select="'1'"/>
             <xsl:apply-templates select="node()" mode="#current"/>
         </xsl:copy>
     </xsl:template>
-    <xsl:template match="mei:mSpace" mode="add.tstamps">
+    <xsl:template match="mei:mSpace" mode="addTstamps">
         <xsl:copy>
             <xsl:apply-templates select="@*" mode="#current"/>
             <xsl:attribute name="tstamp" select="'1'"/>
             <xsl:apply-templates select="node()" mode="#current"/>
         </xsl:copy>
     </xsl:template>
-    <xsl:template match="mei:mRpt" mode="add.tstamps">
+    <xsl:template match="mei:mRpt" mode="addTstamps">
         <xsl:copy>
             <xsl:apply-templates select="@*" mode="#current"/>
             <xsl:attribute name="tstamp" select="'1'"/>
