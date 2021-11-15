@@ -306,6 +306,36 @@ let $postDocs :=
 let $ante.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', 'anteRevision')
 let $post.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', 'postRevision')
 
+let $tags := 
+    let $all.categories :=
+        for $cat in distinct-values(($complaint.metamark/tokenize(normalize-space(@class),' '),$postDoc.contextAnnots/mei:annot/tokenize(normalize-space(@class),' ')))
+        let $id := substring($cat,2)
+        where $id ne 'bw_monitum' and $id ne 'bw_monitum_comment' (: todo: where to store the fully implemented?:)
+        return $corpus.head/id($id)
+    
+    let $objects := 
+        for $object in $all.categories/self::mei:category[@class = '#bw_monitum_object']
+        return $object/string(@xml:id)
+    
+    let $operations := 
+        for $operation in $all.categories/self::mei:category[@class = '#bw_monitum_textoperation']
+        return $operation/string(@xml:id)
+        
+    let $classes := 
+        for $class in $all.categories/self::mei:category[@class = '#bw_monitum_classification']
+        return $class/string(@xml:id)
+    
+    let $context.correct := 
+        for $context in $all.categories/self::mei:category[@class = '#bw_monitum_kontext']
+        return $context/string(@xml:id)
+    
+    return map {
+        'objects': array { $objects },
+        'operation': array { $operations },
+        'classes': array { $classes },
+        'context': array { $context.correct }
+    }
+
 return map {
     '@id': $public.complaint.id,
     'label': $complaint.metamark/string(@label),
@@ -317,5 +347,6 @@ return map {
     'text': map {
         'ante': $ante.text,
         'post': $post.text
-    }
+    },
+    'tags': $tags
 }

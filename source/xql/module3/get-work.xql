@@ -150,11 +150,16 @@ let $manifestations :=
 let $complaints := 
     for $complaint in $document.files//mei:metaMark['#bw_monitum' = tokenize(normalize-space(@class),' ')]
     let $complaint.id := $complaint/string(@xml:id)
-    let $complaint.classes := tokenize(normalize-space($complaint/@class),' ')
+    (: let $complaint.classes := tokenize(normalize-space($complaint/@class),' ') :)
     let $public.complaint.id := module3:getComplaintLink($document.id, $complaint.id)
     
     let $complaint.document.id := $complaint/ancestor::mei:mei//mei:manifestation/string(@xml:id)
     let $text.file.annots := $text.file//mei:annot[mei:relation[@rel = 'constituent'][substring-after(@target,'#') = $complaint.id]]
+    let $post.annots := 
+        for $annot in $text.file.annots
+        let $rel.target := $annot/mei:relation[@rel = 'preceding']/substring(@target,2)
+        let $target := $document.files/root()/id($rel.target)
+        return $target
     
     let $affects :=
         for $annot in $text.file.annots
@@ -216,9 +221,40 @@ let $complaints :=
             'staves': array { $staves }
         }
         
+    let $tags := 
+        let $all.categories :=
+            for $cat in distinct-values(($complaint/tokenize(normalize-space(@class),' '),$post.annots/mei:annot/tokenize(normalize-space(@class),' ')))
+            let $id := substring($cat,2)
+            where $id ne 'bw_monitum' and $id ne 'bw_monitum_comment' (: todo: where to store the fully implemented?:)
+            return $corpus.head/id($id)
+        
+        let $objects := 
+            for $object in $all.categories/self::mei:category[@class = '#bw_monitum_object']
+            return $object/string(@xml:id)
+        
+        let $operations := 
+            for $operation in $all.categories/self::mei:category[@class = '#bw_monitum_textoperation']
+            return $operation/string(@xml:id)
+            
+        let $classes := 
+            for $class in $all.categories/self::mei:category[@class = '#bw_monitum_classification']
+            return $class/string(@xml:id)
+        
+        let $context.correct := 
+            for $context in $all.categories/self::mei:category[@class = '#bw_monitum_kontext']
+            return $context/string(@xml:id)
+        
+        return map {
+            'objects': array { $objects },
+            'operation': array { $operations },
+            'classes': array { $classes },
+            'context': array { $context.correct }
+        }
+        
     return map {
         '@id': $public.complaint.id,
-        'affects': array { $affects }
+        'affects': array { $affects },
+        'tags': $tags
     }
 
 let $output := map {

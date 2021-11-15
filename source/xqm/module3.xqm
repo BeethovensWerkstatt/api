@@ -17,6 +17,7 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace map="http://www.w3.org/2005/xpath-functions/map";
 declare namespace tools="http://edirom.de/ns/tools";
 declare namespace ft="http://exist-db.org/xquery/lucene";
+declare namespace transform="http://exist-db.org/xquery/transform";
 
 declare function module3:getComplaintLink($file.id as xs:string, $complaint.id as xs:string) as xs:string {
     let $link := $config:module3-basepath || $file.id || '/complaints/' || $complaint.id || '.json'
@@ -106,7 +107,12 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
     let $all.pages.ids := distinct-values(for $zone in $zones return ($zone/ancestor::mei:surface/@xml:id))
     let $pageLabels := array { for $page.id in $all.pages.ids return module3:getPageLabelBySurface($document.file, $page.id) }
     
-        
+    let $comment := $doc.annot/mei:annot[contains(@class, '#bw_monitum_comment')]/element()
+    let $mei2html := $config:xslt-basepath || '../xslt/tools/mei2html.xsl'
+    let $html := transform:transform($comment, doc($mei2html), <parameters>
+            <param name="purpose" value="'comment'"/>
+        </parameters>)
+    
     return map {
         'work': $work.uri,
         'role': $role,
@@ -127,6 +133,7 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             'source': replace($source.id,'_',' '),
             'measures': $measureLabels,
             'pages': $pageLabels
-        }
+        },
+        'comment': serialize($html)
     }
 };
