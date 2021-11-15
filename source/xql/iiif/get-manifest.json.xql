@@ -152,11 +152,12 @@ let $sequences :=
             )
             else()
         
+        (: overlaysPlus/ has enriched SVG shapes, overlays/ has the plain file :)
         let $svgContent :=
             if($canvas/xi:include)
             then(
                 map {
-                    '@id': $document.uri || 'overlays/' || $canvas/xi:include/tokenize(normalize-space(@href),'/')[last()],
+                    '@id': $document.uri || 'overlaysPlus/' || $canvas/xi:include/tokenize(normalize-space(@href),'/')[last()],
                     '@type': 'sc:AnnotationList',
                     'within': map {
                         '@id': $document.uri || 'layer/svgShapes',

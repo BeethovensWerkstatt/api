@@ -19,6 +19,9 @@
     		<text match="//mei:zone/@data" analyzer="ws"/>
     		<text match="//mei:measure/@facs" analyzer="ws"/>
     		<text match="//mei:staff/@facs" analyzer="ws"/>
+            <text match="//@facs" analyzer="ws"/>
+            <text match="//@class" analyzer="ws"/>
+            <text match="//@target" analyzer="ws"/>
 		</lucene>
     </index>
 </collection>
