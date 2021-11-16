@@ -41,7 +41,7 @@ let $document.uri := $config:file-basepath || $document.id || '.xml'
 let $svg.file := $database//svg:svg[tokenize(document-uri(root()),'/')[last()] = $svg.file.name]
 let $svg.shape.IDs := $svg.file//svg:path/@id
 
-let $manifestation.file := $database/id($document.id)
+let $manifestation.file := $database/id($document.id)/ancestor-or-self::mei:mei
 let $manifestation.file.name := $manifestation.file/tokenize(document-uri(root()),'/')[last()]
 let $corpus.file := $database//mei:meiCorpus[xi:include[@href = 'manifestations/' ||$manifestation.file.name]]
 let $all.text.files := $database//mei:mei[.//mei:encodingDesc[@class = '#bw_module3_textFile']]
@@ -160,7 +160,7 @@ $enriched.svg
 (:<root 
     corpus="{$corpus.file/@xml:id}" 
     man.fil.name="{$manifestation.file.name}">
-    {$enriched.svg}
+    notes: {count($manifestation.file//@class)}
     {$links}
     {$monita}
 </root>:)
