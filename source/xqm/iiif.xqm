@@ -313,7 +313,8 @@ declare function iiif:getStructures_iiifPresentationAPI2($file as node(), $docum
         for $part.n in $part.n.values
         order by $part.n ascending
         let $part.elems := $file//mei:part[string(@n) = string($part.n)]
-        let $part.labels := distinct-values($part.elems/string(@label))
+        let $part.labels := distinct-values($part.elems/mei:scoreDef[1]//mei:labelAbbr[not(parent::mei:staffDef/ancestor::mei:staffGrp/mei:labelAbbr)]/text())
+        let $part.labels.long := distinct-values($part.elems/mei:scoreDef[1]//mei:label[not(parent::mei:staffDef/ancestor::mei:staffGrp/mei:label)]/text())
         
         (:let $measures := $part.elems//mei:measure
         let $facs.tokens := $measures/tokenize(substring(normalize-space(string(@facs)), 2), ' ') 
@@ -337,7 +338,7 @@ declare function iiif:getStructures_iiifPresentationAPI2($file as node(), $docum
         return map {
             '@id': $id, 
             '@type': $type,
-            'description': 'Part ' || $part.n,
+            'description': 'Part ' || $part.n || ', ' || string-join($part.labels.long,' '),
             'label': $label,
             'ranges': array { $part.mdivs }
         }

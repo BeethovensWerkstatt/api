@@ -47,7 +47,7 @@ let $mei.file := $manifestation/ancestor::mei:mei
 let $facsimile := $mei.file//mei:facsimile
 
 (: TODO: Hier was aus dem Header nehmen?:)
-let $manifestation.label := $manifestation/string(@label)
+let $manifestation.label := $manifestation/mei:physLoc/mei:repository/mei:identifier[@auth = 'RISM']/text() || ' ' || $manifestation/mei:physLoc/mei:identifier/text()
 
 let $iiif.manifest := $config:iiif-basepath || 'document/' || $manifestation.id || '/manifest.json'
 
