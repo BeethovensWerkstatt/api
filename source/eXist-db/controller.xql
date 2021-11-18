@@ -252,6 +252,24 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.mei$')
     </dispatch>
 ) else
 
+(: get Info about an element :)
+if(matches($exist:path,'/desc/[\da-zA-Z-_\.,]+.json$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    
+    let $element.id := substring-before(tokenize($exist:path,'/')[last()],'.json')
+    let $lang := 'de'
+
+    return
+    
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/tools/get_element_description_as_JSON.xql">
+          (: pass in the UUID of the document passed in the URI :)
+            <add-parameter name="element.id" value="{$element.id}"/>
+            <add-parameter name="lang" value="{$lang}"/>
+        </forward>
+    </dispatch>
+) else
+
 (: endpoint for index.html :)
 if ($exist:path eq "/index.html") then (
     (: forward root path to index.xql :)
