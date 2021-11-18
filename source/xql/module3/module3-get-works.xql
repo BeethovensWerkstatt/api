@@ -35,6 +35,16 @@ let $database := collection($config:module3-root)
 :)
 let $files :=
   for $file in $database//mei:meiCorpus[@xml:id]
+  let $rawTitle := $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']/text()
+  let $opusNum := 
+    if(contains($rawTitle,'Op.'))
+    then(xs:integer(normalize-space(substring-after($rawTitle,'Op.'))))
+    else if(contains($rawTitle,'WoO'))
+    then(xs:integer(normalize-space(substring-after($rawTitle,'WoO'))) + 1000)
+    else(5000)    
+  
+  order by $opusNum ascending
+  
   let $workCorpus.id := $file/string(@xml:id)
   let $external.id := $config:module3-basepath || $workCorpus.id || '.json'
   let $title := 
