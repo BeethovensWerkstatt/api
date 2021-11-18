@@ -243,12 +243,17 @@ let $complaints :=
         let $context.correct := 
             for $context in $all.categories/self::mei:category[@class = '#bw_monitum_kontext']
             return $context/string(@xml:id)
+            
+        let $implementation := 
+            for $class in $all.categories/self::mei:category[@class = '#bw_implementation_completeness']
+            return $class/string(@xml:id)
         
         return map {
             'objects': array { $objects },
             'operation': array { $operations },
             'classes': array { $classes },
-            'context': array { $context.correct }
+            'context': array { $context.correct },
+            'implementation': array { $implementation }
         }
         
     return map {
