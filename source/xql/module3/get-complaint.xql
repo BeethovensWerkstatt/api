@@ -308,7 +308,7 @@ let $post.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/stri
 
 let $tags := 
     let $all.categories :=
-        for $cat in distinct-values(($complaint.metamark/tokenize(normalize-space(@class),' '),$postDoc.contextAnnots/mei:annot/tokenize(normalize-space(@class),' ')))
+        for $cat in distinct-values(($complaint.metamark/tokenize(normalize-space(@class),' '),$postDoc.contextAnnots//tokenize(normalize-space(@class),' ')))
         let $id := substring($cat,2)
         where $id ne 'bw_monitum' and $id ne 'bw_monitum_comment' (: todo: where to store the fully implemented?:)
         return $corpus.head/id($id)
@@ -328,12 +328,17 @@ let $tags :=
     let $context.correct := 
         for $context in $all.categories/self::mei:category[@class = '#bw_monitum_kontext']
         return $context/string(@xml:id)
+        
+    let $implementation := 
+        for $class in $all.categories/self::mei:category[@class = '#bw_implementation_completeness']
+        return $class/string(@xml:id)
     
     return map {
         'objects': array { $objects },
         'operation': array { $operations },
         'classes': array { $classes },
-        'context': array { $context.correct }
+        'context': array { $context.correct },
+        'implementation': array { $implementation }
     }
 
 return map {
