@@ -54,7 +54,7 @@ let $xslt := $config:xslt-basepath || '../xslt/module3/get-stateless-complaint-t
 let $monita := 
     for $context.annot in $manifestation.file//@class[ft:query(.,'#bw_monitum_context')]/parent::node() 
     let $monitum.effect := $all.text.files//@target[ft:query(.,'#' || $context.annot/@xml:id)]/parent::mei:relation/parent::mei:annot
-    let $monitum.id := $monitum.effect/mei:relation[@rel = 'constituent']/substring(@target,2)
+    let $monitum.id := $monitum.effect/mei:relation[@rel = 'constituent']/substring(normalize-space(@target),2)
     let $source.id := $manifestation.file//mei:manifestation/@xml:id
     
     let $measure.count := 
