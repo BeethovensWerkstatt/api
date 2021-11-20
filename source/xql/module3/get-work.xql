@@ -223,11 +223,11 @@ let $complaints :=
         
     let $tags := 
         let $all.categories :=
-            for $cat in distinct-values(($complaint/tokenize(normalize-space(@class),' '),$post.annots/mei:annot/tokenize(normalize-space(@class),' ')))
+            for $cat in distinct-values(($complaint/tokenize(normalize-space(@class),' '),$post.annots//tokenize(normalize-space(@class),' ')))
             let $id := substring($cat,2)
             where $id ne 'bw_monitum' and $id ne 'bw_monitum_comment' (: todo: where to store the fully implemented?:)
             return $corpus.head/id($id)
-        
+            
         let $objects := 
             for $object in $all.categories/self::mei:category[@class = '#bw_monitum_object']
             return $object/string(@xml:id)
