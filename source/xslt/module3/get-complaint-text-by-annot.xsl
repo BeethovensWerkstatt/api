@@ -1025,6 +1025,15 @@
     
     <xd:doc>
         <xd:desc>
+            <xd:p>Get regular staff out of ossia, as Verovio doesn't do ossia yet</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:ossia" mode="finalFixes">
+        <xsl:apply-templates select="child::mei:staff" mode="#current"/>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
             <xd:p>A simple, mode-sensitive copy-template</xd:p>
         </xd:desc>
     </xd:doc>
