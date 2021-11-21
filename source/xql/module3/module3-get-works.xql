@@ -34,8 +34,8 @@ let $database := collection($config:module3-root)
     - have no facsimiles in them (TODO: find a better way to identify work files, maybe using @class)
 :)
 let $files :=
-  for $file in $database//mei:meiCorpus[@xml:id]
-  where not($file/@xml:id = 't0c09f04e-e36d-4eaa-a064-029b5a232332') (:TODO: excludes op.127:)
+  for $file in $database//mei:meiCorpus[@xml:id and not(@xml:id = ('t0c09f04e-e36d-4eaa-a064-029b5a232332', 'xfae46dc1-e2dc-412a-a27c-91a31cd18ab8'))]
+  (:exclude op.120, op.127:)
   let $rawTitle := $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']/text()
   let $opusNum := 
     if(contains($rawTitle,'Op.'))
