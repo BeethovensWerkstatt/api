@@ -35,6 +35,7 @@ let $database := collection($config:module3-root)
 :)
 let $files :=
   for $file in $database//mei:meiCorpus[@xml:id]
+  where not($file/@xml:id = 't0c09f04e-e36d-4eaa-a064-029b5a232332') (:TODO: excludes op.127:)
   let $rawTitle := $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']/text()
   let $opusNum := 
     if(contains($rawTitle,'Op.'))
