@@ -614,6 +614,11 @@
         <xsl:if test="'#' || $source.id = tokenize(normalize-space(@source),' ')">
             <xsl:next-match/>
         </xsl:if>
+        
+        <!-- this is probably coming from the text -->
+        <xsl:if test="$source.id = '' and local-name() = 'corr' and parent::mei:choice">
+            <xsl:next-match/>
+        </xsl:if>
     </xsl:template>
     
     <xd:doc>
