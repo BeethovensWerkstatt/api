@@ -609,8 +609,8 @@ declare function bw:getMetaMarkDesc($metaMark as node(), $doc as node(), $lang a
         if($metaMark/@function = 'navigation')
         then(
             if($metaMark/@target)
-            then(bw:getI18n('link.origin',$lang))
-            else(bw:getI18n('link.target',$lang))
+            then(bw:getI18n('link.origin',$lang) || ': ' || string-join($metaMark//text(),' '))
+            else(bw:getI18n('link.target',$lang) || ': ' || string-join($metaMark//text(),' '))
             
         ) else if($metaMark/@function = 'confirmation')
         then(
