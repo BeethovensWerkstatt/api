@@ -983,7 +983,7 @@
             <xd:p>If there are metaMarks with @place=rightmar, this will render them</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:measure[not(following::mei:measure)]" mode="finalFixes">
+    <xsl:template match="mei:measure[not(following::mei:measure)]" mode="finalFixes" priority="1">
         <xsl:next-match/>
         <xsl:variable name="metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='rightmar'] | .//mei:metaMark[@place='rightmar'])" as="element(mei:metaMark)*"/>
         
@@ -1005,6 +1005,22 @@
             </measure>
         </xsl:if>
         
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Make metaMarks render with Verovio</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:metaMark['translate_dir' = tokenize(@class)]" mode="finalFixes">
+        <dir xmlns="http://www.music-encoding.org/ns/mei" type="metaMark">
+            <xsl:apply-templates select="@*" mode="#current"/>
+            <xsl:if test="'place_above' = tokenize(@class)">
+                <xsl:attribute name="place" select="'above'"/>
+                <xsl:attribute name="staff" select="'1'"/>
+            </xsl:if>
+            <xsl:apply-templates select="node()" mode="#current"/>
+        </dir>
     </xsl:template>
     
     <xd:doc>
