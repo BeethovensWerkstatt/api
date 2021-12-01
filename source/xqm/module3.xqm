@@ -19,6 +19,10 @@ declare namespace tools="http://edirom.de/ns/tools";
 declare namespace ft="http://exist-db.org/xquery/lucene";
 declare namespace transform="http://exist-db.org/xquery/transform";
 
+declare function module3:addConditionally($map, $key, $data) as map(*) {
+  if (exists($data)) then map:put($map, $key, $data) else $map
+};
+
 declare function module3:getComplaintLink($file.id as xs:string, $complaint.id as xs:string) as xs:string {
     let $link := $config:module3-basepath || $file.id || '/complaints/' || $complaint.id || '.json'
     return $link
@@ -50,7 +54,16 @@ declare function module3:getPageLabelBySurface($file as node(), $surfaceId as xs
     return string($label)
 };
 
-declare function module3:getEmbodiment($file.id as xs:string, $complaint as node(), $source.id as xs:string, $role as xs:string, $affected.measures as node()+, $affected.staves as xs:string*, $text.file as node(), $document.file as node(), $text.annot as node(), $doc.annot as node()) as map(*) {
+declare function module3:getEmbodiment($file.id as xs:string, 
+    $complaint as node(), 
+    $source.id as xs:string, 
+    $role as xs:string, 
+    $affected.measures as node()+, 
+    $affected.staves as xs:string*, 
+    $text.file as node(), 
+    $document.file as node(), 
+    $text.annot as node(), 
+    $doc.annot as node()) as map(*) {
     (: 
         allowed values for $role: 
         - 'ante'
@@ -58,6 +71,11 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         - 'revision'
     :)
     let $work.uri := $config:module3-basepath || $file.id || '.json'
+    
+    let $document.type := 
+        if($complaint/ancestor::tei:*)
+        then('tei')
+        else('mei')
     
     let $file := $text.file/root()
     
@@ -92,8 +110,6 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         then($complaint/string(@xml:id))
         else('')
     
-    let $context := ef:getMeiByContextLink($file.id, $doc.annot/string(@xml:id), $focus.link, $source.id, $state.id)
-
     let $iiif := iiif:getRectangle($document.file, $zones, true()) (:map {
             'zones': count($zones),
             'dataTargets': count($data.targets),
@@ -113,10 +129,9 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
             <param name="purpose" value="'comment'"/>
         </parameters>)
     
-    return map {
+    let $basemap := map {
         'work': $work.uri,
         'role': $role,
-        'mei': $context,
         'iiif': array { $iiif },
         (:'test': map {
             'fileId': string($file.id),
@@ -136,4 +151,16 @@ declare function module3:getEmbodiment($file.id as xs:string, $complaint as node
         },
         'comment': serialize($html)
     }
+    
+    let $enhancedMap := 
+        if($document.type = 'mei')
+        then(
+            let $context := ef:getMeiByContextLink($file.id, $doc.annot/string(@xml:id), $focus.link, $source.id, $state.id)
+            return module3:addConditionally($basemap, 'mei', $context)
+        ) else (
+            let $context := ef:getTeiByContextLink($file.id, $doc.annot/string(@xml:id), $source.id, $state.id)
+            return module3:addConditionally($basemap, 'tei', $context)
+        )
+    
+    return $enhancedMap
 };

@@ -252,6 +252,29 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.mei$')
     </dispatch>
 ) else
 
+(: get TEI extract for showing a single complaint's text :)
+if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.tei$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    
+    let $document.id := tokenize($exist:path,'/')[last() - 2]
+    let $last.section := tokenize($exist:path,'/')[last()]
+    let $context.id := substring(tokenize($exist:path,'/')[last()],1,string-length(tokenize($exist:path,'/')[last()]) - 4)
+    let $source.id := request:get-parameter('source', '')
+    let $state.id := request:get-parameter('state', '')
+
+    return
+    
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module3/get-complaint-TEI-text-by-annot.xql">
+          (: pass in the UUID of the document passed in the URI :)
+            <add-parameter name="document.id" value="{$document.id}"/>
+            <add-parameter name="context.id" value="{$context.id}"/>
+            <add-parameter name="source.id" value="{$source.id}"/>
+            <add-parameter name="state.id" value="{$state.id}"/>
+        </forward>
+    </dispatch>
+) else
+
 (: get Info about an element :)
 if(matches($exist:path,'/desc/[\da-zA-Z-_\.,]+.json$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
