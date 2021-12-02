@@ -225,8 +225,9 @@
                                             <xsl:variable name="trans.semi" select="if($trans.elem) then($trans.elem/@trans.semi) else()" as="xs:string?"/>
                                             <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                             
-                                            
-                                            <staffDef n="{$current.staff.n.in.group}" lines="5">
+                                            <xsl:element name="staffDef" namespace="http://www.music-encoding.org/ns/mei">
+                                                <xsl:attribute name="n" select="$current.staff.n.in.group"/>
+                                                <xsl:attribute name="lines" select="'5'"/>
                                                 <xsl:if test="exists($staff.label) and not($staffGrp.symbol)">
                                                     <xsl:attribute name="label" select="$staff.label"/>
                                                 </xsl:if>
@@ -240,7 +241,22 @@
                                                     <xsl:attribute name="trans.diat" select="$trans.diat"/>
                                                 </xsl:if>
                                                 <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
-                                            </staffDef>
+                                            </xsl:element>
+                                            <!--<staffDef n="{$current.staff.n.in.group}" lines="5">
+                                                <xsl:if test="exists($staff.label) and not($staffGrp.symbol)">
+                                                    <xsl:attribute name="label" select="$staff.label"/>
+                                                </xsl:if>
+                                                <xsl:attribute name="clef.shape" select="$clef.shape"/>
+                                                <xsl:attribute name="clef.line" select="$clef.line"/>
+                                                <xsl:if test="exists($staff.key.sig)">
+                                                    <xsl:attribute name="key.sig" select="$staff.key.sig"/>
+                                                </xsl:if>
+                                                <xsl:if test="exists($trans.elem)">
+                                                    <xsl:attribute name="trans.semi" select="$trans.semi"/>
+                                                    <xsl:attribute name="trans.diat" select="$trans.diat"/>
+                                                </xsl:if>
+                                                <xsl:comment select="'clef: ' || $clef.elem/@xml:id || ', measure ' || $clef.elem/ancestor::mei:measure/@label || ', staff ' || $clef.elem/ancestor::mei:staff/@n"/>
+                                            </staffDef>-->
                                         </xsl:for-each>
                                     </xsl:variable>
                                     <xsl:sequence select="$staffDefs"/>
@@ -439,10 +455,8 @@
             <xsl:comment select="'source: ' || $source.id"/>
             <body>
                 <mdiv>
-                    <xsl:comment select="'focus.id: ' || $focus.id"/>
-                    <xsl:comment select="'context.id: ' || $context.id"/>
-                    <xsl:sequence select="$final.text"/>
                     <!--<xsl:sequence select="$ranges"/>-->
+                    <xsl:sequence select="$final.text"/>
                 </mdiv>
             </body>
         </music>
@@ -662,7 +676,10 @@
                 <xsl:apply-templates select=".//mei:restore[replace(@changeState,'#','') = $activated.states.ids]/child::node()" mode="#current"/>
             </xsl:when>
             <xsl:when test="$name = 'del' and not($local.state = $activated.states.ids)">
-                <xsl:apply-templates select="child::node()" mode="#current"/>
+                <xsl:copy>
+                    <xsl:attribute name="type" select="normalize-space(@type || ' futureDeletion')"/>
+                    <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
+                </xsl:copy>
             </xsl:when>
             <xsl:when test="$name = 'restore' and $local.state = $activated.states.ids">
                 <xsl:comment>******Restore starts*******</xsl:comment>
@@ -980,6 +997,34 @@
                 </label>
             </xsl:if>
             <xsl:apply-templates select="node()" mode="#current"/>
+        </xsl:copy>
+    </xsl:template>
+    
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Translates metaMarks to dir for rendition with Verovio</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:metaMark[@place = ('above', 'below')]" mode="finalFixes">
+        <dir xmlns="http://www.music-encoding.org/ns/mei">
+            <xsl:attribute name="type" select="string-join((string(@type),'metaMark'), ' ')"/>
+            <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
+        </dir>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Translate dot elements to attributes</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:*[.//mei:dot]" mode="finalFixes">
+        <xsl:copy>
+            <xsl:attribute name="dots" select="count(.//mei:dot)"/>
+            <xsl:if test="@facs or .//mei:dots/@facs">
+                <xsl:attribute name="facs" select="string-join((@facs, .//mei:dots/@facs), ' ')"/>    
+            </xsl:if>
+            <xsl:apply-templates select="node() | @* except @facs" mode="#current"/>
         </xsl:copy>
     </xsl:template>
     
