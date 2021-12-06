@@ -668,18 +668,19 @@
                     <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
                 </xsl:copy>
             </xsl:when>
+            <!-- in source transcriptions, it might be necessary to render current deletions -->
+            <xsl:when test="$name = 'del' and $local.state = $state.id and string-length($source.id) gt 0">
+                <xsl:copy>
+                    <xsl:attribute name="type" select="normalize-space(@type || ' currentAction del')"/>
+                    <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
+                </xsl:copy>
+            </xsl:when>
             <xsl:when test="$name = 'add' and $local.state = $activated.states.ids">
                 <xsl:apply-templates select="child::node()" mode="#current"/>
             </xsl:when>
             <xsl:when test="$name = 'add' and not($local.state = $activated.states.ids)"/>
             <xsl:when test="$name = 'del' and $local.state = $activated.states.ids">
                 <xsl:apply-templates select=".//mei:restore[replace(@changeState,'#','') = $activated.states.ids]/child::node()" mode="#current"/>
-            </xsl:when>
-            <xsl:when test="$name = 'del' and not($local.state = $activated.states.ids)">
-                <xsl:copy>
-                    <xsl:attribute name="type" select="normalize-space(@type || ' futureDeletion')"/>
-                    <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
-                </xsl:copy>
             </xsl:when>
             <xsl:when test="$name = 'restore' and $local.state = $activated.states.ids">
                 <xsl:comment>******Restore starts*******</xsl:comment>
@@ -1034,10 +1035,18 @@
         </xd:desc>
     </xd:doc>
     <xsl:template match="mei:measure[not(following::mei:measure)]" mode="finalFixes" priority="1">
-        <xsl:next-match/>
-        <xsl:variable name="metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='rightmar'] | .//mei:metaMark[@place='rightmar'])" as="element(mei:metaMark)*"/>
+        <xsl:copy>
+            <xsl:apply-templates select="node() | @*" mode="#current"/>
+            
+            <xsl:variable name="botmar.metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='botmar'] | .//mei:metaMark[@place='botmar'])" as="element(mei:metaMark)*"/>
+            <xsl:for-each select="$botmar.metaMarks">
+                <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+            </xsl:for-each>
+        </xsl:copy>
         
-        <xsl:if test="exists($metaMarks)">
+        <xsl:variable name="rightmar.metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='rightmar'] | .//mei:metaMark[@place='rightmar'])" as="element(mei:metaMark)*"/>
+        
+        <xsl:if test="exists($rightmar.metaMarks)">
             <measure xmlns="http://www.music-encoding.org/ns/mei">
                 <xsl:attribute name="type" select="'invis'"/>
                 <xsl:for-each select="./mei:staff">
@@ -1047,7 +1056,7 @@
                         </layer>
                     </staff>
                 </xsl:for-each>
-                <xsl:for-each select="$metaMarks">
+                <xsl:for-each select="$rightmar.metaMarks">
                     <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
                         <xsl:apply-templates select="node()" mode="#current"/>
                     </dir> 
@@ -1062,16 +1071,23 @@
             <xd:p>Make metaMarks render with Verovio</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:metaMark['translate_dir' = tokenize(@class)]" mode="finalFixes">
+    <xsl:template match="mei:metaMark['translate_dir' = tokenize(@type)]" mode="finalFixes" priority="1">
         <dir xmlns="http://www.music-encoding.org/ns/mei" type="metaMark">
             <xsl:apply-templates select="@*" mode="#current"/>
-            <xsl:if test="'place_above' = tokenize(@class)">
+            <xsl:if test="'place_above' = tokenize(@type)">
                 <xsl:attribute name="place" select="'above'"/>
                 <xsl:attribute name="staff" select="'1'"/>
             </xsl:if>
             <xsl:apply-templates select="node()" mode="#current"/>
         </dir>
     </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>These metaMarks are translated to other markup and are removed to avoid ID collisions</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:metaMark[@place = ('rightmar','leftmar','botmar')]" mode="finalFixes"/>
     
     <xd:doc>
         <xd:desc>
