@@ -1077,6 +1077,12 @@
             <xsl:if test="'place_above' = tokenize(@type)">
                 <xsl:attribute name="place" select="'above'"/>
                 <xsl:attribute name="staff" select="'1'"/>
+                <xsl:attribute name="tstamp" select="'0'"/>
+            </xsl:if>
+            <xsl:if test="'place_below' = tokenize(@type)">
+                <xsl:attribute name="place" select="'above'"/>
+                <xsl:attribute name="staff" select="'1'"/>
+                <xsl:attribute name="tstamp" select="'0'"/>
             </xsl:if>
             <xsl:apply-templates select="node()" mode="#current"/>
         </dir>
