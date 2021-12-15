@@ -971,26 +971,70 @@
         </xsl:choose>
     </xsl:template>
     
+    <!-- clean up scoreDef for supplements -->
     <xsl:template match="mei:staffDef[ancestor::mei:scoreDef/@type='supplied']" mode="finalFixes">
         <xsl:copy>
             <xsl:apply-templates select="@* except (@meter.sig, @key.sig, @clef.line, @clef.shape, @label, @label)" mode="#current"/>
-            <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
-                <xsl:attribute name="count" select="ancestor-or-self::mei:*[@meter.count][1]/@meter.count"/>
-                <xsl:attribute name="unit" select="ancestor-or-self::mei:*[@meter.unit][1]/@meter.unit"/>
-                <xsl:if test="ancestor-or-self::mei:*[@meter.sym]">
-                    <xsl:attribute name="sym" select="ancestor-or-self::mei:*[@meter.sym][1]/@meter.sym"/>
-                </xsl:if>
-            </meterSig>
+            
+            <xsl:variable name="count" select="string(ancestor-or-self::mei:*[@meter.count][1]/@meter.count)" as="xs:string"/>
+            <xsl:variable name="unit" select="string(ancestor-or-self::mei:*[@meter.unit][1]/@meter.unit)" as="xs:string"/>
+            <xsl:variable name="sym" select="string(ancestor-or-self::mei:*[@meter.sym])" as="xs:string?"/>
+            
+            <xsl:variable name="staff.n" select="string(@n)" as="xs:string"/>
+            <xsl:variable name="written.meterSig" select="(ancestor::mei:score//mei:measure)[1]/mei:staff[@n = $staff.n]//mei:meterSig[count(preceding-sibling::mei:*[not(local-name() = ('keySig','meterSig','clef'))]) = 0]" as="element(mei:meterSig)*"/>
+            
+            <xsl:choose>
+                <xsl:when test="exists($written.meterSig) and $written.meterSig/@count = $count and $written.meterSig/@unit = $unit">
+                    <xsl:sequence select="$written.meterSig"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                        <xsl:attribute name="count" select="ancestor-or-self::mei:*[@meter.count][1]/@meter.count"/>
+                        <xsl:attribute name="unit" select="ancestor-or-self::mei:*[@meter.unit][1]/@meter.unit"/>
+                        <xsl:if test="ancestor-or-self::mei:*[@meter.sym]">
+                            <xsl:attribute name="sym" select="ancestor-or-self::mei:*[@meter.sym][1]/@meter.sym"/>
+                        </xsl:if>
+                    </meterSig>
+                </xsl:otherwise>
+            </xsl:choose>
+            
             <xsl:if test="ancestor-or-self::mei:*/@key.sig">
-                <keySig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
-                    <xsl:attribute name="sig" select="ancestor-or-self::mei:*[@key.sig][1]/@key.sig"/>
-                </keySig>
+                
+                <xsl:variable name="sig" select="string(@key.sig)" as="xs:string"/>
+                <xsl:variable name="staff.n" select="string(@n)" as="xs:string"/>
+                <xsl:variable name="written.keySig" select="(ancestor::mei:score//mei:measure)[1]/mei:staff[@n = $staff.n]//mei:keySig[count(preceding-sibling::mei:*[not(local-name() = ('keySig','meterSig','clef'))]) = 0]" as="element(mei:keySig)*"/>
+                
+                <xsl:choose>
+                    <xsl:when test="exists($written.keySig) and $written.keySig/@sig = $sig">
+                        <xsl:sequence select="$written.keySig"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <keySig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                            <xsl:attribute name="sig" select="ancestor-or-self::mei:*[@key.sig][1]/@key.sig"/>
+                        </keySig>
+                    </xsl:otherwise>
+                </xsl:choose>
+                
             </xsl:if>
             <xsl:if test="@clef.line">
-                <clef type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
-                    <xsl:attribute name="line" select="ancestor-or-self::mei:*[@clef.line][1]/@clef.line"/>
-                    <xsl:attribute name="shape" select="ancestor-or-self::mei:*[@clef.shape][1]/@clef.shape"/>
-                </clef>
+                
+                <xsl:variable name="line" select="string(@clef.line)" as="xs:string"/>
+                <xsl:variable name="shape" select="string(@clef.shape)" as="xs:string"/>
+                <xsl:variable name="staff.n" select="string(@n)" as="xs:string"/>
+                <xsl:variable name="written.clef" select="(ancestor::mei:score//mei:measure)[1]/mei:staff[@n = $staff.n]//mei:clef[count(preceding-sibling::mei:*[not(local-name() = ('keySig','meterSig','clef'))]) = 0]" as="element(mei:clef)*"/>
+                
+                <xsl:choose>
+                    <xsl:when test="exists($written.clef) and $written.clef/@shape = $shape and $written.clef/@line = $line">
+                        <xsl:sequence select="$written.clef"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <clef type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
+                            <xsl:attribute name="line" select="ancestor-or-self::mei:*[@clef.line][1]/@clef.line"/>
+                            <xsl:attribute name="shape" select="ancestor-or-self::mei:*[@clef.shape][1]/@clef.shape"/>
+                        </clef>
+                    </xsl:otherwise>
+                </xsl:choose>
+                
             </xsl:if>
             <xsl:if test="@label">
                 <label type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
@@ -1076,14 +1120,26 @@
             <xsl:apply-templates select="@*" mode="#current"/>
             <xsl:if test="'place_above' = tokenize(@type)">
                 <xsl:attribute name="place" select="'above'"/>
-                <xsl:attribute name="staff" select="'1'"/>
-                <xsl:attribute name="tstamp" select="'0'"/>
             </xsl:if>
             <xsl:if test="'place_below' = tokenize(@type)">
-                <xsl:attribute name="place" select="'above'"/>
-                <xsl:attribute name="staff" select="'1'"/>
-                <xsl:attribute name="tstamp" select="'0'"/>
+                <xsl:attribute name="place" select="'below'"/>
             </xsl:if>
+            <xsl:choose>
+                <xsl:when test="not(@staff)">
+                    <xsl:attribute name="staff" select="'1'"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:copy-of select="@staff"/>
+                </xsl:otherwise>
+            </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="not(@tstamp)">
+                    <xsl:attribute name="tstamp" select="'0'"/>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:copy-of select="@tstamp"/>
+                </xsl:otherwise>
+            </xsl:choose>
             <xsl:apply-templates select="node()" mode="#current"/>
         </dir>
     </xsl:template>
@@ -1102,6 +1158,93 @@
     </xd:doc>
     <xsl:template match="mei:ossia" mode="finalFixes">
         <xsl:apply-templates select="child::mei:staff" mode="#current"/>
+    </xsl:template>
+    
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Avoid duplicate identical clefs at the begin of an excerpt</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:clef" mode="finalFixes">
+        <xsl:choose>
+            <!-- this is a clef right at the start of a staff -->
+            <xsl:when test="ancestor::mei:measure[count(preceding::mei:measure) = 0] and count(preceding-sibling::mei:*) = 0">
+                <xsl:variable name="line" select="string(@line)" as="xs:string"/>
+                <xsl:variable name="shape" select="string(@shape)" as="xs:string"/>
+                <xsl:variable name="staff.n" select="string(ancestor::mei:staff/@n)" as="xs:string"/>
+                <xsl:variable name="starting.clef" select="ancestor::mei:score/mei:scoreDef[1][@type = 'supplied']//mei:staffDef[@n = $staff.n][@clef.line and @clef.shape]" as="element(mei:staffDef)?"/>
+                <xsl:choose>
+                    <xsl:when test="exists($starting.clef) and $starting.clef/@clef.shape = $shape and $starting.clef/@clef.line = $line">
+                        <xsl:comment select="'promoting clef to first staffDef'"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:next-match/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <!-- this is a different clef -->
+            <xsl:otherwise>
+                <xsl:next-match/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Avoid duplicate identical keySigs at the begin of an excerpt</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:keySig" mode="finalFixes">
+        <xsl:choose>
+            <!-- this is a keySig right at the start of a staff -->
+            <xsl:when test="ancestor::mei:measure[count(preceding::mei:measure) = 0] and count(preceding-sibling::mei:*) = 0">
+                <xsl:variable name="sig" select="string(@sig)" as="xs:string"/>
+                <xsl:variable name="staff.n" select="string(ancestor::mei:staff/@n)" as="xs:string"/>
+                <xsl:variable name="starting.keySig" select="ancestor::mei:score/mei:scoreDef[1][@type = 'supplied']//mei:staffDef[@n = $staff.n]/ancestor-or-self::mei:*[@keySig]" as="element()?"/>
+                <xsl:choose>
+                    <xsl:when test="exists($starting.keySig) and $starting.keySig[1]/@key.sig = $sig">
+                        <xsl:comment select="'promoting keySig to first staffDef'"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:next-match/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <!-- this is a different keySig -->
+            <xsl:otherwise>
+                <xsl:next-match/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Avoid duplicate identical meterSigs at the begin of an excerpt</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:meterSig" mode="finalFixes">
+        <xsl:choose>
+            <!-- this is a keySig right at the start of a staff -->
+            <xsl:when test="ancestor::mei:measure[count(preceding::mei:measure) = 0] and count(preceding-sibling::mei:*) = 0">
+                <xsl:variable name="count" select="string(@count)" as="xs:string"/>
+                <xsl:variable name="unit" select="string(@unit)" as="xs:string"/>
+                <xsl:variable name="staff.n" select="string(ancestor::mei:staff/@n)" as="xs:string"/>
+                <xsl:variable name="starting.meterSig" select="ancestor::mei:score/mei:scoreDef[1][@type = 'supplied']//mei:staffDef[@n = $staff.n]/ancestor-or-self::mei:*[@meter.count and @meter.unit]" as="element()?"/>
+                <xsl:choose>
+                    <xsl:when test="exists($starting.meterSig) and $starting.meterSig/@meter.count = $count and $starting.meterSig/@meter.unit = $unit">
+                        <xsl:comment select="'promoting meterSig to first staffDef'"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:next-match/>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:when>
+            <!-- this is a different meterSig -->
+            <xsl:otherwise>
+                <xsl:next-match/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     
     <xd:doc>
