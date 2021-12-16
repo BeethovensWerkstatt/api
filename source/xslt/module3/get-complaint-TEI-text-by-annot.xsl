@@ -43,6 +43,7 @@
     <xsl:param name="state.id" as="xs:string"/>
     
     <xsl:param name="text.file" as="xs:string"/>
+    
     <xsl:variable name="text.doc" select="parse-xml($text.file)" as="node()"/>
 
     <xd:doc>
@@ -81,7 +82,15 @@
     </xsl:variable>
     
     <xsl:variable name="cleaned.state" as="node()*">
-        <xsl:apply-templates select="$cleaned.source" mode="getState"/>
+        <xsl:choose>
+            <xsl:when test="$state.id = ''">
+                <xsl:sequence select="$cleaned.source"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:apply-templates select="$cleaned.source" mode="getState"/>
+            </xsl:otherwise>
+        </xsl:choose>
+        
     </xsl:variable>
     
     <xsl:variable name="translated.tei" as="node()*">
