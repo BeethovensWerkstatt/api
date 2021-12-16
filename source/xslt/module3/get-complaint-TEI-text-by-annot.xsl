@@ -82,15 +82,7 @@
     </xsl:variable>
     
     <xsl:variable name="cleaned.state" as="node()*">
-        <xsl:choose>
-            <xsl:when test="$state.id = ''">
-                <xsl:sequence select="$cleaned.source"/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:apply-templates select="$cleaned.source" mode="getState"/>
-            </xsl:otherwise>
-        </xsl:choose>
-        
+        <xsl:apply-templates select="$cleaned.source" mode="getState"/>
     </xsl:variable>
     
     <xsl:variable name="translated.tei" as="node()*">
@@ -98,7 +90,16 @@
     </xsl:variable>
     
     <xsl:variable name="final.fixes" as="node()*">
-        <xsl:apply-templates select="$translated.tei" mode="finalFixes"/>
+        <xsl:choose>
+            <xsl:when test="$state.id = ''">
+                <xsl:comment select="'kept TEI'"/>
+                <xsl:sequence select="$cleaned.source"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:comment select="'processed to HTML ' || $state.id"/>
+                <xsl:apply-templates select="$translated.tei" mode="finalFixes"/>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:variable>
     
     <xd:doc scope="component">
@@ -203,7 +204,11 @@
             <xd:p>Drop all facs attributes</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="@facs" mode="#all"/>
+    <xsl:template match="@facs" mode="#all">
+        <xsl:if test="$state.id = ''">
+            <xsl:next-match/>
+        </xsl:if>
+    </xsl:template>
     
     
     <xd:doc>
@@ -258,6 +263,21 @@
     </xd:doc>
     <xsl:template match="mei:ossia" mode="finalFixes">
         <xsl:apply-templates select="child::mei:staff" mode="#current"/>
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>Translate dot elements to attributes</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:*[.//mei:dot]" mode="finalFixes">
+        <xsl:copy>
+            <xsl:attribute name="dots" select="count(.//mei:dot)"/>
+            <xsl:if test="@facs or .//mei:dots/@facs">
+                <xsl:attribute name="facs" select="string-join((@facs, .//mei:dots/@facs), ' ')"/>    
+            </xsl:if>
+            <xsl:apply-templates select="node() | @* except @facs" mode="#current"/>
+        </xsl:copy>
     </xsl:template>
     
     <xsl:template match="tei:lb" mode="tei2html"/>

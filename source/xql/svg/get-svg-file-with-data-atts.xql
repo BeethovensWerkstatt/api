@@ -96,20 +96,20 @@ let $results :=
                 return $count    
             let $relevant.measures := ($context.annot/ancestor::mei:measure, $context.annot/ancestor::mei:measure/following::mei:measure[position() le $measure.count])
             
-            where some $shape.ID in $svg.shape.IDs satisfies exists($relevant.measures//@facs[ft:query(.,'#' || $shape.ID)])
+            where exists($context.annot/ancestor::tei:div) or (some $shape.ID in $svg.shape.IDs satisfies exists($relevant.measures//@facs[ft:query(.,'#' || $shape.ID)]))
             
             let $text.file := serialize($monitum.effect/ancestor::mei:mei)
             let $excerpt := transform:transform($manifestation.file,
                        doc($xslt), <parameters>
                            <param name="context.id" value="{$context.annot/string(@xml:id)}"/>
                            <param name="source.id" value="{$source.id}"/>
-                           <param name="state.id" value="''"/>
-                           <param name="focus.id" value="''"/>
+                           <param name="state.id" value=""/>
+                           <param name="focus.id" value=""/>
                            <param name="text.file" value="{$text.file}"/>
                        </parameters>)
             return 
                 <snippet monitum.id="{$monitum.id}" monitum.effect="{$monitum.effect/@xml:id}">{$excerpt}</snippet>
-        
+                
         let $links := 
             for $shape.ID in $svg.shape.IDs
             let $query := '#' || $shape.ID
@@ -194,6 +194,10 @@ let $results :=
             corpus="{$corpus.file/@xml:id}" 
             man.fil.name="{$manifestation.file.name}">
             notes: {count($manifestation.file//@class)}
+            shapes: {count($svg.shape.IDs)}
+            document.id: {$document.id}
+            monita: {count($monita)}
+            monitaRaw: {count($manifestation.file//@class[ft:query(.,'#bw_monitum_context')]/parent::node() )}
             {$links}
             {$monita}
         </root>:)
