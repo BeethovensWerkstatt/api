@@ -11,6 +11,7 @@ import module namespace config="https://api.beethovens-werkstatt.de" at "../../x
 
 declare namespace xhtml="http://www.w3.org/1999/xhtml";
 declare namespace mei="http://www.music-encoding.org/ns/mei";
+declare namespace tei="http://www.tei-c.org/ns/1.0";
 declare namespace svg="http://www.w3.org/2000/svg";
 declare namespace request="http://exist-db.org/xquery/request";
 declare namespace util="http://exist-db.org/xquery/util";
@@ -72,8 +73,13 @@ let $results :=
         
         (: let $monita.contexts := :) 
         
+        let $is.tei.file := $manifestation.file//tei:div
+        let $xslt.path := 
+            if($is.tei.file)
+            then('../xslt/module3/get-complaint-TEI-text-by-annot.xsl')
+            else('../xslt/module3/get-stateless-complaint-text-by-annot.xsl')
         
-        let $xslt := $config:xslt-basepath || '../xslt/module3/get-stateless-complaint-text-by-annot.xsl'
+        let $xslt := $config:xslt-basepath || $xslt.path
         
         let $monita := 
             for $context.annot in $manifestation.file//@class[ft:query(.,'#bw_monitum_context')]/parent::node() 
