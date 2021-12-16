@@ -73,7 +73,7 @@ declare function module3:getEmbodiment($file.id as xs:string,
     let $work.uri := $config:module3-basepath || $file.id || '.json'
     
     let $document.type := 
-        if($complaint/ancestor::tei:*)
+        if($doc.annot/ancestor::tei:*)
         then('tei')
         else('mei')
     
