@@ -255,11 +255,12 @@ let $complaints :=
             'context': array { $context.correct },
             'implementation': array { $implementation }
         }
-        
+    
     return map {
         '@id': $public.complaint.id,
         'affects': array { $affects },
-        'tags': $tags
+        'tags': $tags,
+        'revisionDoc': $complaint.document.id
     }
 
 let $output := map {
