@@ -951,26 +951,6 @@
         
     </xsl:template>
     
-    <xd:doc>
-        <xd:desc>
-            <xd:p>This takes care of measure numbers</xd:p>
-        </xd:desc>
-    </xd:doc>
-    <xsl:template match="mei:measure" mode="finalFixes">
-        <xsl:choose>
-            <xsl:when test="preceding::mei:measure">
-                <xsl:next-match/>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:copy>
-                    <xsl:apply-templates select="@*" mode="#current"/>
-                    <mNum type="supplied" xmlns="http://www.music-encoding.org/ns/mei"><xsl:value-of select="if(@label) then(@label) else(@n)"/></mNum>
-                    <xsl:apply-templates select="node()" mode="#current"/>
-                </xsl:copy>
-            </xsl:otherwise>
-        </xsl:choose>
-    </xsl:template>
-    
     <!-- clean up scoreDef for supplements -->
     <xsl:template match="mei:staffDef[ancestor::mei:scoreDef/@type='supplied']" mode="finalFixes">
         <xsl:copy>
@@ -1080,7 +1060,13 @@
     </xd:doc>
     <xsl:template match="mei:measure[not(following::mei:measure)]" mode="finalFixes" priority="1">
         <xsl:copy>
-            <xsl:apply-templates select="node() | @*" mode="#current"/>
+            <xsl:apply-templates select="@*" mode="#current"/>
+            <xsl:if test="not(preceding::mei:measure)">
+                <mNum xmlns="http://www.music-encoding.org/ns/mei" type="supplied">
+                    <xsl:value-of select="if(@label) then(@label) else(@n)"/>
+                </mNum>
+            </xsl:if>
+            <xsl:apply-templates select="node()" mode="#current"/>
             
             <xsl:variable name="botmar.metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='botmar'] | .//mei:metaMark[@place='botmar'])" as="element(mei:metaMark)*"/>
             <xsl:for-each select="$botmar.metaMarks">
@@ -1108,6 +1094,26 @@
             </measure>
         </xsl:if>
         
+    </xsl:template>
+    
+    <xd:doc>
+        <xd:desc>
+            <xd:p>This takes care of measure numbers in all other cases</xd:p>
+        </xd:desc>
+    </xd:doc>
+    <xsl:template match="mei:measure" mode="finalFixes">
+        <xsl:choose>
+            <xsl:when test="preceding::mei:measure">
+                <xsl:next-match/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:copy>
+                    <xsl:apply-templates select="@*" mode="#current"/>
+                    <mNum type="supplied" xmlns="http://www.music-encoding.org/ns/mei"><xsl:value-of select="if(@label) then(@label) else(@n)"/></mNum>
+                    <xsl:apply-templates select="node()" mode="#current"/>
+                </xsl:copy>
+            </xsl:otherwise>
+        </xsl:choose>
     </xsl:template>
     
     <xd:doc>
