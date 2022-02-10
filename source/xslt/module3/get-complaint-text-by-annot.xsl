@@ -965,7 +965,17 @@
             
             <xsl:choose>
                 <xsl:when test="exists($written.meterSig) and $written.meterSig/@count = $count and $written.meterSig/@unit = $unit">
-                    <xsl:sequence select="$written.meterSig"/>
+                    <xsl:choose>
+                        <xsl:when test="$written.meterSig/parent::mei:add">
+                            <xsl:sequence select="$written.meterSig/parent::mei:add"/>        
+                        </xsl:when>
+                        <xsl:when test="$written.meterSig/parent::mei:del">
+                            <xsl:sequence select="$written.meterSig/parent::mei:del"/>        
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:sequence select="$written.meterSig"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
                 </xsl:when>
                 <xsl:otherwise>
                     <meterSig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
@@ -986,7 +996,17 @@
                 
                 <xsl:choose>
                     <xsl:when test="exists($written.keySig) and $written.keySig/@sig = $sig">
-                        <xsl:sequence select="$written.keySig"/>
+                        <xsl:choose>
+                            <xsl:when test="$written.keySig/parent::mei:add">
+                                <xsl:sequence select="$written.keySig/parent::mei:add"/>        
+                            </xsl:when>
+                            <xsl:when test="$written.keySig/parent::mei:del">
+                                <xsl:sequence select="$written.keySig/parent::mei:del"/>        
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:sequence select="$written.keySig"/>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:when>
                     <xsl:otherwise>
                         <keySig type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
@@ -1005,7 +1025,17 @@
                 
                 <xsl:choose>
                     <xsl:when test="exists($written.clef) and $written.clef/@shape = $shape and $written.clef/@line = $line">
-                        <xsl:sequence select="$written.clef"/>
+                        <xsl:choose>
+                            <xsl:when test="$written.clef/parent::mei:add">
+                                <xsl:sequence select="$written.clef/parent::mei:add"/>        
+                            </xsl:when>
+                            <xsl:when test="$written.clef/parent::mei:del">
+                                <xsl:sequence select="$written.clef/parent::mei:del"/>        
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:sequence select="$written.clef"/>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:when>
                     <xsl:otherwise>
                         <clef type="supplied" xmlns="http://www.music-encoding.org/ns/mei">
