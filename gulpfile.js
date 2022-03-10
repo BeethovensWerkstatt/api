@@ -30,9 +30,23 @@ gulp.task('xql', function(){
 
 gulp.task('xqm', function(){
 
-    return gulp.src(sourcePath + '/xqm/**/*')
-        .pipe(newer('build/resources/xqm/'))
-        .pipe(gulp.dest('build/resources/xqm/'))
+  const target = 'http://localhost:8080/exist/apps/api'
+
+  return gulp.src(sourcePath + '/xqm/**/*')
+    .pipe(newer('build/resources/xqm/'))
+    .pipe(replace('$$deployTarget$$', target))
+    .pipe(gulp.dest('build/resources/xqm/'))
+})
+
+gulp.task('xqm-public', function(){
+
+  const branch = gitInfo.branch()
+  const target = (branch === 'main') ? 'https://api.beethovens-werkstatt.de' : 'https://dev-api.beethovens-werkstatt.de'
+
+  return gulp.src(sourcePath + '/xqm/**/*')
+    .pipe(newer('build/resources/xqm/'))
+    .pipe(replace('$$deployTarget$$', target))
+    .pipe(gulp.dest('build/resources/xqm/'))
 })
 
 //deploys xql to exist-db
@@ -206,7 +220,6 @@ gulp.task('deploy', function() {
 
 gulp.task('watch', gulp.parallel('watch-xql','watch-xslt','watch-controller','watch-html'))
 
-
 gulp.task('dist-finish', function() {
     return gulp.src('./build/**/*')
         .pipe(zip(existPackageName + '-' + getPackageJsonVersion() + '.xar'))
@@ -214,7 +227,10 @@ gulp.task('dist-finish', function() {
 })
 
 //creates a dist version
-gulp.task('dist', gulp.series('xar-structure', gulp.parallel('xql','xqm','xslt','data','html'), 'dist-finish'))
+gulp.task('dist', gulp.series('xar-structure', gulp.parallel('xql','xqm-public','xslt','data','html'), 'dist-finish'))
+
+gulp.task('dist-local', gulp.series('xar-structure', gulp.parallel('xql','xqm','xslt','data','html'), 'dist-finish'))
+
 
 //creates a dist version and cleans up afterwards
 gulp.task('dist-clean', gulp.series('dist', 'del'))
