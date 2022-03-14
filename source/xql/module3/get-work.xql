@@ -176,7 +176,10 @@ let $complaints :=
             else(0)
         let $subsequent.measures :=
             if($range gt 0)
-            then($first.measure/following::mei:measure[position() le $range])
+            then(
+                (:$first.measure/following-sibling::mei:measure[position() le $range]:)
+                ($first.measure/parent::mei:*/mei:measure[preceding-sibling::mei:measure[@xml:id = $first.measure/@xml:id]])[position() le $range]
+            )
             else()
             
         let $affected.measures := ($first.measure | $subsequent.measures)
