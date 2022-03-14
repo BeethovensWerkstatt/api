@@ -135,8 +135,10 @@ gulp.task('data', gulp.series(
         return del(['./build/data/**/*','./build/tmp/**/*','./build/tmp'])
     },
     function(){
-        /*return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp', {'--branch': 'revise-structure'})*/
-        return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp')
+    
+        const branch = gitInfo.branch()
+        return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp', {'--branch': branch})
+        //return git.clone('https://github.com/BeethovensWerkstatt/data.git', './build/tmp')
     },
     function(){
       return gulp.src('./build/tmp/data/**/*')
