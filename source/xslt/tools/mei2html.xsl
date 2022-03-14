@@ -43,6 +43,9 @@
             <xsl:apply-templates select="node()"/>
         </p>
     </xsl:template>
+    <xsl:template match="mei:lb">
+        <br/>
+    </xsl:template>
     <xsl:template match="mei:ref">
         <xsl:choose>
             <xsl:when test="@target and starts-with(@target,'http://')">
