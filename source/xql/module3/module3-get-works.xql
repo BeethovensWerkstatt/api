@@ -55,7 +55,7 @@ let $files :=
   let $title := 
     for $title in $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']
     return map {
-      'title': $title/text() || ' (corpus file)',
+      'title': $title/text() (: || ' (corpus file)' :),
       '@lang': $title/string(@xml:lang)
     }
     
