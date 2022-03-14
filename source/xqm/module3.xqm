@@ -92,14 +92,19 @@ declare function module3:getEmbodiment($file.id as xs:string,
     let $zones := ($referencing.zones,  $referenced.zones)
     
     let $state.id :=
-        if ($role = 'ante')
+        if ($role = ('ante', 'post'))
         then (
             let $provided.state.id := $complaint/replace(normalize-space(@state),'#','')
             let $provided.state := $file/id($provided.state.id)
 
             (: TODO: the following needs to be more elaborate:)
-            let $previous.state.id := $provided.state/preceding-sibling::mei:genState[1]/@xml:id
-            return $previous.state.id
+            (: let $previous.state.id := $provided.state/preceding-sibling::mei:genState[1]/@xml:id :)
+            let $last.state.id :=
+                if($provided.state/following-sibling::mei:genState)
+                then($provided.state/following-sibling::mei:genState[last()]/@xml:id)
+                else($provided.state.id)
+            
+            return $last.state.id
         )
         else (
             $complaint/replace(normalize-space(@state),'#','')
