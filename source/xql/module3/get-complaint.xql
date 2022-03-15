@@ -394,8 +394,8 @@ let $postDocs :=
     
     return module3:getEmbodiment($document.id, $complaint.metamark, $source.id, 'post', $affected.measures, $staves, $text.file, $context/ancestor::mei:mei, $text.annot, $context)
 
-let $post.state.id := $complaint.metamark/substring-after(@state,'#')
-let $ante.state.id := $database/id($post.state.id)/preceding::mei:genState[1]/string(@xml:id)
+let $post.state.id := ($complaint.metamark/substring-after(@state,'#'))[1]
+let $ante.state.id := ($database/id($post.state.id)/preceding::mei:genState[1]/string(@xml:id))[1]
 
 let $ante.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', $ante.state.id)
 let $post.text := ef:getMeiByContextLink($document.id, $text.file.annots[1]/string(@xml:id), '', '', $post.state.id)
