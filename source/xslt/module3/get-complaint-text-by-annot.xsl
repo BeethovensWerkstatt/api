@@ -270,25 +270,39 @@
             </scoreDef>
         </xsl:variable>
         <xsl:variable name="generated.section" as="node()">
+            
+            <xsl:variable name="region" as="node()*">
+                <xsl:apply-templates select="$affected.measures" mode="getSelectedStaves">
+                    <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
+                </xsl:apply-templates>
+            </xsl:variable>
+            <xsl:variable name="source.resolved" as="node()*">
+                <xsl:apply-templates select="$region" mode="getSource"/>
+            </xsl:variable>
+            <xsl:variable name="state.resolved" as="node()*">
+                <xsl:apply-templates select="$source.resolved" mode="getState"/>
+            </xsl:variable>
+            
             <section xmlns="http://www.music-encoding.org/ns/mei">
+                
                 <!-- debug attributes:
                     measures="{count($search.space//mei:measure)}" 
                     elements="{string-join(distinct-values($search.space/descendant-or-self::mei:*/local-name()), ', ')}" 
                     meter.counts="{count($search.space//@meter.count) || ': ' || string-join(distinct-values($search.space//string(@meter.count)),', ')}"
                     scoreDefs="{string-join(distinct-values($search.space//mei:scoreDef/string(@xml:id)),', ')}"
                 -->
-                <xsl:variable name="region" as="node()*">
-                    <xsl:apply-templates select="$affected.measures" mode="getSelectedStaves">
-                        <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
-                    </xsl:apply-templates>
-                </xsl:variable>
-                <xsl:variable name="source.resolved" as="node()*">
-                    <xsl:apply-templates select="$region" mode="getSource"/>
-                </xsl:variable>
-                <xsl:variable name="state.resolved" as="node()*">
-                    <xsl:apply-templates select="$source.resolved" mode="getState"/>
-                </xsl:variable>
-                <xsl:sequence select="$state.resolved"/>
+                <xsl:choose>
+                    <xsl:when test="exists($affected.measures/ancestor::mei:ending)">
+                        <ending>
+                            <xsl:apply-templates select="$affected.measures/ancestor::mei:ending/@*" mode="#current"/>
+                            <xsl:sequence select="$state.resolved"/>
+                        </ending>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:sequence select="$state.resolved"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+                
             </section>
         </xsl:variable>
         <range 
