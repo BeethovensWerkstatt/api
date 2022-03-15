@@ -43,6 +43,7 @@ declare function module3:getPageLabelBySurface($file as node(), $surfaceId as xs
     
     let $surface := $file//mei:surface[@xml:id = $surfaceId]
     
+    (:
     let $all.folia := $file//mei:folium
     let $all.bifolia := $file//mei:bifolium
     
@@ -51,6 +52,14 @@ declare function module3:getPageLabelBySurface($file as node(), $surfaceId as xs
                   else if($all.folia[@verso = '#' || $surface/@xml:id])
                   then($all.folia[@verso = '#' || $surface/@xml:id]/string(@n) || 'v')
                   else ($surface/string(@n))
+    :)
+    
+    let $label := 
+        if($surface/@label)
+        then($surface/@label)
+        else if($surface/@n)
+        then($surface/@n)
+        else(count($surface/preceding-sibling::mei:surface) + 1)
     return string($label)
 };
 
