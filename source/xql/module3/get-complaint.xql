@@ -373,7 +373,7 @@ let $postDocs :=
                 else if($measure/@n)
                 then($measure/string(@n))
                 else('(' || string(count($mdiv//mei:measure[following::mei:measure[@xml:id = $measure.id]]) + 1) || ')')
-            order by xs:double(replace($measure.label,'[a-zA-Z]+','')) ascending
+            order by xs:double(replace($measure.label,'[a-zA-Z_]+','')) ascending
             return $measure.label
 
         let $summary :=
