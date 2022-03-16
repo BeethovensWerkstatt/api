@@ -1116,7 +1116,18 @@
             
             <xsl:variable name="botmar.metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='botmar'] | .//mei:metaMark[@place='botmar'])" as="element(mei:metaMark)*"/>
             <xsl:for-each select="$botmar.metaMarks">
-                <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+                <xsl:choose>
+                    <xsl:when test="parent::mei:*[@state]">
+                        <xsl:element name="{parent::mei:*/local-name()}">
+                            <xsl:copy-of select="parent::mei:*/@*"/>
+                            <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+                        </xsl:element>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+                    </xsl:otherwise>
+                </xsl:choose>
+                
             </xsl:for-each>
         </xsl:copy>
         
@@ -1133,9 +1144,21 @@
                     </staff>
                 </xsl:for-each>
                 <xsl:for-each select="$rightmar.metaMarks">
-                    <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
-                        <xsl:apply-templates select="node()" mode="#current"/>
-                    </dir> 
+                    <xsl:choose>
+                        <xsl:when test="parent::mei:*[@state]">
+                            <xsl:element name="{parent::mei:*/local-name()}">
+                                <xsl:copy-of select="parent::mei:*/@*"/>
+                                <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
+                                    <xsl:apply-templates select="node()" mode="#current"/>
+                                </dir> 
+                            </xsl:element>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
+                                <xsl:apply-templates select="node()" mode="#current"/>
+                            </dir> 
+                        </xsl:otherwise>
+                    </xsl:choose>
                 </xsl:for-each>
             </measure>
         </xsl:if>
