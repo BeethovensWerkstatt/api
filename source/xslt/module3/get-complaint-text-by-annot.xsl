@@ -682,6 +682,8 @@
                     <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
                 </xsl:copy>
             </xsl:when>
+            <!-- special case, suppress rendition when this is a substitution or similar -->
+            <xsl:when test="$name = 'del' and $local.state = $state.id and string-length($source.id) gt 0 and exists(@type) and 'dontShow' = tokenize(normalize-space(@type),' ')"/>
             <!-- in source transcriptions, it might be necessary to render current deletions -->
             <xsl:when test="$name = 'del' and $local.state = $state.id and string-length($source.id) gt 0">
                 <xsl:copy>
