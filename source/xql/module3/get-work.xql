@@ -201,7 +201,7 @@ let $complaints :=
     let $externalUri := 
         if($staticExample and $text.file.annots/@data)
         then(array { $text.file.annots/string(@data)} )
-        else( array {})
+        else( array { $text.file.annots/@nonExistent })
     
     return map {
         '@id': $public.complaint.id,
