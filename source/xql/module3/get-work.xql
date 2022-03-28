@@ -48,8 +48,8 @@ let $mei.files :=
     for $link in $complete.file/xi:include/string(@href)
     return doc($inclusion.base.uri || '/' || $link)//mei:mei
 
-let $text.file := ($mei.files[.//mei:encodingDesc[@class='#bw_module3_textFile']])[1]
-let $document.files := $mei.files[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
+let $text.file := ($mei.files[.//mei:encodingDesc['#bw_module3_textFile' = tokenize(normalize-space(@class),' ')]])[1]
+let $document.files := $mei.files[.//mei:encodingDesc['#bw_module3_documentFile' = tokenize(normalize-space(@class),' ')]]
 
 let $title := 
     for $title in $text.file//mei:fileDesc/mei:titleStmt/mei:title
@@ -65,50 +65,6 @@ let $composer := map {
     'internalId': $composer.elem/string(@xml:id)
 }
 
-(:
-let $manifestation.files := 
-    for $manifestationRef in $file//mei:manifestation
-    let $manifestation.filename := 
-        if(contains($manifestationRef/@sameas,'/')) 
-        then(tokenize($manifestationRef/@sameas,'/')[last()]) 
-        else($manifestationRef/string(@sameas))
-    let $manifestation.file := $database/element()[tokenize(document-uri(./root()),'/')[last()] = $manifestation.filename]
-    where exists($manifestation.file) and exists($manifestation.file/@xml:id)
-    return $manifestation.file
-    
-let $manifestations := 
-    for $manifestationRef in $file//mei:manifestation
-    let $manifestation.filename := 
-        if(contains($manifestationRef/@sameas,'/')) 
-        then(tokenize($manifestationRef/@sameas,'/')[last()]) 
-        else($manifestationRef/string(@sameas))
-    let $manifestation.file := $manifestation.files[tokenize(document-uri(./root()),'/')[last()] = $manifestation.filename]
-    where exists($manifestation.file) and exists($manifestation.file/@xml:id)
-    let $label := $manifestationRef/string(@label)
-    let $manifestation.id := $manifestation.file/string(@xml:id)
-    let $manifestation.namespace := namespace-uri($manifestation.file)
-    let $manifestation.external.id := $config:module3-basepath || $document.id || '/manifestation/' || $manifestation.id || '.json'
-    
-    let $iiif.manifest := $config:iiif-basepath || 'document/' || $manifestation.id || '/manifest.json'
-    
-    return map {
-      '@id': $manifestation.id,
-      'label': $label,
-      'file': map {
-        'uri': $config:file-basepath || $manifestation.id || '.xml',
-        '@ns':  $manifestation.namespace,
-        'name': $manifestation.filename
-      },
-      'frbr': map {
-        'level': 'manifestation'
-      },
-      'iiif': map {
-        'manifest': $iiif.manifest
-      }
-    }    
-    
-:)
-
 let $mdivs := 
     for $mdiv in $text.file//mei:mdiv[@xml:id]
     let $mdiv.id := $mdiv/string(@xml:id)
@@ -117,24 +73,6 @@ let $mdivs :=
         then($mdiv/string(@n))
         else(string(count($mdiv/preceding::mei:mdiv) + 1))
     order by xs:integer($mdiv.n) ascending
-    (:let $mdiv.label :=
-        if($mdiv/@label)
-        then($mdiv/string(@label))
-        else if($mdiv/@n)
-        then($mdiv/string(@n))
-        else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')'):)
-        
-    (:let $staves := 
-        for $staff in distinct-values($mdiv//mei:staffDef/@n)
-        let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text())
-        let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text())
-        order by xs:integer($staff)
-        return map {
-            'n': $staff,
-            'label': $staff.label,
-            'abbr': $staff.labelAbbr
-        }:)
-        
     
     return ef:getMdivLink($document.id, $mdiv.id)
     
@@ -258,12 +196,20 @@ let $complaints :=
             'context': array { $context.correct },
             'implementation': array { $implementation }
         }
+        
+    let $staticExample := '#bw_module3_staticExample' = distinct-values($text.file//mei:encodingDesc/tokenize(normalize-space(@class),' ')) 
+    let $externalUri := 
+        if($staticExample and $text.file.annots/@data)
+        then(array { $text.file.annots/string(@data)} )
+        else( array {})
     
     return map {
         '@id': $public.complaint.id,
         'affects': array { $affects },
         'tags': $tags,
-        'revisionDoc': $complaint.document.id
+        'revisionDoc': $complaint.document.id,
+        'staticExample': $staticExample,
+        'externalUri': $externalUri
     }
 
 let $output := map {
@@ -274,5 +220,4 @@ let $output := map {
     'complaints': array { $complaints },
     'movements': $mdivs
 }
-
 return $output
