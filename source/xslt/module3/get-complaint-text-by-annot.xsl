@@ -983,10 +983,16 @@
                 <xsl:when test="exists($written.meterSig) and $written.meterSig/@count = $count and $written.meterSig/@unit = $unit">
                     <xsl:choose>
                         <xsl:when test="$written.meterSig/parent::mei:add">
-                            <xsl:sequence select="$written.meterSig/parent::mei:add"/>        
+                            <meterSig xmlns="http://www.music-encoding.org/ns/mei">
+                                <xsl:copy-of select="$written.meterSig/parent::mei:add/@type"/>
+                                <xsl:copy-of select="$written.meterSig/@* | $written.meterSig/node()"/>
+                            </meterSig>        
                         </xsl:when>
                         <xsl:when test="$written.meterSig/parent::mei:del">
-                            <xsl:sequence select="$written.meterSig/parent::mei:del"/>        
+                            <meterSig xmlns="http://www.music-encoding.org/ns/mei">
+                                <xsl:copy-of select="$written.meterSig/parent::mei:del/@type"/>
+                                <xsl:copy-of select="$written.meterSig/@* | $written.meterSig/node()"/>
+                            </meterSig>
                         </xsl:when>
                         <xsl:otherwise>
                             <xsl:sequence select="$written.meterSig"/>
@@ -1014,10 +1020,16 @@
                     <xsl:when test="exists($written.keySig) and $written.keySig/@sig = $sig">
                         <xsl:choose>
                             <xsl:when test="$written.keySig/parent::mei:add">
-                                <xsl:sequence select="$written.keySig/parent::mei:add"/>        
+                                <keySig xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.keySig/parent::mei:add/@type"/>
+                                    <xsl:copy-of select="$written.keySig/@* | $written.keySig/node()"/>
+                                </keySig>
                             </xsl:when>
                             <xsl:when test="$written.keySig/parent::mei:del">
-                                <xsl:sequence select="$written.keySig/parent::mei:del"/>        
+                                <keySig xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.keySig/parent::mei:del/@type"/>
+                                    <xsl:copy-of select="$written.keySig/@* | $written.keySig/node()"/>
+                                </keySig>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:sequence select="$written.keySig"/>
@@ -1043,10 +1055,16 @@
                     <xsl:when test="exists($written.clef) and $written.clef/@shape = $shape and $written.clef/@line = $line">
                         <xsl:choose>
                             <xsl:when test="$written.clef/parent::mei:add">
-                                <xsl:sequence select="$written.clef/parent::mei:add"/>        
+                                <clef xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.clef/parent::mei:add/@type"/>
+                                    <xsl:copy-of select="$written.clef/@* | $written.clef/node()"/>
+                                </clef>
                             </xsl:when>
                             <xsl:when test="$written.clef/parent::mei:del">
-                                <xsl:sequence select="$written.clef/parent::mei:del"/>        
+                                <clef xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.clef/parent::mei:del/@type"/>
+                                    <xsl:copy-of select="$written.clef/@* | $written.clef/node()"/>
+                                </clef>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:sequence select="$written.clef"/>
