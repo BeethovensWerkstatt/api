@@ -53,8 +53,23 @@ let $mdiv.label :=
     else('(' || string(count($mdiv/preceding::mei:mdiv) + 1) || ')')
 let $staves := 
     for $staff in distinct-values($mdiv//mei:staffDef/xs:integer(@n))
-    let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text())
-    let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text())
+    (: let $staff.label := ($mdiv//mei:staffDef[@n = $staff and ./mei:label], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text()) :)
+    (: let $staff.labelAbbr := ($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr], $mdiv//mei:staffGrp[.//mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text()) :)
+    
+    let $staff.label :=
+        if($mdiv//mei:staffGrp[./mei:staffDef[@n = $staff] and ./mei:label])
+        then(($mdiv//mei:staffGrp[./mei:staffDef[@n = $staff] and ./mei:label])[1]/mei:label/string(text()))
+        else if($mdiv//mei:staffDef[@n = $staff and ./mei:label])
+        then(($mdiv//mei:staffDef[@n = $staff and ./mei:label])[1]/mei:label/string(text()))
+        else('')
+        
+    let $staff.labelAbbr :=
+        if($mdiv//mei:staffGrp[./mei:staffDef[@n = $staff] and ./mei:labelAbbr])
+        then(($mdiv//mei:staffGrp[./mei:staffDef[@n = $staff] and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text()))
+        else if($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr])
+        then(($mdiv//mei:staffDef[@n = $staff and ./mei:labelAbbr])[1]/mei:labelAbbr/string(text()))
+        else('')
+        
     order by $staff ascending
     return map {
         'n': $staff,
@@ -72,7 +87,7 @@ let $included.file.uris :=
     return replace($inclusion.base.uri || '/' || $link,'/\./','/')
 
 let $mdiv.file := $mdiv/root()
-let $proper.textfile := exists($mdiv.file//mei:encodingDesc[@class='#bw_module3_textFile'])
+let $proper.textfile := exists($mdiv.file//mei:encodingDesc['#bw_module3_textFile' = tokenize(normalize-space(@class),' ')])
 let $correctly.loaded := document-uri($mdiv.file) = $included.file.uris
 
 let $output := 
@@ -82,6 +97,7 @@ let $output :=
         '@id': ef:getMdivLink($document.id, $mdiv.id),
         'label': $mdiv.label,
         'n': $mdiv.n,
+        'mdivId': $mdiv.id,
         'staves': array { $staves },
         'work': $document.uri
     }

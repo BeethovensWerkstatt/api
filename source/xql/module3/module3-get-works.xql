@@ -34,7 +34,7 @@ let $database := collection($config:module3-root)
     - have no facsimiles in them (TODO: find a better way to identify work files, maybe using @class)
 :)
 let $files :=
-  for $file in $database//mei:meiCorpus[@xml:id and not(@xml:id = ('t0c09f04e-e36d-4eaa-a064-029b5a232332'))]
+  for $file in $database//mei:meiCorpus[@xml:id]
   (:
     op.120:     xfae46dc1-e2dc-412a-a27c-91a31cd18ab8 
     op.127:     
@@ -55,7 +55,7 @@ let $files :=
   let $title := 
     for $title in $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']
     return map {
-      'title': $title/text() || ' (corpus file)',
+      'title': $title/text() (: || ' (corpus file)' :),
       '@lang': $title/string(@xml:lang)
     }
     
@@ -66,10 +66,17 @@ let $files :=
     'internalId': $composer.elem/string(@xml:id)
   }
   
+  let $staticExample := '#bw_module3_staticExample' = distinct-values($file//mei:encodingDesc/tokenize(normalize-space(@class),' '))
+  let $level := 
+    if($staticExample)
+    then('external')
+    else('videapp')
+  
   return map {
     '@id': $external.id,
     'title': array { $title },
-    'composer': $composer
+    'composer': $composer,
+    'level': $level
   }
 
 

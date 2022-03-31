@@ -176,7 +176,7 @@
                         <xsl:choose>
                             <xsl:when test="not($is.multi.staff)">
                                 
-                                <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text() | $search.space/self::mei:part/@label)[last()]" as="xs:string"/>
+                                <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text() | $search.space//mei:staffDef[@n = $current.staff.n]/mei:labelAbbr/text() | $search.space/self::mei:part/@label)[last()]" as="xs:string?"/>
                                 
                                 <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n]//mei:clef)[last()]" as="node()"/>
                                 <xsl:variable name="clef.shape" select="$clef.elem/@clef.shape | $clef.elem/@shape" as="xs:string"/>
@@ -187,7 +187,7 @@
                                 <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                 
                                 <staffDef n="{$current.staff.n}" lines="5">
-                                    <xsl:if test="not($staffGrp.symbol)">
+                                    <xsl:if test="not($staffGrp.symbol) or ($staffGrp.symbol = 'none' and exists($staff.label))">
                                         <xsl:attribute name="label" select="$staff.label"/>    
                                     </xsl:if>
                                     <xsl:attribute name="clef.shape" select="$clef.shape"/>
@@ -270,25 +270,39 @@
             </scoreDef>
         </xsl:variable>
         <xsl:variable name="generated.section" as="node()">
+            
+            <xsl:variable name="region" as="node()*">
+                <xsl:apply-templates select="$affected.measures" mode="getSelectedStaves">
+                    <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
+                </xsl:apply-templates>
+            </xsl:variable>
+            <xsl:variable name="source.resolved" as="node()*">
+                <xsl:apply-templates select="$region" mode="getSource"/>
+            </xsl:variable>
+            <xsl:variable name="state.resolved" as="node()*">
+                <xsl:apply-templates select="$source.resolved" mode="getState"/>
+            </xsl:variable>
+            
             <section xmlns="http://www.music-encoding.org/ns/mei">
+                
                 <!-- debug attributes:
                     measures="{count($search.space//mei:measure)}" 
                     elements="{string-join(distinct-values($search.space/descendant-or-self::mei:*/local-name()), ', ')}" 
                     meter.counts="{count($search.space//@meter.count) || ': ' || string-join(distinct-values($search.space//string(@meter.count)),', ')}"
                     scoreDefs="{string-join(distinct-values($search.space//mei:scoreDef/string(@xml:id)),', ')}"
                 -->
-                <xsl:variable name="region" as="node()*">
-                    <xsl:apply-templates select="$affected.measures" mode="getSelectedStaves">
-                        <xsl:with-param name="staves" select="$staves.n" tunnel="yes" as="xs:string*"/>
-                    </xsl:apply-templates>
-                </xsl:variable>
-                <xsl:variable name="source.resolved" as="node()*">
-                    <xsl:apply-templates select="$region" mode="getSource"/>
-                </xsl:variable>
-                <xsl:variable name="state.resolved" as="node()*">
-                    <xsl:apply-templates select="$source.resolved" mode="getState"/>
-                </xsl:variable>
-                <xsl:sequence select="$state.resolved"/>
+                <xsl:choose>
+                    <xsl:when test="exists($affected.measures/ancestor::mei:ending)">
+                        <ending>
+                            <xsl:apply-templates select="$affected.measures/ancestor::mei:ending/@*" mode="#current"/>
+                            <xsl:sequence select="$state.resolved"/>
+                        </ending>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:sequence select="$state.resolved"/>
+                    </xsl:otherwise>
+                </xsl:choose>
+                
             </section>
         </xsl:variable>
         <range 
@@ -668,6 +682,8 @@
                     <xsl:apply-templates select="node() | @* except @type" mode="#current"/>
                 </xsl:copy>
             </xsl:when>
+            <!-- special case, suppress rendition when this is a substitution or similar -->
+            <xsl:when test="$name = 'del' and $local.state = $state.id and string-length($source.id) gt 0 and exists(@type) and 'dontShow' = tokenize(normalize-space(@type),' ')"/>
             <!-- in source transcriptions, it might be necessary to render current deletions -->
             <xsl:when test="$name = 'del' and $local.state = $state.id and string-length($source.id) gt 0">
                 <xsl:copy>
@@ -967,10 +983,16 @@
                 <xsl:when test="exists($written.meterSig) and $written.meterSig/@count = $count and $written.meterSig/@unit = $unit">
                     <xsl:choose>
                         <xsl:when test="$written.meterSig/parent::mei:add">
-                            <xsl:sequence select="$written.meterSig/parent::mei:add"/>        
+                            <meterSig xmlns="http://www.music-encoding.org/ns/mei">
+                                <xsl:copy-of select="$written.meterSig/parent::mei:add/@type"/>
+                                <xsl:copy-of select="$written.meterSig/@* | $written.meterSig/node()"/>
+                            </meterSig>        
                         </xsl:when>
                         <xsl:when test="$written.meterSig/parent::mei:del">
-                            <xsl:sequence select="$written.meterSig/parent::mei:del"/>        
+                            <meterSig xmlns="http://www.music-encoding.org/ns/mei">
+                                <xsl:copy-of select="$written.meterSig/parent::mei:del/@type"/>
+                                <xsl:copy-of select="$written.meterSig/@* | $written.meterSig/node()"/>
+                            </meterSig>
                         </xsl:when>
                         <xsl:otherwise>
                             <xsl:sequence select="$written.meterSig"/>
@@ -998,10 +1020,16 @@
                     <xsl:when test="exists($written.keySig) and $written.keySig/@sig = $sig">
                         <xsl:choose>
                             <xsl:when test="$written.keySig/parent::mei:add">
-                                <xsl:sequence select="$written.keySig/parent::mei:add"/>        
+                                <keySig xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.keySig/parent::mei:add/@type"/>
+                                    <xsl:copy-of select="$written.keySig/@* | $written.keySig/node()"/>
+                                </keySig>
                             </xsl:when>
                             <xsl:when test="$written.keySig/parent::mei:del">
-                                <xsl:sequence select="$written.keySig/parent::mei:del"/>        
+                                <keySig xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.keySig/parent::mei:del/@type"/>
+                                    <xsl:copy-of select="$written.keySig/@* | $written.keySig/node()"/>
+                                </keySig>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:sequence select="$written.keySig"/>
@@ -1027,10 +1055,16 @@
                     <xsl:when test="exists($written.clef) and $written.clef/@shape = $shape and $written.clef/@line = $line">
                         <xsl:choose>
                             <xsl:when test="$written.clef/parent::mei:add">
-                                <xsl:sequence select="$written.clef/parent::mei:add"/>        
+                                <clef xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.clef/parent::mei:add/@type"/>
+                                    <xsl:copy-of select="$written.clef/@* | $written.clef/node()"/>
+                                </clef>
                             </xsl:when>
                             <xsl:when test="$written.clef/parent::mei:del">
-                                <xsl:sequence select="$written.clef/parent::mei:del"/>        
+                                <clef xmlns="http://www.music-encoding.org/ns/mei">
+                                    <xsl:copy-of select="$written.clef/parent::mei:del/@type"/>
+                                    <xsl:copy-of select="$written.clef/@* | $written.clef/node()"/>
+                                </clef>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:sequence select="$written.clef"/>
@@ -1101,6 +1135,17 @@
             <xsl:variable name="botmar.metaMarks" select="(preceding::mei:measure//mei:metaMark[@place='botmar'] | .//mei:metaMark[@place='botmar'])" as="element(mei:metaMark)*"/>
             <xsl:for-each select="$botmar.metaMarks">
                 <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+                <!--<xsl:choose>
+                    <xsl:when test="parent::mei:*[@state]">
+                        <xsl:element name="{parent::mei:*/local-name()}">
+                            <xsl:copy-of select="parent::mei:*/@*"/>
+                            <dir xmlns="http://www.music-encoding.org/ns/mei" staff="1" tstamp="-{ancestor::mei:measure/@meter.count}" place="below" xml:id="{@xml:id}"><lb/><rend fontsize="xx-large" color="white">|</rend><lb/><xsl:apply-templates select="node()" mode="#current"/></dir>
+                        </xsl:element>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        
+                    </xsl:otherwise>
+                </xsl:choose>-->
             </xsl:for-each>
         </xsl:copy>
         
@@ -1120,6 +1165,19 @@
                     <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
                         <xsl:apply-templates select="node()" mode="#current"/>
                     </dir> 
+                    <!--<xsl:choose>
+                        <xsl:when test="parent::mei:*[@state]">
+                            <xsl:element name="{parent::mei:*/local-name()}">
+                                <xsl:copy-of select="parent::mei:*/@*"/>
+                                <dir xml:id="{@xml:id}" place="below" staff="1" tstamp="1" type="metaMark rightmar">
+                                    <xsl:apply-templates select="node()" mode="#current"/>
+                                </dir> 
+                            </xsl:element>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            
+                        </xsl:otherwise>
+                    </xsl:choose>-->
                 </xsl:for-each>
             </measure>
         </xsl:if>

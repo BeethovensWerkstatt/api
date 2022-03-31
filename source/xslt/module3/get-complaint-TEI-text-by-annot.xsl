@@ -240,6 +240,18 @@
         
     </xsl:template>
     
+    <xsl:template match="mei:measure[@label]" mode="finalFixes">
+        <xsl:copy>
+            <xsl:apply-templates select="@*" mode="#current"/>
+            <xsl:if test="not(exists(preceding::mei:measure))">
+                <mNum xmlns="http://www.music-encoding.org/ns/mei" type="supplied">
+                    <xsl:value-of select="string(@label)"/>
+                </mNum>
+            </xsl:if>
+            <xsl:apply-templates select="node()" mode="#current"/>
+        </xsl:copy>
+    </xsl:template>
+    
     <xd:doc>
         <xd:desc>
             <xd:p>Make metaMarks render with Verovio</xd:p>
@@ -270,7 +282,7 @@
             <xd:p>Translate dot elements to attributes</xd:p>
         </xd:desc>
     </xd:doc>
-    <xsl:template match="mei:*[.//mei:dot]" mode="finalFixes">
+    <xsl:template match="mei:*[local-name() = ('note', 'rest', 'chord', 'space') and .//mei:dot]" mode="finalFixes">
         <xsl:copy>
             <xsl:attribute name="dots" select="count(.//mei:dot)"/>
             <xsl:if test="@facs or .//mei:dots/@facs">
@@ -309,7 +321,8 @@
         </xsl:variable>
         <xsl:choose>
             <xsl:when test="tei:notatedMusic/@place = 'inline'">
-                <span class="notatedMusic inline"><xsl:sequence select="$music"/></span>
+                <xsl:variable name="small" select="if($music//mei:staffDef[@lines ne '0']) then('') else(' small')" as="xs:string"/>
+                <span class="notatedMusic inline{$small}"><xsl:sequence select="$music"/></span>
             </xsl:when>
             <xsl:otherwise>
                 <div class="notatedMusic block"><xsl:sequence select="$music"/></div>
