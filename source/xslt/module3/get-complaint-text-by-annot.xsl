@@ -176,7 +176,7 @@
                         <xsl:choose>
                             <xsl:when test="not($is.multi.staff)">
                                 
-                                <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text() | $search.space//mei:staffDef[@n = $current.staff.n]/mei:labelAbbr/text() | $search.space/self::mei:part/@label)[last()]" as="xs:string"/>
+                                <xsl:variable name="staff.label" select="($search.space//mei:staffDef[@n = $current.staff.n]/@label | $search.space//mei:staffDef[@n = $current.staff.n]/mei:label/text() | $search.space//mei:staffDef[@n = $current.staff.n]/mei:labelAbbr/text() | $search.space/self::mei:part/@label)[last()]" as="xs:string?"/>
                                 
                                 <xsl:variable name="clef.elem" select="($search.space//mei:staffDef[@n = $current.staff.n][@clef.shape and @clef.line] | $search.space//mei:staff[@n = $current.staff.n]//mei:clef)[last()]" as="node()"/>
                                 <xsl:variable name="clef.shape" select="$clef.elem/@clef.shape | $clef.elem/@shape" as="xs:string"/>
@@ -187,7 +187,7 @@
                                 <xsl:variable name="trans.diat" select="if($trans.elem) then($trans.elem/@trans.diat) else()" as="xs:string?"/>
                                 
                                 <staffDef n="{$current.staff.n}" lines="5">
-                                    <xsl:if test="not($staffGrp.symbol) or $staffGrp.symbol = 'none'">
+                                    <xsl:if test="not($staffGrp.symbol) or ($staffGrp.symbol = 'none' and exists($staff.label))">
                                         <xsl:attribute name="label" select="$staff.label"/>    
                                     </xsl:if>
                                     <xsl:attribute name="clef.shape" select="$clef.shape"/>
