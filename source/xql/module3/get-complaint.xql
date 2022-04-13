@@ -54,8 +54,8 @@ let $mei.files :=
     for $link in $complete.file/xi:include/string(@href)
     return doc($inclusion.base.uri || '/' || $link)//mei:mei
 
-let $text.file := ($mei.files[.//mei:encodingDesc[@class='#bw_module3_textFile']])[1]
-let $document.files := $mei.files[.//mei:encodingDesc[@class='#bw_module3_documentFile']]
+let $text.file := ($mei.files[.//mei:encodingDesc['#bw_module3_textFile' = tokenize(normalize-space(@class),' ')]])[1]
+let $document.files := $mei.files[.//mei:encodingDesc['#bw_module3_documentFile' = tokenize(normalize-space(@class),' ')]]
 
 
 let $complaint.metamark := $database//mei:metaMark[@xml:id = $complaint.id]
@@ -408,23 +408,23 @@ let $tags :=
         return $corpus.head/id($id)
     
     let $objects := 
-        for $object in $all.categories/self::mei:category[@class = '#bw_monitum_object']
+        for $object in $all.categories/self::mei:category['#bw_monitum_object' = tokenize(normalize-space(@class),' ')]
         return $object/string(@xml:id)
     
     let $operations := 
-        for $operation in $all.categories/self::mei:category[@class = '#bw_monitum_textoperation']
+        for $operation in $all.categories/self::mei:category['#bw_monitum_textoperation' = tokenize(normalize-space(@class),' ')]
         return $operation/string(@xml:id)
         
     let $classes := 
-        for $class in $all.categories/self::mei:category[@class = '#bw_monitum_classification']
+        for $class in $all.categories/self::mei:category['#bw_monitum_classification' = tokenize(normalize-space(@class),' ')]
         return $class/string(@xml:id)
     
     let $context.correct := 
-        for $context in $all.categories/self::mei:category[@class = '#bw_monitum_kontext']
+        for $context in $all.categories/self::mei:category['#bw_monitum_kontext' = tokenize(normalize-space(@class),' ')]
         return $context/string(@xml:id)
         
     let $implementation := 
-        for $class in $all.categories/self::mei:category[@class = '#bw_implementation_completeness']
+        for $class in $all.categories/self::mei:category['#bw_implementation_completeness' = tokenize(normalize-space(@class),' ')]
         return $class/string(@xml:id)
     
     return map {
