@@ -40,6 +40,9 @@ declare variable $config:ema-basepath := $config:public-base-uri || '/ema/';
 
 declare variable $config:module3-basepath := $config:public-base-uri || '/module3/';
 
+(: module 4 onwards :)
+declare variable $config:documents-basepath := $config:public-base-uri || '/documents/';
+
 declare variable $config:xslt-basepath := $config:app-root || '/resources/xslt/';
 
 declare variable $config:repo-descriptor := doc(concat($config:app-root, '/repo.xml'))/repo:meta;

@@ -74,3 +74,8 @@ declare function ef:getTeiByContextLink($file.id as xs:string, $context.id as xs
     let $link := $config:module3-basepath || $file.id || '/snippet/' || $context.id || '.tei?source=' || $source.id || '&amp;state=' || $state.id
     return $link
 };
+
+declare function ef:getDocumentLink($document.id as xs:string) as xs:string {
+    let $link := $config:documents-basepath || $document.id || '.json'
+    return $link
+};

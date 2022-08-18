@@ -293,6 +293,33 @@ if(matches($exist:path,'/desc/[\da-zA-Z-_\.,]+.json$')) then (
     </dispatch>
 ) else
 
+(: endpoints for module 4 :)
+if(matches($exist:path,'/module4/documents\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module4/module4-get-documents.xql"/>
+    </dispatch>
+
+) else
+
+(: endpoints for module 4 onwards :)
+if(matches($exist:path,'/documents/[\da-zA-Z-_\.,]+\.json$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    
+    let $document.id := substring-before(tokenize($exist:path,'/')[last()],'.json')
+    
+    return
+    
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/module4/get-document.xql">
+          (: pass in the UUID of the document passed in the URI :)
+            <add-parameter name="document.id" value="{$document.id}"/>
+        </forward>
+    </dispatch>
+
+) else
+
 (: endpoint for index.html :)
 if ($exist:path eq "/index.html") then (
     (: forward root path to index.xql :)
