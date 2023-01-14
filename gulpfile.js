@@ -145,7 +145,7 @@ gulp.task('data', gulp.series(
           .pipe(gulp.dest('./build/data'))
     },
     function() {
-        return del(['./build/tmp/**/*','./build/tmp'])
+        return del(['./build/tmp'])
     })
 )
 
