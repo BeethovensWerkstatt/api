@@ -37,7 +37,7 @@ RUN npm install \
 # Now running the eXist-db
 # and adding our freshly built xar-package
 #########################
-FROM stadlerpeter/existdb
+FROM stadlerpeter/existdb:6.0.1
 
 # add SMuFL-browser specific settings
 # for a production ready environment with
