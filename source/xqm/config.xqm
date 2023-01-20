@@ -30,7 +30,9 @@ declare variable $config:public-base-uri := '$$deployTarget$$'; (: This will be 
 
 declare variable $config:data-root := $config:app-root || '/data/';
 
-declare variable $config:module3-root := $config:data-root || '/module3/';
+declare variable $config:module1-root := $config:data-root || 'module1/';
+
+declare variable $config:module3-root := $config:data-root || 'module3/';
 
 declare variable $config:iiif-basepath := $config:public-base-uri || '/iiif/';
 
