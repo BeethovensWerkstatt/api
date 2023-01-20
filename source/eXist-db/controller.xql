@@ -106,95 +106,400 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/overlaysPlus/[\da-zA-Z-_\
 
 ) else
 
-(: endpoints for module 2 :)
-if(matches($exist:path,'/module2/comparisons\.json')) then (
-    response:set-header("Access-Control-Allow-Origin", "*"),
+(: endpoints for module 1 VideApp:)
+if (starts-with(lower-case($exist:path), '/module1/')) then (
+    
+    if (contains(lower-case($exist:path),'/module1/listall.json')) then
+        (: forward to xql :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_all_MEI_files_from_DB_as_JSON.xql"/>
+        </dispatch>
+        )
+        
+    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z-_\.]+.xml$')) then
+        (: request a complete edition as one XML file :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_MEI_file_as_XML.xql">
+                <add-parameter name="file.id" value="{replace(tokenize($exist:path,'/')[last()],'.xml','')}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/finalstate.xml$')) then
+        (: request a complete edition as one XML file :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_final_state_as_XML.xql">
+                <add-parameter name="edition.id" value="{replace(tokenize($exist:path,'/')[last() - 1],'.xml','')}"/>
+            </forward>
+        </dispatch>
+        )    
+    
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+.xml$')) then
+        (: request an element as XML snippet :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_MEI_snippet_as_XML.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+                <add-parameter name="element.id" value="{replace(tokenize($exist:path,'/')[last()],'.xml','')}"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/[\d\.]+,[\d\.]+/facsimileinfo.json$')) then
+        (: get information about an element for displaying it as facsimile :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_facsimile_info_for_element_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 4]}"/>
+                <add-parameter name="element.id" value="{replace(tokenize($exist:path,'/')[last() - 2],'.xml','')}"/>
+                <add-parameter name="w" value="{substring-before(tokenize($exist:path,'/')[last() - 1],',')}"/>
+                <add-parameter name="h" value="{substring-after(tokenize($exist:path,'/')[last() - 1],',')}"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z-_\.]+.svg$')) then
+        (: request a complete edition as one XML file :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_SVG_file_as_XML.xql">
+                <add-parameter name="file.id" value="{replace(tokenize($exist:path,'/')[last()],'.xml','')}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/states/overview.json$')) then
+        (: request a list of states for navigation :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_geneticStatesList_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/annotations.json$')) then
+        (: request a list of annotations with their metadata, excluding their content :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_annotations_as_json.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/page/[\da-zA-Z-_\.]+/annotations.json$')) then
+        (: request a list of annotations on a page :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_annotations_on_page_as_json.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="page.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )    
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/scars/categories.json$')) then
+        (: request a list of scar categories :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_scar_categories_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+            </forward>
+        </dispatch>
+        )    
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/state/[\da-zA-Z-_\.]+/otherStates/[\da-zA-Z-_\.]+/meiSnippet.xml$')) then
+        (: forward to xql :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_geneticState_as_XML.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="state.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="other.states" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/states/[\da-zA-Z-_\.]+/preview.xml$')) then
+        (: request preview rendering of an item within a staff, relative to a given set of states :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_element_preview_as_XML.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="element.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="states" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/(en|de)/description.json$')) then
+        (: request a summary of any given element :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_element_description_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 4]}"/>
+                <add-parameter name="element.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+                <add-parameter name="lang" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        
+        )
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/firstState/meiSnippet.xml$')) then
+        (: request the first state of an edition as MEI snippet (which can be rendered with Verovio) :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_geneticState_as_XML.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+                <add-parameter name="state.id" value="''"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/reconstructionSetup.json$')) then
+        (: request a list of states for navigation :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_reconstruction_setup_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/invarianceRelations.json$')) then
+        (: request a list of states for navigation :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_invariance_relations_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/shape/[\da-zA-Z-_\.]+/info.json$')) then
+        (: request the MEI information related to a specified shape :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_shape_info_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="shape.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+    
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/object/[\da-zA-Z-_\.]+/shapes.json$')) then
+        (: request the shapes belonging to a given object :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_shapes_for_object_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="object.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/introduction.html$')) then
+        (: request the introductory text of an edition :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_introduction_as_HTML.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/pages.json$')) then
+        (: request a list of all pages in an edition :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_pages_in_edition_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/measures.json$')) then
+        (: request a list of all pages in an edition :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_measure_overview_as_JSON.xql">
+                <add-parameter name="edition.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+        )
+        
+    (: <temp>
+    else if (matches($exist:path,'/module1/notePositions.json$')) then
+        (: request a list of all pages in an edition :)
+        (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module1/get_note_positions_as_JSON.xql"/>
+        </dispatch>
+        )
+    </temp> :)
+    
+    (: all other requests are forwarded to index.html, which will inform about the available endpoints :)
+    else (
+        response:set-header("Access-Control-Allow-Origin", "*"),
+    
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <redirect url="index.html"/>
+        </dispatch>
+    )
 
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getComparisonListing.xql"/>
-    </dispatch>
-    
-    ) else if(matches($exist:path,'/data/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/basic.xml')) then (
-    
-    response:set-header("Access-Control-Allow-Origin", "*"),
-    
-    let $hiddenStaves := request:get-parameter('hideStaves', '')
-    return
-    
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
-            <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
-            <add-parameter name="method" value="comparison"/>
-            <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
-            <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
-            <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
-        </forward>
-    </dispatch>
+) else 
 
-(: retrieves the MEI for an event density comparison :)
-) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/eventDensity.xml$')) then (
-    
-    response:set-header("Access-Control-Allow-Origin", "*"),
-    
-    let $hiddenStaves := request:get-parameter('hideStaves', '')
-    return
-    
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
-            <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
-            <add-parameter name="method" value="eventDensity"/>
-            <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
-            <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
-            <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
-        </forward>
-    </dispatch>
 
-(: retrieves the MEI for a melodic contour comparison :)
-) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/melodicComparison.xml$')) then (
-    
-    response:set-header("Access-Control-Allow-Origin", "*"),
-    
-    let $hiddenStaves := request:get-parameter('hideStaves', '')
-    return
-    
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
-            <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
-            <add-parameter name="method" value="melodicComparison"/>
-            <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
-            <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
-            <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
-        </forward>
-    </dispatch>
+(: endpoints for module 2:)
+if (starts-with(lower-case($exist:path), '/module2/')) then (
 
-(: retrieves the MEI for a harmonic comparison :)
-) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/harmonicComparison.xml$')) then (
+    if(matches($exist:path,'/module2/comparisons\.json')) then (
+        response:set-header("Access-Control-Allow-Origin", "*"),
     
-    response:set-header("Access-Control-Allow-Origin", "*"),
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getComparisonListing.xql"/>
+        </dispatch>
+        
+        ) else if(matches($exist:path,'/data/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/basic.xml')) then (
+        
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        let $hiddenStaves := request:get-parameter('hideStaves', '')
+        return
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
+                <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="method" value="comparison"/>
+                <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+                <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
+            </forward>
+        </dispatch>
     
-    let $hiddenStaves := request:get-parameter('hideStaves', '')
-    return
+    (: retrieves the MEI for an event density comparison :)
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/eventDensity.xml$')) then (
+        
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        let $hiddenStaves := request:get-parameter('hideStaves', '')
+        return
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
+                <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="method" value="eventDensity"/>
+                <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+                <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
+            </forward>
+        </dispatch>
     
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
-            <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
-            <add-parameter name="method" value="harmonicComparison"/>
-            <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
-            <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
-            <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
-        </forward>
-    </dispatch>
+    (: retrieves the MEI for a melodic contour comparison :)
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/melodicComparison.xml$')) then (
+        
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        let $hiddenStaves := request:get-parameter('hideStaves', '')
+        return
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
+                <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="method" value="melodicComparison"/>
+                <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+                <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
+            </forward>
+        </dispatch>
     
-(: retrieves the HTML introduction for a comparison :)    
-) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/intro.html')) then (
+    (: retrieves the MEI for a harmonic comparison :)
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/harmonicComparison.xml$')) then (
+        
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        let $hiddenStaves := request:get-parameter('hideStaves', '')
+        return
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getAnalysis.xql">
+                <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 5]}"/>
+                <add-parameter name="method" value="harmonicComparison"/>
+                <add-parameter name="mdiv" value="{tokenize($exist:path,'/')[last() - 3]}"/>
+                <add-parameter name="transpose" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+                <add-parameter name="hiddenStaves" value="{$hiddenStaves}"/>
+            </forward>
+        </dispatch>
+        
+    (: retrieves the HTML introduction for a comparison :)    
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/intro.html')) then (
+        
+        response:set-header("Access-Control-Allow-Origin", "*"),
+        
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/resources/xql/module2/getTextIntroduction.xql">
+                <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+            </forward>
+        </dispatch>
+    )
     
-    response:set-header("Access-Control-Allow-Origin", "*"),
+    (: all other requests are forwarded to index.html, which will inform about the available endpoints :)
+    else (
+        response:set-header("Access-Control-Allow-Origin", "*"),
     
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/module2/getTextIntroduction.xql">
-            <add-parameter name="comparisonId" value="{tokenize($exist:path,'/')[last() - 1]}"/>
-        </forward>
-    </dispatch>
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <redirect url="index.html"/>
+        </dispatch>
+    )
 
 ) else
 
