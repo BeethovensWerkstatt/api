@@ -39,7 +39,7 @@ if(ends-with($exist:path,'/iiif/documents.json')) then (
 
 
 (: retrieves a IIIF MANIFEST for a given document - manifest.json = get-manifest.json.xql :)
-if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/manifest(\.json)?')) then (
+if(matches($exist:path,'/iiif/document/[\da-zA-Z_\.-]+/manifest(\.json)?')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -52,7 +52,7 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/manifest(\.json)?')) then
 ) else
 
 (: retrieves a IIIF MANIFEST for a given canvas :)
-(:if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/canvas/[\da-zA-Z-_\.]+')) then (
+(:if(matches($exist:path,'/iiif/document/[\da-zA-Z_\.-]+/canvas/[\da-zA-Z_\.-]+')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -65,7 +65,7 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/manifest(\.json)?')) then
 ) else:)
 
 (: retrieves a IIIF annotation list for the zones on a given page :)
-if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/list/[\da-zA-Z-_\.]+_zones$')) then (
+if(matches($exist:path,'/iiif/document/[\da-zA-Z_\.-]+/list/[\da-zA-Z_\.-]+_zones$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -79,7 +79,7 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/list/[\da-zA-Z-_\.]+_zone
 ) else
 
 (: retrieves an SVG file with the overlays for a given page :)
-if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/overlays/[\da-zA-Z-_\.]+\.svg$')) then (
+if(matches($exist:path,'/iiif/document/[\da-zA-Z_\.-]+/overlays/[\da-zA-Z_\.-]+\.svg$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -93,7 +93,7 @@ if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/overlays/[\da-zA-Z-_\.]+\
 ) else
 
 (: retrieves an SVG file with the overlays for a given page, enriched with additional data attributes identifying monita and some such :)
-if(matches($exist:path,'/iiif/document/[\da-zA-Z-_\.]+/overlaysPlus/[\da-zA-Z-_\.]+\.svg$')) then (
+if(matches($exist:path,'/iiif/document/[\da-zA-Z_\.-]+/overlaysPlus/[\da-zA-Z_\.-]+\.svg$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -119,7 +119,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z-_\.]+.xml$')) then
+    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z_\.-]+.xml$')) then
         (: request a complete edition as one XML file :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -131,7 +131,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/finalstate.xml$')) then
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z_\.-]+/finalstate.xml$')) then
         (: request a complete edition as one XML file :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -143,7 +143,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )    
     
-    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+.xml$')) then
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z_\.-]+/element/[\da-zA-Z_\.-]+.xml$')) then
         (: request an element as XML snippet :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -156,7 +156,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/[\d\.]+,[\d\.]+/facsimileinfo.json$')) then
+    else if (matches(lower-case($exist:path),'/module1/edition/[\da-zA-Z_\.-]+/element/[\da-zA-Z_\.-]+/[\d\.]+,[\d\.]+/facsimileinfo.json$')) then
         (: get information about an element for displaying it as facsimile :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -171,7 +171,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z-_\.]+.svg$')) then
+    else if (matches(lower-case($exist:path),'/module1/file/[\da-zA-Z_\.-]+.svg$')) then
         (: request a complete edition as one XML file :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -183,7 +183,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/states/overview.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/states/overview.json$')) then
         (: request a list of states for navigation :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -195,7 +195,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/annotations.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/annotations.json$')) then
         (: request a list of annotations with their metadata, excluding their content :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -207,7 +207,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/page/[\da-zA-Z-_\.]+/annotations.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/page/[\da-zA-Z_\.-]+/annotations.json$')) then
         (: request a list of annotations on a page :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -220,7 +220,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )    
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/scars/categories.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/scars/categories.json$')) then
         (: request a list of scar categories :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -232,7 +232,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )    
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/state/[\da-zA-Z-_\.]+/otherStates/[\da-zA-Z-_\.]+/meiSnippet.xml$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/state/[\da-zA-Z_\.-]+/otherStates/[\da-zA-Z_\.-]+/meiSnippet.xml$')) then
         (: forward to xql :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -246,7 +246,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/states/[\da-zA-Z-_\.]+/preview.xml$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/element/[\da-zA-Z_\.-]+/states/[\da-zA-Z_\.-]+/preview.xml$')) then
         (: request preview rendering of an item within a staff, relative to a given set of states :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -261,7 +261,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+/(en|de)/description.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/element/[\da-zA-Z_\.-]+/(en|de)/description.json$')) then
         (: request a summary of any given element :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -276,7 +276,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         
         )
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/firstState/meiSnippet.xml$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/firstState/meiSnippet.xml$')) then
         (: request the first state of an edition as MEI snippet (which can be rendered with Verovio) :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -289,7 +289,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/reconstructionSetup.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/reconstructionSetup.json$')) then
         (: request a list of states for navigation :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -301,7 +301,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/invarianceRelations.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/invarianceRelations.json$')) then
         (: request a list of states for navigation :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -313,7 +313,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/shape/[\da-zA-Z-_\.]+/info.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/shape/[\da-zA-Z_\.-]+/info.json$')) then
         (: request the MEI information related to a specified shape :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -326,7 +326,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
     
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/object/[\da-zA-Z-_\.]+/shapes.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/object/[\da-zA-Z_\.-]+/shapes.json$')) then
         (: request the shapes belonging to a given object :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -339,7 +339,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/introduction.html$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/introduction.html$')) then
         (: request the introductory text of an edition :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -351,7 +351,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/pages.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/pages.json$')) then
         (: request a list of all pages in an edition :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -363,7 +363,7 @@ if (starts-with(lower-case($exist:path), '/module1/')) then (
         </dispatch>
         )
         
-    else if (matches($exist:path,'/module1/edition/[\da-zA-Z-_\.]+/measures.json$')) then
+    else if (matches($exist:path,'/module1/edition/[\da-zA-Z_\.-]+/measures.json$')) then
         (: request a list of all pages in an edition :)
         (
         response:set-header("Access-Control-Allow-Origin", "*"),
@@ -409,7 +409,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
             <forward url="{$exist:controller}/resources/xql/module2/getComparisonListing.xql"/>
         </dispatch>
         
-        ) else if(matches($exist:path,'/data/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/basic.xml')) then (
+        ) else if(matches($exist:path,'/data/[\da-zA-Z_\.-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.-]+/basic.xml')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -427,7 +427,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for an event density comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/eventDensity.xml$')) then (
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.-]+/eventDensity.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -445,7 +445,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for a melodic contour comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/melodicComparison.xml$')) then (
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.-]+/melodicComparison.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -463,7 +463,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for a harmonic comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/mdiv/[\d]+/transpose/[\da-zA-Z-_\.]+/harmonicComparison.xml$')) then (
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.-]+/harmonicComparison.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -481,7 +481,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
         
     (: retrieves the HTML introduction for a comparison :)    
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z-_\.]+/intro.html')) then (
+    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.-]+/intro.html')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -514,7 +514,7 @@ if(matches($exist:path,'/module3/works\.json')) then (
 ) else
 
 (: get specific work:)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -526,7 +526,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+\.json')) then (
 ) else
 
 (: get info about manifestation / source :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+\.json')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/manifestation/[\da-zA-Z_\.-]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -539,7 +539,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+\.
 ) else
 
 (: get info about mdiv :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/mdiv/[\da-zA-Z-_\.]+\.json')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/mdiv/[\da-zA-Z_\.-]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -552,7 +552,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/mdiv/[\da-zA-Z-_\.]+\.json')) t
 ) else
 
 (: get measures in an mdiv :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+/measures\.json$')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/manifestation/[\da-zA-Z_\.-]+/measures\.json$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     
     let $scope := request:get-parameter('scope', '')
@@ -574,7 +574,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/manifestation/[\da-zA-Z-_\.]+/m
 ) else
 
 (: get info about measure :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/measure/[\da-zA-Z-_\.]+\.json')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/measure/[\da-zA-Z_\.-]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -587,7 +587,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/measure/[\da-zA-Z-_\.]+\.json')
 ) else
 
 (: get specific complaint:)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/complaints/[\da-zA-Z-_\.]+\.json')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/complaints/[\da-zA-Z_\.-]+\.json')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -600,7 +600,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/complaints/[\da-zA-Z-_\.]+\.jso
 ) else
 
 (: get MEI element:)
-if(matches($exist:path,'/file/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+')) then (
+if(matches($exist:path,'/file/[\da-zA-Z_\.-]+/element/[\da-zA-Z_\.-]+')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -613,7 +613,7 @@ if(matches($exist:path,'/file/[\da-zA-Z-_\.]+/element/[\da-zA-Z-_\.]+')) then (
 ) else
 
 (: get MEI file:)
-if(matches($exist:path,'/file/[\da-zA-Z-_\.]+.xml$')) then (
+if(matches($exist:path,'/file/[\da-zA-Z_\.-]+.xml$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
 
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -625,7 +625,7 @@ if(matches($exist:path,'/file/[\da-zA-Z-_\.]+.xml$')) then (
 ) else
 
 (: get MEI extract for showing a single complaint's text :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.mei$')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/snippet/[\da-zA-Z_\.,-]+.mei$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     
     let $document.id := tokenize($exist:path,'/')[last() - 2]
@@ -650,7 +650,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.mei$')
 ) else
 
 (: get TEI extract for showing a single complaint's text :)
-if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.tei$')) then (
+if(matches($exist:path,'/module3/[\da-zA-Z_\.-]+/snippet/[\da-zA-Z_\.,-]+.tei$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     
     let $document.id := tokenize($exist:path,'/')[last() - 2]
@@ -673,7 +673,7 @@ if(matches($exist:path,'/module3/[\da-zA-Z-_\.]+/snippet/[\da-zA-Z-_\.,]+.tei$')
 ) else
 
 (: get Info about an element :)
-if(matches($exist:path,'/desc/[\da-zA-Z-_\.,]+.json$')) then (
+if(matches($exist:path,'/desc/[\da-zA-Z_\.,-]+.json$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     
     let $element.id := substring-before(tokenize($exist:path,'/')[last()],'.json')
@@ -701,7 +701,7 @@ if(matches($exist:path,'/module4/documents\.json')) then (
 ) else
 
 (: endpoints for module 4 onwards :)
-if(matches($exist:path,'/documents/[\da-zA-Z-_\.,]+\.json$')) then (
+if(matches($exist:path,'/documents/[\da-zA-Z_\.,-]+\.json$')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     
     let $document.id := substring-before(tokenize($exist:path,'/')[last()],'.json')
