@@ -427,7 +427,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for an event density comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/eventDensity.xml$')) then (
+    ) else if(matches($exist:path,'/module2/data/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/eventDensity.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -445,7 +445,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for a melodic contour comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/melodicComparison.xml$')) then (
+    ) else if(matches($exist:path,'/module2/data/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/melodicComparison.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
@@ -463,7 +463,7 @@ if (starts-with(lower-case($exist:path), '/module2/')) then (
         </dispatch>
     
     (: retrieves the MEI for a harmonic comparison :)
-    ) else if(matches($exist:path,'/module2/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/harmonicComparison.xml$')) then (
+    ) else if(matches($exist:path,'/module2/data/[\da-zA-Z_\.\-]+/mdiv/[\d]+/transpose/[\da-zA-Z_\.\-]+/harmonicComparison.xml$')) then (
         
         response:set-header("Access-Control-Allow-Origin", "*"),
         
