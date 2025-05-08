@@ -51,8 +51,8 @@ let $scars :=
     
     let $scar.label := 
         if(count($affected.measures/descendant-or-self::mei:measure) gt 1)
-        then(concat(($affected.measures)[1]/@label,' – ',($affected.measures)[last()]/@label))
-        else(($affected.measures)[1]/@label)
+        then(concat(($affected.measures)[1]/string(@label),' – ',($affected.measures)[last()]/string(@label)))
+        else(($affected.measures)[1]/string(@label))
     let $scar.ordered := 
         if ($scar/@ordered) 
         then($scar/xs:boolean(@ordered))
