@@ -112,7 +112,7 @@ and here: http://www.ietf.org/rfc/rfc4122.txt
                 mod 16 + 1  
             ]"/>
     </xsl:function>
-    <xsl:function name="math:power">
+    <!-- <xsl:function name="math:power">
         <xsl:param name="base"/>
         <xsl:param name="power"/>
         <xsl:choose>
@@ -134,7 +134,7 @@ and here: http://www.ietf.org/rfc/rfc4122.txt
                 </xsl:call-template>
             </xsl:otherwise>
         </xsl:choose>
-    </xsl:function>
+    </xsl:function> -->
     <xsl:template name="math:_power">
         <xsl:param name="base"/>
         <xsl:param name="power"/>

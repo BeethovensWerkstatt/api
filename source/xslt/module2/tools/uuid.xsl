@@ -83,7 +83,7 @@ and here: http://www.ietf.org/rfc/rfc4122.txt
         <xsl:param name="dec-val"/>
         <xsl:value-of separator="" select="             for $i in 1 to 15             return (0 to 9, tokenize('A B C D E F', ' '))             [             $dec-val idiv             xs:integer(math:power(16, 15 - $i))             mod 16 + 1             ]"/>
     </xsl:function>
-    <xsl:function name="math:power">
+    <!-- <xsl:function name="math:power">
         <xsl:param name="base"/>
         <xsl:param name="power"/>
         <xsl:choose>
@@ -105,7 +105,7 @@ and here: http://www.ietf.org/rfc/rfc4122.txt
                 </xsl:call-template>
             </xsl:otherwise>
         </xsl:choose>
-    </xsl:function>
+    </xsl:function> -->
     <xsl:template name="math:_power">
         <xsl:param name="base"/>
         <xsl:param name="power"/>

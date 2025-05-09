@@ -383,7 +383,8 @@
         </xsl:choose>
     </xsl:template>
     
-    <xsl:function name="math:pow">
+    <!-- not needed in 2025 anymore -->
+    <!-- <xsl:function name="math:pow">
         <xsl:param name="base"/>
         <xsl:param name="power"/>
         <xsl:choose>
@@ -397,7 +398,7 @@
                 <xsl:value-of select="$base * math:pow($base,$power - 1)"/>
             </xsl:otherwise>
         </xsl:choose>
-    </xsl:function>
+    </xsl:function> -->
     
     <!-- generic copy template -->
     <xsl:template match="node() | @*" mode="#all">

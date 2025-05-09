@@ -769,7 +769,8 @@
     </xsl:template>
     
     <!-- required only as exist-db doesn't support the regular math:pow function: bug! -->
-    <xsl:function name="math:pow">
+    <!-- not required anymore in 2025 -->
+    <!-- <xsl:function name="math:pow">
         <xsl:param name="base"/>
         <xsl:param name="power"/>
         <xsl:choose>
@@ -783,7 +784,7 @@
                 <xsl:value-of select="$base * math:pow($base,$power - 1)"/>
             </xsl:otherwise>
         </xsl:choose>
-    </xsl:function>
+    </xsl:function> -->
     
     <!-- generic copy template -->
     <xsl:template match="node() | @*" mode="#all">
