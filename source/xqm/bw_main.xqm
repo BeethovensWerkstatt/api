@@ -10,7 +10,7 @@ declare namespace util = "http://exist-db.org/xquery/util";
 declare namespace transform = "http://exist-db.org/xquery/transform";
 
 declare function bw:getPosition($states as node()+, $follows as xs:string*, $prev as xs:string*, $position as xs:integer, $scar.ordered as xs:boolean) as xs:integer {
-    let $preceding.states := $states[concat('"', @xml:id, '"') = ($follows, $prev)]
+    let $preceding.states := $states[@xml:id = ($follows, $prev)]
     let $positions :=
         for $state in $preceding.states
         let $state.follows :=
@@ -18,7 +18,7 @@ declare function bw:getPosition($states as node()+, $follows as xs:string*, $pre
             where ($otherState/@xml:id = tokenize($state/replace(@follows, '#', ''), ' ')
                 or $state/@xml:id = tokenize($otherState/replace(@precedes, '#', ''), ' '))
             return
-                '"' || $otherState/@xml:id || '"'
+                $otherState/@xml:id
         
         let $state.prev :=
             for $otherState in $states[@xml:id != $state/@xml:id]
@@ -26,7 +26,7 @@ declare function bw:getPosition($states as node()+, $follows as xs:string*, $pre
                 or $state/@xml:id = tokenize($otherState/replace(@next, '#', ''), ' ')
                 or $scar.ordered = true() and $otherState/following-sibling::mei:state[1]/@xml:id = $state/@xml:id)
             return
-                '"' || $otherState/@xml:id || '"'
+                $otherState/@xml:id
         
         let $state.position := bw:getPosition($states, $state.follows, $state.prev, $position + 1, $scar.ordered)
         return $state.position
