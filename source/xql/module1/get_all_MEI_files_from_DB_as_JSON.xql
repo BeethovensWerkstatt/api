@@ -88,7 +88,7 @@ let $entries :=
                 'fullTitle': $edition.title,
                 'desc': $edition.desc,
                 'revisions': array { $revisions },
-                'previewUri': $preview.baseURI || '/' || $preview.region || $preview.size || '0/default.jpg',
+                'previewUri': $preview.baseURI || (if (ends-with($preview.baseURI, '/')) then ('') else ('/')) || $preview.region || $preview.size || '0/default.jpg',
                 'supportedViews': array { $supportedViews}
             })
             (: '"' || $edition.id || '":{' ||
