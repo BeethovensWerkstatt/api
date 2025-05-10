@@ -97,6 +97,7 @@ declare function mei:getPages($pageRef as attribute(), $doc as node()) as map(*)
         'height_mm': $page.height.mm,
         'facsRef': $page.facsRef,
         'pageRef': $page.pageRef,
+        'shapesRef': $page.shapesRef,
         'measures': array { $measures },
         'patches': array { $patches }
     }
