@@ -113,13 +113,25 @@ async function buildXQuery(replacements) {
   
   if (await exists(xqmSrc)) {
     await fs.mkdir(xqmDest, { recursive: true });
-    const files = await fs.readdir(xqmSrc);
     
-    for (const file of files) {
-      const srcPath = path.join(xqmSrc, file);
-      const destPath = path.join(xqmDest, file);
-      await processTemplate(srcPath, destPath, replacements);
-    }
+    // Process all files and subdirectories
+    const processDir = async (srcDir, destDir) => {
+      const entries = await fs.readdir(srcDir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const srcPath = path.join(srcDir, entry.name);
+        const destPath = path.join(destDir, entry.name);
+        
+        if (entry.isDirectory()) {
+          await fs.mkdir(destPath, { recursive: true });
+          await processDir(srcPath, destPath);
+        } else {
+          await processTemplate(srcPath, destPath, replacements);
+        }
+      }
+    };
+    
+    await processDir(xqmSrc, xqmDest);
   }
   
   console.log('✓ Built XQuery files');

@@ -175,6 +175,27 @@ No build framework dependencies:
 - `archiver` - ZIP/XAR creation
 - `chokidar` - File watching
 
+### REST API Architecture
+
+The API uses **RESTXQ** for declarative routing with REST annotations:
+
+**All 44 endpoints migrated to RESTXQ modules:**
+- `iiif-api.xqm` - IIIF Presentation API (5 endpoints)
+- `module1-api.xqm` - Digital Edition (17 endpoints)
+- `module2-api.xqm` - Analysis (13 endpoints)
+- `module3-api.xqm` - Sketch Analysis (3 endpoints)
+- `module4-api.xqm` - Engraving Comparison (2 endpoints)
+- `services-api.xqm` - Context, EMA, File services (4 endpoints)
+
+The controller.xql (375 lines) simply forwards requests to RESTXQ, down from 737 lines of pattern matching.
+
+**Benefits of RESTXQ:**
+- Declarative routing with annotations (`%rest:GET`, `%rest:path()`)
+- Type safety with parameter declarations
+- Cleaner code organization by module
+- Easier to maintain and extend
+- Supports future OpenAPI documentation generation
+
 ## License
 
 AGPL-3.0
