@@ -29,8 +29,7 @@ RUN addgroup apibuilder \
 USER apibuilder:apibuilder
 
 RUN npm install \
-    && cp existConfig.tmpl.json existConfig.json \
-    && ./node_modules/.bin/gulp dist
+    && npm run dist:full
 
 
 #########################
