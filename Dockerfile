@@ -3,50 +3,52 @@
 # 1. set up the build environment and build the expath-package
 # 2. run the eXist-db
 #########################
-FROM openjdk:8-jdk as builder
+FROM node:18-bookworm AS builder
 LABEL maintainer="Johannes Kepper"
 
 ENV API_BUILD_HOME="/opt/api-build"
 
-ADD https://deb.nodesource.com/setup_14.x /tmp/nodejs_setup
-
 WORKDIR ${API_BUILD_HOME}
 
 RUN apt-get update \
-    && apt-get install -y --force-yes git \
-    # installing nodejs
-    && chmod 755 /tmp/nodejs_setup; sync \
-    && /tmp/nodejs_setup \
-    && apt-get install -y nodejs \
-    && ln -s /usr/bin/nodejs /usr/local/bin/node
+    && apt-get install -y git
 
 COPY . .
 
-RUN addgroup apibuilder \
-    && adduser apibuilder --ingroup apibuilder --disabled-password --system \
-    && chown -R apibuilder:apibuilder ${API_BUILD_HOME}
-
-USER apibuilder:apibuilder
-
 RUN npm install \
-    && npm run dist:full
+    && npm run dist
 
 
 #########################
 # Now running the eXist-db
 # and adding our freshly built xar-package
 #########################
-FROM stadlerpeter/existdb:6.0.1
+FROM stadlerpeter/existdb:6.4.0-jre17
 
-# add SMuFL-browser specific settings
-# for a production ready environment with
-# SMuFL-browser as the root app.
+# add API specific settings
 # For more details about the options see
 # https://github.com/peterstadler/existdb-docker
-ENV EXIST_ENV="production"
-ENV EXIST_CONTEXT_PATH="/"
-ENV EXIST_DEFAULT_APP_PATH="xmldb:exist:///db/apps/api"
+# Using development mode to allow RESTXQ module registration
+# TODO: For production, need to configure permissions properly
+ENV EXIST_ENV="development"
+ENV EXIST_CONTEXT_PATH="/exist"
 
-# simply copy our SMuFL-browser xar package
-# to the eXist-db autodeploy folder
-COPY --from=builder /opt/api-build/dist/*.xar ${EXIST_HOME}/autodeploy/
+# Set deterministic admin password for development
+# WARNING: Change this for production deployments!
+ENV EXIST_PASSWORD="admin123"
+
+WORKDIR /opt/exist
+
+# Copy custom entrypoint and API package
+USER root
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+COPY --from=builder /opt/api-build/dist/api-*.xar ${EXIST_HOME}/autodeploy/
+RUN chown wegajetty:wegajetty ${EXIST_HOME}/autodeploy/api-*.xar \
+    && ls -lh ${EXIST_HOME}/autodeploy/api-*.xar
+
+USER wegajetty
+
+# Override entrypoint to use our custom startup script
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

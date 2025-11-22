@@ -1,0 +1,14 @@
+# Don't copy existing build artifacts
+build/
+dist/
+
+# Don't copy node_modules
+node_modules/
+
+# Don't copy git
+.git/
+.gitignore
+
+# Don't copy Docker files (except entrypoint which we need)
+Dockerfile
+.dockerignore

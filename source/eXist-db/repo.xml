@@ -9,6 +9,6 @@
     <type>application</type>
     <target>$$abbrev$$</target>
     <prepare>pre-install.xql</prepare>
-    <finish/>
+    <finish>post-install.xql</finish>
     <deployed>$$deployed$$</deployed>
 </meta>

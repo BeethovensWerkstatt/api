@@ -194,7 +194,19 @@ The controller.xql (375 lines) simply forwards requests to RESTXQ, down from 737
 - Type safety with parameter declarations
 - Cleaner code organization by module
 - Easier to maintain and extend
-- Supports future OpenAPI documentation generation
+- **OpenAPI 3.0 documentation** - Auto-generated from REST annotations
+
+### API Documentation
+
+**Interactive documentation with Swagger UI:**
+- Access at `/docs` endpoint (e.g., `http://localhost:8080/exist/apps/api/docs`)
+- Try endpoints directly from the browser
+- View request/response schemas
+
+**OpenAPI 3.0 specification:**
+- Available at `/openapi.json`
+- Auto-generated from RESTXQ annotations
+- Always up-to-date with code changes
 
 ## License
 

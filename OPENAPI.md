@@ -1,0 +1,469 @@
+# OpenAPI Documentation System
+
+## Overview
+
+The Beethovens Werkstatt API now includes **automatic OpenAPI 3.0 documentation generation** that introspects RESTXQ modules and creates an always-up-to-date API specification.
+
+## Features
+
+✅ **Auto-generated OpenAPI 3.0 spec** - No manual maintenance required  
+✅ **Interactive Swagger UI** - Try endpoints directly from browser  
+✅ **Always synchronized** - Updates automatically with code changes  
+✅ **Organized by modules** - Endpoints grouped by domain (IIIF, Analysis, etc.)  
+✅ **Parameter documentation** - Path parameters extracted from RESTXQ annotations  
+✅ **Response schemas** - Common data structures documented  
+
+## Endpoints
+
+### OpenAPI Specification
+```
+GET /openapi.json
+```
+Returns the complete OpenAPI 3.0 specification in JSON format.
+
+**Example:**
+```bash
+curl http://localhost:8080/exist/apps/api/openapi.json
+```
+
+### Interactive Documentation
+```
+GET /docs
+```
+Serves Swagger UI for interactive API exploration.
+
+**Access in browser:**
+```
+http://localhost:8080/exist/apps/api/docs
+```
+
+## Architecture
+
+### 1. Introspection Module (`openapi.xqm`)
+
+The core module that generates the OpenAPI specification:
+
+```xquery
+openapi:generate-spec() → map(*)
+```
+
+**Process:**
+1. Scans all REST modules in `/xqm/rest/`
+2. Queries the RESTXQ registry via `exrest:register-module()` to get registered endpoints
+3. Extracts `%rest:path()`, `%rest:GET`, `%rest:produces()`, etc. from registry XML
+4. Parses path parameters from `{$param}` syntax
+5. Groups endpoints by domain (IIIF, Analysis, etc.)
+6. Builds OpenAPI 3.0 JSON structure
+
+**Functions:**
+- `openapi:extract-paths-from-registry()` - Process registry result for one REST module
+- `openapi:get-tag-from-path()` - Categorize endpoint
+- `openapi:generate-schemas()` - Common data structures
+
+### 2. Swagger UI (`docs.html`)
+
+Interactive documentation interface using Swagger UI 5.10.3:
+
+**Features:**
+- Endpoint browser with search/filter
+- Request builder with parameter inputs
+- Try-it-out functionality
+- Response viewer with syntax highlighting
+- Schema explorer
+- CORS-enabled for testing
+
+**CDN Resources:**
+- `swagger-ui.css` - Styling
+- `swagger-ui-bundle.js` - Core functionality
+- `swagger-ui-standalone-preset.js` - Layout presets
+
+### 3. Controller Integration
+
+The controller routes these endpoints:
+
+```xquery
+(: OpenAPI spec :)
+if ($exist:path eq '/openapi.json') then (
+    <dispatch><forward url="/restxq{$exist:path}"/></dispatch>
+)
+
+(: Swagger UI :)
+if ($exist:path eq '/docs' or $exist:path eq '/docs/') then (
+    <dispatch><redirect url="docs.html"/></dispatch>
+)
+```
+
+## OpenAPI Specification Structure
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Beethovens Werkstatt API",
+    "description": "API for accessing MEI-encoded music data...",
+    "version": "0.3.0",
+    "contact": {
+      "name": "Beethovens Werkstatt",
+      "url": "https://beethovens-werkstatt.de"
+    },
+    "license": {
+      "name": "AGPL-3.0",
+      "url": "https://www.gnu.org/licenses/agpl-3.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/exist/apps/api",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/iiif/documents.json": {
+      "get": {
+        "summary": "List all documents with IIIF manifests",
+        "tags": ["IIIF"],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/document/{documentId}/file.xml": {
+      "get": {
+        "summary": "Get full MEI file",
+        "tags": ["Digital Edition"],
+        "parameters": [
+          {
+            "name": "documentId",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "The documentId identifier"
+          }
+        ],
+        "responses": {
+          "200": {"description": "Successful response"},
+          "404": {"description": "Resource not found"},
+          "500": {"description": "Internal server error"}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "manifest": {"type": "string", "format": "uri"}
+        }
+      }
+    }
+  }
+}
+```
+
+## Endpoint Categories (Tags)
+
+The specification organizes endpoints into logical groups:
+
+- **IIIF** - IIIF Presentation API endpoints
+- **Digital Edition** - MEI files, genetic states, annotations
+- **Analysis** - Comparative analysis, fragments, works
+- **Sketch Analysis** - Sketch studies and work lists
+- **Engraving Comparison** - Engraving comparison data
+- **EMA** - Encoded Musical Analysis
+- **File Services** - File and element retrieval
+- **Context** - JSON-LD context definitions
+
+## Schema Definitions
+
+Common data structures are defined in `components/schemas`:
+
+### Document
+```json
+{
+  "id": "string",
+  "title": "string",
+  "manifest": "string (uri)"
+}
+```
+
+### MEIFile
+```json
+{
+  "id": "string",
+  "title": "string",
+  "work": "string",
+  "version": "string"
+}
+```
+
+### Annotation
+```json
+{
+  "id": "string",
+  "type": "string",
+  "target": "string",
+  "body": "string"
+}
+```
+
+### Error
+```json
+{
+  "code": "integer",
+  "message": "string"
+}
+```
+
+## Usage Examples
+
+### Accessing the Specification
+
+**Download OpenAPI spec:**
+```bash
+curl http://localhost:8080/exist/apps/api/openapi.json > api-spec.json
+```
+
+**View in browser:**
+```
+http://localhost:8080/exist/apps/api/openapi.json
+```
+
+### Using Swagger UI
+
+1. **Open in browser:**
+   ```
+   http://localhost:8080/exist/apps/api/docs
+   ```
+
+2. **Browse endpoints** - Organized by tag (IIIF, Digital Edition, etc.)
+
+3. **Try an endpoint:**
+   - Click on an endpoint to expand it
+   - Click "Try it out"
+   - Fill in parameters
+   - Click "Execute"
+   - View response
+
+4. **Filter endpoints** - Use search box at top
+
+5. **View schemas** - Scroll to "Schemas" section at bottom
+
+### Integration with Tools
+
+**Import into Postman:**
+1. Open Postman
+2. Import → Link
+3. Paste: `http://localhost:8080/exist/apps/api/openapi.json`
+
+**Generate client code:**
+```bash
+# Install OpenAPI Generator
+npm install -g @openapitools/openapi-generator-cli
+
+# Generate TypeScript client
+openapi-generator-cli generate \
+  -i http://localhost:8080/exist/apps/api/openapi.json \
+  -g typescript-fetch \
+  -o ./api-client
+```
+
+**Validate specification:**
+```bash
+npm install -g @apidevtools/swagger-cli
+
+swagger-cli validate http://localhost:8080/exist/apps/api/openapi.json
+```
+
+## Extending Documentation
+
+### Adding Descriptions to Endpoints
+
+Use XQDoc comments in RESTXQ functions:
+
+```xquery
+(:~
+ : Get full MEI file for a document
+ : 
+ : Returns the complete MEI-encoded musical text with all
+ : genetic information, annotations, and facsimile links.
+ :
+ : @param $documentId The document identifier
+ : @return MEI XML file
+ :)
+declare
+    %rest:GET
+    %rest:path("/document/{$documentId}/file.xml")
+    %rest:produces("application/xml")
+function module1-api:get-file($documentId as xs:string) { ... }
+```
+
+The first line of the XQDoc comment becomes the OpenAPI `summary`.
+
+### Adding New Schemas
+
+Edit `openapi:generate-schemas()` in `openapi.xqm`:
+
+```xquery
+declare function openapi:generate-schemas() as map(*) {
+    map {
+        "YourNewSchema": map {
+            "type": "object",
+            "properties": map {
+                "field1": map { "type": "string" },
+                "field2": map { "type": "integer" }
+            }
+        }
+    }
+};
+```
+
+### Adding Response Examples
+
+Currently not implemented, but could be added by:
+1. Storing example responses in separate files
+2. Loading them in `openapi:extract-paths-from-module()`
+3. Adding to the `responses` section
+
+## Benefits
+
+### For Developers
+
+✅ **No manual docs to maintain** - Always synchronized with code  
+✅ **Easy testing** - Try endpoints without writing code  
+✅ **Clear contract** - Specification defines expected behavior  
+✅ **Client generation** - Auto-generate API clients  
+
+### For API Users
+
+✅ **Self-service exploration** - Browse all endpoints  
+✅ **Interactive testing** - Try before integrating  
+✅ **Clear documentation** - See parameters and responses  
+✅ **Search functionality** - Quickly find endpoints  
+
+### For Project
+
+✅ **Professional API** - Industry-standard documentation  
+✅ **Lower support burden** - Users can self-serve  
+✅ **Better adoption** - Easy to understand and use  
+✅ **Integration ready** - Standard format for tools  
+
+## Implementation Details
+
+### Dependencies
+
+**Runtime (in eXist-DB):**
+- `inspect` module - Function introspection
+- `config` module - Version and URL information
+- RESTXQ - REST annotation support
+
+**Frontend (CDN):**
+- Swagger UI 5.10.3 - Documentation interface
+
+### Performance
+
+- **Introspection overhead** - Minimal, happens on-demand
+- **Caching** - Could be added for production (not implemented)
+- **Load time** - Swagger UI loads quickly from CDN
+
+### Browser Compatibility
+
+Swagger UI supports:
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
+- Mobile browsers (responsive)
+
+## Future Enhancements
+
+### Potential Additions
+
+1. **Request/Response Examples**
+   - Add real example data to specification
+   - Improve documentation clarity
+
+2. **Authentication Documentation**
+   - If authentication is added later
+   - Document security schemes
+
+3. **Versioning**
+   - Support multiple API versions
+   - Version-specific docs
+
+4. **Advanced Schemas**
+   - More detailed schema definitions
+   - Validation rules (min/max, patterns)
+
+5. **Caching**
+   - Cache generated spec for performance
+   - Invalidate on module changes
+
+6. **Build-time Generation**
+   - Pre-generate spec during build
+   - Reduce runtime overhead
+
+## Troubleshooting
+
+### OpenAPI spec not loading
+
+**Check:**
+1. Is `openapi.xqm` in `/db/apps/api/resources/xqm/`?
+2. Are REST modules in `/db/apps/api/resources/xqm/rest/`?
+3. Check eXist-DB logs for XQuery errors
+
+**Test directly:**
+```bash
+curl http://localhost:8080/exist/apps/api/openapi.json
+```
+
+### Swagger UI shows errors
+
+**Check:**
+1. Is `docs.html` in `/db/apps/api/`?
+2. Can you access `/openapi.json`?
+3. Check browser console for errors
+4. Verify CORS headers are set
+
+### Endpoints not appearing
+
+**Check:**
+1. Do functions have `%rest:path()` annotations?
+2. Are modules in the scanned path?
+3. Check XQuery syntax in REST modules
+4. Restart eXist-DB to reload RESTXQ
+
+### Parameters not documented
+
+**Ensure:**
+1. Path uses `{$paramName}` syntax
+2. Function parameter matches: `$paramName as xs:string`
+3. No typos in parameter names
+
+## Files
+
+### Created
+- `source/xqm/openapi.xqm` - OpenAPI generator (220 lines)
+- `source/html/docs.html` - Swagger UI page (85 lines)
+
+### Modified
+- `source/eXist-db/controller.xql` - Added `/openapi.json` and `/docs` routes
+- `source/xqm/config.xqm` - Added `$config:app-version` and `$config:api-url`
+
+## Conclusion
+
+The OpenAPI documentation system provides automatic, always-up-to-date API documentation that enhances developer experience and makes the API more accessible. The introspection-based approach ensures documentation stays synchronized with code changes without manual maintenance.
+
+---
+
+**Documentation added:** November 21, 2024  
+**OpenAPI version:** 3.0.0  
+**Swagger UI version:** 5.10.3

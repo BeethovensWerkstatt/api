@@ -17,8 +17,22 @@ declare variable $exist:root external;
 
 (:~
  : RESTXQ endpoints - delegated to REST API modules in /xqm/rest/
- : All /iiif/* endpoints are now handled by iiif-api.xqm
+ : All API endpoints and OpenAPI spec are handled by RESTXQ
  :)
+
+(: OpenAPI documentation endpoint :)
+if ($exist:path eq '/openapi.json') then (
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/openapi.xql"/>
+    </dispatch>
+) else
+
+(: Swagger UI documentation :)
+if ($exist:path eq '/docs' or $exist:path eq '/docs/') then (
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <redirect url="docs.html"/>
+    </dispatch>
+) else
 
 (: IIIF endpoints - migrated to RESTXQ :)
 if (starts-with($exist:path, '/iiif/')) then (

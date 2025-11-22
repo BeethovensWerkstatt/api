@@ -26,7 +26,7 @@ declare variable $config:app-root :=
         substring-before($modulePath, '/resources/')
 ;
 
-declare variable $config:public-base-uri := '$$deployTarget$$'; (: This will be set automatically through gulpfile.js :)
+declare variable $config:public-base-uri := '$$deployTarget$$'; (: This will be set automatically through build.js :)
 
 declare variable $config:data-root := $config:app-root || '/data/';
 
@@ -50,3 +50,7 @@ declare variable $config:xslt-basepath := $config:app-root || '/resources/xslt/'
 declare variable $config:repo-descriptor := doc(concat($config:app-root, '/repo.xml'))/repo:meta;
 
 declare variable $config:expath-descriptor := doc(concat($config:app-root, '/expath-pkg.xml'))/expath:package;
+
+declare variable $config:app-version := $config:expath-descriptor/@version/string();
+
+declare variable $config:api-url := $config:public-base-uri;

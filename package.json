@@ -14,12 +14,12 @@
     "dist:local": "npm run build && npm run package",
     "dist:full": "npm run fetch-data && npm run dist",
     "watch": "node scripts/watch.js",
-    "deploy": "xst upload build/ /db/apps/api",
-    "deploy:xql": "xst upload build/resources/xql/ /db/apps/api/resources/xql/",
-    "deploy:xqm": "xst upload build/resources/xqm/ /db/apps/api/resources/xqm/",
-    "deploy:xslt": "xst upload build/resources/xslt/ /db/apps/api/resources/xslt/",
-    "deploy:controller": "xst upload build/controller.xql /db/apps/api/controller.xql",
-    "install:xar": "xst package install local-files dist/*.xar",
+    "deploy": "xst --server localhost upload build/ /db/apps/api",
+    "deploy:xql": "xst --server localhost upload build/resources/xql/ /db/apps/api/resources/xql/",
+    "deploy:xqm": "xst --server localhost upload build/resources/xqm/ /db/apps/api/resources/xqm/",
+    "deploy:xslt": "xst --server localhost upload build/resources/xslt/ /db/apps/api/resources/xslt/",
+    "deploy:controller": "xst --server localhost upload build/controller.xql /db/apps/api/controller.xql",
+    "install:xar": "xst --server localhost package install local-files dist/*.xar",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

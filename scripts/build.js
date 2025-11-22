@@ -12,7 +12,7 @@ import {
 } from './utils.js';
 
 /**
- * Build script - replaces gulp build tasks
+ * Build script for eXist-DB package
  * 
  * This script:
  * 1. Cleans the build directory
@@ -81,6 +81,7 @@ async function buildExistStructure(replacements) {
     'controller.xql',
     'expath-pkg.xml',
     'pre-install.xql',
+    'post-install.xql',
     'repo.xml'
   ];
   
@@ -174,10 +175,10 @@ async function verifyData() {
   const dataDir = path.join(BUILD_DIR, 'data');
   
   if (!existsSync(dataDir)) {
-    console.error('\n❌ Error: Data directory not found!');
-    console.error('Please run: npm run fetch-data');
-    console.error('Or run: npm run build:full\n');
-    process.exit(1);
+    console.warn('\n⚠️  Warning: Data directory not found.');
+    console.warn('The package will be built without sample data.');
+    console.warn('To include data, run: npm run fetch-data\n');
+    return;
   }
   
   console.log('✓ Data directories verified');
