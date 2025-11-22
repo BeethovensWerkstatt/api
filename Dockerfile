@@ -16,7 +16,7 @@ RUN apt-get update \
 COPY . .
 
 RUN npm install \
-    && npm run dist
+    && npm run dist:full
 
 
 #########################
