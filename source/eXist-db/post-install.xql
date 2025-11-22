@@ -13,13 +13,13 @@ declare variable $dir external;
 declare variable $target external;
 
 let $modules := (
-    "/db/apps/" || $target || "/resources/xqm/rest/iiif-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/module1-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/module2-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/module3-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/module4-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/services-api.xqm",
-    "/db/apps/" || $target || "/resources/xqm/rest/openapi-endpoint.xqm"
+    $target || "/resources/xqm/rest/iiif-api.xqm",
+    $target || "/resources/xqm/rest/module1-api.xqm",
+    $target || "/resources/xqm/rest/module2-api.xqm",
+    $target || "/resources/xqm/rest/module3-api.xqm",
+    $target || "/resources/xqm/rest/module4-api.xqm",
+    $target || "/resources/xqm/rest/services-api.xqm",
+    $target || "/resources/xqm/rest/openapi-endpoint.xqm"
 )
 
 let $_ := util:log("info", "API post-install: Registering " || count($modules) || " RESTXQ modules...")
