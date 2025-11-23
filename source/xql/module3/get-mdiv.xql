@@ -102,9 +102,12 @@ let $output :=
         'work': $document.uri
     }
     ) else (
-        (: TODO: add RESSOURCE NOT FOUND:)
+        response:set-status-code(404),
         map {
-            
+            'error': 404,
+            'message': 'Mdiv not found or could not be loaded properly',
+            'requestedMdiv': $mdiv.id,
+            'requestedWork': $document.id
         }
     )
 

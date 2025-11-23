@@ -26,4 +26,12 @@ let $file.id := request:get-parameter('file.id','')
 let $doc := collection($config:module1-root)//mei:mei[@xml:id = $file.id]
 
 return 
-    $doc
+    if(exists($doc))
+    then($doc)
+    else(
+        response:set-status-code(404),
+        <error>
+            <code>404</code>
+            <message>Document not found: {$file.id}</message>
+        </error>
+    )

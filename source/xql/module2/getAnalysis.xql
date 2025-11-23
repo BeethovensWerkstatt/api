@@ -36,8 +36,18 @@ let $doc2.hidden.staves := if(contains($hidden.staves.param,'-')) then(substring
 
 let $comparison := (collection($data.basePath)//mei:meiCorpus[@xml:id = $comparison.id])[1]
 
-let $comparison.path.tokens := tokenize(document-uri($comparison/root()),'/')
-let $comparison.path := string-join($comparison.path.tokens[position() lt count($comparison.path.tokens)],'/')
+return
+    if(not(exists($comparison)))
+    then(
+        response:set-status-code(404),
+        <error>
+            <code>404</code>
+            <message>Comparison not found: {$comparison.id}</message>
+        </error>
+    )
+    else(
+        let $comparison.path.tokens := tokenize(document-uri($comparison/root()),'/')
+        let $comparison.path := string-join($comparison.path.tokens[position() lt count($comparison.path.tokens)],'/')
 
 let $doc1.path := ($comparison//mei:source)[1]/data(@target)
 let $doc2.path := ($comparison//mei:source)[2]/data(@target)
@@ -61,13 +71,12 @@ let $doc2.analyzed := transform:transform($doc2,
                    <param name="hidden.staves" value="{$doc2.hidden.staves}"/>
                </parameters>)               
 
-let $merged.files := transform:transform(<root>{$doc1.analyzed}{$doc2.analyzed}{$comparison}</root>,
-               doc(concat($xslPath,'combine.files.xsl')), <parameters>
-                   <param name="method" value="{$method}"/>
-                   <param name="transpose.mode" value="{$transpose.mode}"/>
-               </parameters>)
-
-return 
-    $merged.files
-    (:<root>{$doc1.analyzed}{$doc2.analyzed}{$comparison}</root>:)
+        let $merged.files := transform:transform(<root>{$doc1.analyzed}{$doc2.analyzed}{$comparison}</root>,
+                       doc(concat($xslPath,'combine.files.xsl')), <parameters>
+                           <param name="method" value="{$method}"/>
+                           <param name="transpose.mode" value="{$transpose.mode}"/>
+                       </parameters>)
+        
+        return $merged.files
+    )
     

@@ -168,9 +168,12 @@ let $output :=
         'measures': $all.measures.link
     }
     ) else (
-        (: TODO: add RESSOURCE NOT FOUND:)
+        response:set-status-code(404),
         map {
-            
+            'error': 404,
+            'message': 'Manifestation not found or could not be loaded properly',
+            'requestedManifestation': $manifestation.id,
+            'requestedWork': $document.id
         }
     )
 

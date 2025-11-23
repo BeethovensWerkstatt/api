@@ -212,12 +212,25 @@ let $complaints :=
         'externalUri': $externalUri
     }
 
-let $output := map {
-    '@id': $document.uri,
-    'title': array { $title },
-    'composer': $composer,
-    'manifestations': array { $manifestations },
-    'complaints': array { $complaints },
-    'movements': $mdivs
-}
+let $output := 
+    if(exists($complete.file))
+    then(
+        map {
+            '@id': $document.uri,
+            'title': array { $title },
+            'composer': $composer,
+            'manifestations': array { $manifestations },
+            'complaints': array { $complaints },
+            'movements': $mdivs
+        }
+    )
+    else(
+        response:set-status-code(404),
+        map {
+            'error': 404,
+            'message': 'Work not found',
+            'requestedWork': $document.id
+        }
+    )
+    
 return $output

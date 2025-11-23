@@ -30,9 +30,11 @@ let $xslPath := '../../xslt/module1/'
 let $doc := collection($config:module1-root)//mei:mei[@xml:id = $edition.id]
 
 let $state.id := 
-    if(string-length($state.raw) gt 0 and $doc//mei:state[@xml:id = $state.raw])
+    if(exists($doc) and string-length($state.raw) gt 0 and $doc//mei:state[@xml:id = $state.raw])
     then($state.raw)
-    else(($doc//mei:state[1])/string(@xml:id))
+    else if(exists($doc))
+    then(($doc//mei:state[1])/string(@xml:id))
+    else('')
     
 let $other.states.ids :=
     if(string-length($other.states.raw) gt 1)
@@ -46,8 +48,17 @@ let $other.states.ids :=
         $state.id
     )
 
-let $snippet := transform:transform($doc,
-               doc(concat($xslPath,'getState.xsl')), <parameters><param name="active.states.string" value="{string-join($other.states.ids,'___')}"/><param name="main.state.id" value="{$state.id}"/></parameters>)
-
-return 
-    $snippet
+return
+    if(exists($doc))
+    then(
+        let $snippet := transform:transform($doc,
+                       doc(concat($xslPath,'getState.xsl')), <parameters><param name="active.states.string" value="{string-join($other.states.ids,'___')}"/><param name="main.state.id" value="{$state.id}"/></parameters>)
+        return $snippet
+    )
+    else(
+        response:set-status-code(404),
+        <error>
+            <code>404</code>
+            <message>Document not found: {$edition.id}</message>
+        </error>
+    )

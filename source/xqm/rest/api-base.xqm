@@ -44,13 +44,16 @@ declare function api-base:xml-response($data) {
 };
 
 (:~
- : Error response
+ : Error response with JSON body
+ : @param $code HTTP status code (404, 500, etc.)
+ : @param $message Human-readable error message
  :)
 declare function api-base:error-response($code as xs:integer, $message as xs:string) {
     (
         <rest:response>
             <http:response status="{$code}" xmlns:http="http://expath.org/ns/http-client">
                 {api-base:cors-headers()}
+                <http:header name="Content-Type" value="application/json" xmlns:http="http://expath.org/ns/http-client"/>
             </http:response>
         </rest:response>,
         map {
@@ -58,4 +61,28 @@ declare function api-base:error-response($code as xs:integer, $message as xs:str
             "message": $message
         }
     )
+};
+
+(:~
+ : 404 Not Found response
+ : @param $resource Description of the resource that wasn't found
+ :)
+declare function api-base:not-found($resource as xs:string) {
+    api-base:error-response(404, "Resource not found: " || $resource)
+};
+
+(:~
+ : 400 Bad Request response
+ : @param $message Description of what's wrong with the request
+ :)
+declare function api-base:bad-request($message as xs:string) {
+    api-base:error-response(400, $message)
+};
+
+(:~
+ : 500 Internal Server Error response
+ : @param $message Error description
+ :)
+declare function api-base:server-error($message as xs:string) {
+    api-base:error-response(500, "Internal server error: " || $message)
 };

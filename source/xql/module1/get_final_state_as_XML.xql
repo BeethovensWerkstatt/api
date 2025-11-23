@@ -27,8 +27,17 @@ let $xslPath := '../../xslt/module1/'
 
 let $doc := collection($config:module1-root)//mei:mei[@xml:id = $edition.id]
 
-let $xml := transform:transform($doc,
-               doc(concat($xslPath,'getFinalState.xsl')), <parameters/>)
-
-return 
-    $xml
+return
+    if(exists($doc))
+    then(
+        let $xml := transform:transform($doc,
+                       doc(concat($xslPath,'getFinalState.xsl')), <parameters/>)
+        return $xml
+    )
+    else(
+        response:set-status-code(404),
+        <error>
+            <code>404</code>
+            <message>Document not found: {$edition.id}</message>
+        </error>
+    )
