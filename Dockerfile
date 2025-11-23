@@ -33,9 +33,10 @@ FROM stadlerpeter/existdb:6.4.0-jre17
 ENV EXIST_ENV="development"
 ENV EXIST_CONTEXT_PATH="/exist"
 
-# Set deterministic admin password for development
-# WARNING: Change this for production deployments!
-ENV EXIST_PASSWORD="admin123"
+# Admin password MUST be set via environment variable at runtime:
+# docker run -e EXIST_PASSWORD="secure-password" ...
+# Or use Docker secrets for orchestration platforms.
+# If not set, will fall back to base image default.
 
 WORKDIR /opt/exist
 

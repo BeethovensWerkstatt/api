@@ -151,16 +151,20 @@ docker build -t beethovens-werkstatt-api .
 
 ```bash
 # Start container on port 8080
-docker run -d --name bw-api -p 8080:8080 beethovens-werkstatt-api
-
-# Start on different port (e.g., 8082)
-docker run -d --name bw-api -p 8082:8080 beethovens-werkstatt-api
-
-# With custom admin password
+# IMPORTANT: Set admin password via environment variable
 docker run -d --name bw-api \
   -p 8080:8080 \
   -e EXIST_PASSWORD="your-secure-password" \
   beethovens-werkstatt-api
+
+# Start on different port (e.g., 8082)
+docker run -d --name bw-api \
+  -p 8082:8080 \
+  -e EXIST_PASSWORD="your-secure-password" \
+  beethovens-werkstatt-api
+
+# For development/testing only (uses base image default password)
+docker run -d --name bw-api -p 8080:8080 beethovens-werkstatt-api
 ```
 
 ### Container Startup
@@ -182,7 +186,7 @@ curl http://localhost:8080/exist/restxq/iiif/documents.json
 |----------|---------|-------------|
 | `EXIST_ENV` | `development` | eXist-DB mode (`production` or `development`) |
 | `EXIST_CONTEXT_PATH` | `/exist` | URL context path |
-| `EXIST_PASSWORD` | `admin123` | Admin password (⚠️ **change for production!**) |
+| `EXIST_PASSWORD` | *(base image default)* | Admin password (**MUST set for production!**) |
 
 ### Accessing the API
 
@@ -227,21 +231,29 @@ docker exec -it bw-api bash
 
 ### Production Deployment
 
-For production, customize the Dockerfile:
+**Security requirements:**
 
-```dockerfile
-# Change admin password (line 38)
-ENV EXIST_PASSWORD="your-secure-password"
+1. **Always set admin password** via environment variable:
+   ```bash
+   docker run -e EXIST_PASSWORD="$(openssl rand -base64 32)" ...
+   ```
 
-# Consider switching to production mode (requires proper permissions)
-ENV EXIST_ENV="production"
-```
+2. **Use Docker secrets** for orchestration platforms:
+   ```yaml
+   # docker-compose.yml or kubernetes
+   secrets:
+     - exist_password
+   environment:
+     EXIST_PASSWORD_FILE: /run/secrets/exist_password
+   ```
 
-**Security notes:**
-- Change `EXIST_PASSWORD` before deploying
-- Use Docker secrets for sensitive data in orchestration systems
-- Consider using a reverse proxy (nginx, traefik) for SSL/TLS
-- Set up proper backup strategy for `/opt/exist/data`
+3. **Additional security measures:**
+   - Use a reverse proxy (nginx, traefik) for SSL/TLS
+   - Set up proper backup strategy for `/opt/exist/data`
+   - Consider network isolation (Docker networks, firewall rules)
+   - Review eXist-DB security settings in production
+
+**Note:** `EXIST_ENV="development"` is required for RESTXQ registration. For production hardening, configure eXist-DB permissions after deployment rather than switching to production mode.
 
 ### Data Updates
 
