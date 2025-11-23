@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  existdb-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: bw-api-dev
+    ports:
+      - "8082:8080"
+      - "8443:8443"
+    environment:
+      - EXIST_ENV=development
+      - EXIST_CONTEXT_PATH=/exist
+      - EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
+    volumes:
+      # Mount the package for easy updates
+      - ./dist/api-0.3.0.xar:/opt/exist/autodeploy/api.xar:ro
+      # Persist database data
+      - exist-dev-data:/opt/exist/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/exist/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  exist-dev-data:
+    name: bw-api-dev-data
+
+# Usage:
+#   # Set password (optional, defaults to admin123):
+#   export EXIST_DEV_PASSWORD="your-password"
+#   
+#   docker-compose -f docker-compose.dev.yml up -d
+#
+# Access points:
+#   - API:       http://localhost:8082/exist/apps/api/
+#   - eXide:     http://localhost:8082/exist/apps/eXide/
+#   - Monex:     http://localhost:8082/exist/apps/monex/
+#   - Dashboard: http://localhost:8082/exist/apps/dashboard/
+#   - REST API:  http://localhost:8082/exist/rest/
+#
+# Watch mode:
+#   1. Start this container
+#   2. Copy .existdb.json.docker to .existdb.json
+#   3. Run: npm run watch
+#   4. Edit files - they auto-deploy to this container

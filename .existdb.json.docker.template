@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "docker": {
+      "server": "http://localhost:8082/exist",
+      "user": "admin",
+      "password": "CHANGE_ME"
+    }
+  }
+}

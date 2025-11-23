@@ -56,7 +56,14 @@ npm run dist:full         # Fetch data + build + package
 ### Development
 
 ```bash
-npm run watch             # Watch files and auto-deploy to eXist-DB
+npm run watch             # Watch files and auto-deploy to local eXist-DB
+
+# Docker-based development (recommended)
+npm run docker:dev        # Start dev container with all eXist apps
+npm run watch:docker      # Watch and deploy to Docker container
+npm run docker:dev:logs   # View container logs
+npm run docker:dev:stop   # Stop dev container
+npm run docker:dev:rebuild # Rebuild package and restart container
 ```
 
 ### Deployment (xst)
@@ -126,6 +133,60 @@ During build, these variables are replaced:
 - `$$desc$$` → package.json description
 - `$$license$$` → package.json license
 - `$$abbrev$$` → package.json name
+
+## Development Workflow
+
+### Docker-Based Development (Recommended)
+
+The easiest way to develop is using the Docker development setup:
+
+```bash
+# 1. Set up passwords (first time only)
+cp .env.template .env
+cp .existdb.json.docker.template .existdb.json.docker
+# Edit both files and set matching passwords
+
+# 2. Build the package
+npm run dist
+
+# 3. Start development container
+npm run docker:dev
+
+# 4. In another terminal, watch for changes
+npm run watch:docker
+
+# Now edit files - they auto-deploy to the container
+```
+
+**Security Note:** The development setup uses a default password (`admin123`) if you don't configure `.env`. This is fine for local development since it's only accessible on `localhost`. For production, always use the production Dockerfile with a secure password.
+
+**What you get:**
+- API at `http://localhost:8082/exist/apps/api/`
+- **eXide** at `http://localhost:8082/exist/apps/eXide/` (XQuery IDE)
+- **Monex** at `http://localhost:8082/exist/apps/monex/` (Monitoring)
+- Dashboard at `http://localhost:8082/exist/apps/dashboard/`
+- REST API at `http://localhost:8082/exist/rest/`
+- All RESTXQ endpoints
+- Auto-deploy on file changes
+
+**Advantages:**
+- All eXist-DB apps available (eXide, Monex, etc.)
+- No local eXist-DB installation needed
+- Clean, reproducible environment
+- Persisted data between restarts
+
+### Traditional Development
+
+If you prefer a local eXist-DB installation:
+
+```bash
+# Configure connection
+cp .existdb.json.template .existdb.json
+# Edit .existdb.json with your local eXist-DB details
+
+# Watch and deploy
+npm run watch
+```
 
 ## Docker
 

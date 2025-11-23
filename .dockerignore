@@ -11,4 +11,15 @@ node_modules/
 
 # Don't copy Docker files (except entrypoint which we need)
 Dockerfile
+Dockerfile.dev
+docker-compose.dev.yml
 .dockerignore
+
+# Don't copy configuration files with secrets
+.existdb.json
+.existdb.json.docker
+.env
+
+# Don't copy development/test files
+*.log
+.DS_Store
