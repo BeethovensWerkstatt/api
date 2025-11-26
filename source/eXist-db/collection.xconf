@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <collection xmlns="http://exist-db.org/collection-config/1.0">
-    <index xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:mei="http://www.music-encoding.org/ns/mei">
-        <fulltext default="none" attributes="false"/>
-        <!--<range>
+	<index xmlns:xs="http://www.w3.org/2001/XMLSchema"
+		xmlns:mei="http://www.music-encoding.org/ns/mei">
+		<fulltext default="none" attributes="false"/>
+		<!--<range>
         	<create qname="mei:zone">
         		<field name="zone-data" match="@data" type="xs:string"/>
     		</create>
@@ -13,15 +14,18 @@
         		<field name="staff-facs" match="@facs" type="xs:string"/>
     		</create>
       </range>-->
-        <lucene>
-    		<analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    		<analyzer id="ws" class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
-    		<text match="//mei:zone/@data" analyzer="ws"/>
-    		<text match="//mei:measure/@facs" analyzer="ws"/>
-    		<text match="//mei:staff/@facs" analyzer="ws"/>
-            <text match="//@facs" analyzer="ws"/>
-            <text match="//@class" analyzer="ws"/>
-            <text match="//@target" analyzer="ws"/>
+		<lucene>
+			<analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+			<analyzer id="ws" class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
+			<text match="//mei:zone/@data" analyzer="ws"/>
+			<text match="//mei:measure/@facs" analyzer="ws"/>
+			<text match="//mei:staff/@facs" analyzer="ws"/>
+			<text match="//@facs" analyzer="ws"/>
+			<text match="//@class" analyzer="ws"/>
+			<text match="//@target" analyzer="ws"/>
 		</lucene>
-    </index>
+	</index>
+	<triggers>
+		<trigger class="org.exist.extensions.exquery.restxq.impl.RestXqTrigger"/>
+	</triggers>
 </collection>
