@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   nginx:
@@ -15,16 +14,15 @@ services:
   existdb-dev:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: bw-api-dev
     ports:
       - "8082:8080"
       - "8443:8443"
     environment:
-      - EXIST_ENV=production
-      - EXIST_DEFAULT_APP_PATH=xmldb:exist:///db/apps/api
+      - EXIST_ENV=restxq
       - EXIST_CONTEXT_PATH=/
-      - EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
+      # EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
     volumes:
       # Mount the package for easy updates
       - ./dist/api-0.3.0.xar:/opt/exist/autodeploy/api.xar:ro
