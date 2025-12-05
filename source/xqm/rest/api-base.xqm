@@ -28,7 +28,12 @@ declare function api-base:cors-headers() {
  :)
 declare function api-base:json-response($data) {
     (
-        api-base:cors-headers(),
+        <rest:response>
+            <http:response status="200" xmlns:http="http://expath.org/ns/http-client">
+                {api-base:cors-headers()}
+                <http:header name="Content-Type" value="application/json" xmlns:http="http://expath.org/ns/http-client"/>
+            </http:response>
+        </rest:response>,
         $data
     )
 };
@@ -38,7 +43,12 @@ declare function api-base:json-response($data) {
  :)
 declare function api-base:xml-response($data) {
     (
-        api-base:cors-headers(),
+        <rest:response>
+            <http:response status="200" xmlns:http="http://expath.org/ns/http-client">
+                {api-base:cors-headers()}
+                <http:header name="Content-Type" value="application/xml" xmlns:http="http://expath.org/ns/http-client"/>
+            </http:response>
+        </rest:response>,
         $data
     )
 };
