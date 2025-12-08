@@ -28,9 +28,8 @@ FROM stadlerpeter/existdb:6.4.0-jre17
 # add API specific settings
 # For more details about the options see
 # https://github.com/peterstadler/existdb-docker
-# Using development mode to allow RESTXQ module registration
-# TODO: For production, need to configure permissions properly
-ENV EXIST_ENV="restxq"
+# Using production mode (no RESTXQ - controller-based routing only)
+ENV EXIST_ENV="production"
 ENV EXIST_CONTEXT_PATH="/"
 # ENV EXIST_DEFAULT_APP_PATH="xmldb:exist:///db/apps/api"
 

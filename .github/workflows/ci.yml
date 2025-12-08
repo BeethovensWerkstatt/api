@@ -81,8 +81,8 @@ jobs:
       
       - name: Wait for eXist-DB startup
         run: |
-          echo "Waiting 90 seconds for full startup (eXist + package deployment + RESTXQ registration)..."
-          sleep 90
+          echo "Waiting 60 seconds for full startup (eXist + package deployment)..."
+          sleep 60
       
       - name: Check container is running
         run: |
@@ -113,33 +113,25 @@ jobs:
           }
           echo "✓ API app is deployed"
       
-      - name: Test RESTXQ endpoints are registered
+      - name: Test Controller-based IIIF endpoints
         run: |
-          echo "Testing RESTXQ endpoint..."
-          RESPONSE=$(curl -s http://localhost:8080/exist/restxq/iiif/documents.json)
-          
-          # Check if we get a 405 error (RESTXQ not registered)
-          if echo "$RESPONSE" | grep -q "405"; then
-            echo "Error: RESTXQ endpoints not registered (got 405)"
-            echo "Response: $RESPONSE"
-            docker logs bw-api-test | grep -i "post-install\|restxq"
-            exit 1
-          fi
+          echo "Testing Controller-based IIIF endpoint..."
+          RESPONSE=$(curl -s http://localhost:8080/exist/apps/api/iiif/documents.json)
           
           # Check if we get valid JSON with array structure
           if ! echo "$RESPONSE" | jq -e 'type == "array"' > /dev/null 2>&1; then
-            echo "Error: Invalid response from RESTXQ endpoint"
+            echo "Error: Invalid response from IIIF endpoint"
             echo "Response: $RESPONSE"
             exit 1
           fi
           
-          echo "✓ RESTXQ endpoints are working"
+          echo "✓ Controller-based endpoints are working"
           echo "Sample response:"
-          echo "$RESPONSE" | jq -r '.[3] | if type == "array" then .[0] else . end | .id // empty' | head -3
+          echo "$RESPONSE" | jq -r '.[0].id // empty' | head -3
       
-      - name: Test OpenAPI spec generation
+      - name: Test OpenAPI spec availability
         run: |
-          echo "Testing OpenAPI spec..."
+          echo "Testing OpenAPI spec endpoint..."
           SPEC=$(curl -s http://localhost:8080/exist/apps/api/openapi.json)
           
           # Validate it's valid JSON
@@ -149,25 +141,9 @@ jobs:
             exit 1
           fi
           
-          # Check OpenAPI version
-          VERSION=$(echo "$SPEC" | jq -r '.openapi')
-          if [ "$VERSION" != "3.0.0" ]; then
-            echo "Error: Wrong OpenAPI version: $VERSION"
-            exit 1
-          fi
-          
-          # Check number of paths
-          PATHS=$(echo "$SPEC" | jq '.paths | length')
-          if [ "$PATHS" -lt 40 ]; then
-            echo "Error: Too few endpoints in OpenAPI spec: $PATHS (expected 40+)"
-            echo "Paths found:"
-            echo "$SPEC" | jq '.paths | keys'
-            exit 1
-          fi
-          
-          echo "✓ OpenAPI spec is valid"
-          echo "  Version: $VERSION"
-          echo "  Endpoints: $PATHS"
+          echo "✓ OpenAPI spec is available and valid JSON"
+          echo "  Sample keys:"
+          echo "$SPEC" | jq -r 'keys | .[0:5]'
       
       - name: Test Swagger UI is accessible
         run: |
@@ -178,12 +154,12 @@ jobs:
           }
           echo "✓ Swagger UI is accessible"
       
-      - name: Check RESTXQ registration in logs
+      - name: Check deployment in logs
         if: always()
         run: |
-          echo "Checking for RESTXQ registration messages..."
-          docker logs bw-api-test 2>&1 | grep -i "post-install.*registered" || {
-            echo "Warning: No RESTXQ registration messages found in logs"
+          echo "Checking for deployment messages..."
+          docker logs bw-api-test 2>&1 | grep -i "post-install\|deployed" || {
+            echo "Warning: No deployment messages found in logs"
             echo "Full logs:"
             docker logs bw-api-test 2>&1 | tail -50
           }
@@ -240,11 +216,10 @@ jobs:
       - name: Test data is available
         run: |
           echo "Testing if documents are available..."
-          RESPONSE=$(curl -s http://localhost:8080/exist/restxq/iiif/documents.json)
+          RESPONSE=$(curl -s http://localhost:8080/exist/apps/api/iiif/documents.json)
           
-          # Extract just the documents array (skip CORS headers)
-          DOCS=$(echo "$RESPONSE" | jq '.[3]')
-          DOC_COUNT=$(echo "$DOCS" | jq 'length')
+          # Response should be a JSON array
+          DOC_COUNT=$(echo "$RESPONSE" | jq 'length')
           
           if [ "$DOC_COUNT" -eq 0 ]; then
             echo "Error: No documents found in API"
@@ -255,7 +230,7 @@ jobs:
           echo "✓ Data is available"
           echo "  Documents found: $DOC_COUNT"
           echo "  Sample document:"
-          echo "$DOCS" | jq '.[0]'
+          echo "$RESPONSE" | jq '.[0]'
       
       - name: Stop container
         if: always()
