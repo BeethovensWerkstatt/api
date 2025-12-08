@@ -3,8 +3,7 @@ xquery version "3.1";
 (:~
  : Controller for Beethovens Werkstatt API
  : 
- : Hybrid approach: Uses RESTXQ for migrated endpoints, legacy routing for others
- : This controller will shrink over time as endpoints are migrated to RESTXQ modules
+ : Classic controller-based routing for all endpoints
  :)
 
 declare namespace exist = "http://exist.sourceforge.net/NS/exist";
@@ -16,8 +15,7 @@ declare variable $exist:prefix external;
 declare variable $exist:root external;
 
 (:~
- : RESTXQ endpoints - delegated to REST API modules in /xqm/rest/
- : All API endpoints and OpenAPI spec are handled by RESTXQ
+ : API ENDPOINTS
  :)
 
 (: OpenAPI documentation endpoint :)
@@ -34,16 +32,73 @@ if ($exist:path eq '/docs' or $exist:path eq '/docs/') then (
     </dispatch>
 ) else
 
-(: IIIF endpoints - migrated to RESTXQ :)
-if (starts-with($exist:path, '/iiif/')) then (
+(:~
+ : IIIF ENDPOINTS
+ :)
+
+(: IIIF documents listing :)
+if ($exist:path eq '/iiif/documents.json') then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="/restxq{$exist:path}"/>
+        <forward url="{$exist:controller}/resources/xql/iiif/get-documents.xql"/>
+    </dispatch>
+) else
+
+(: IIIF manifest :)
+if (matches($exist:path, '/iiif/document/[\da-zA-Z_\.\-]+/manifest\.json')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/iiif/get-manifest.json.xql">
+            <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: IIIF manifest (alternative path without .json) :)
+if (matches($exist:path, '/iiif/document/[\da-zA-Z_\.\-]+/manifest$')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/iiif/get-manifest.json.xql">
+            <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 1]}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: IIIF measure zones annotation list :)
+if (matches($exist:path, '/iiif/document/[\da-zA-Z_\.\-]+/list/[\da-zA-Z_\.\-]+_zones')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/iiif/get-measure-positions-on-page.xql">
+            <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+            <add-parameter name="canvas.id" value="{substring-before(tokenize($exist:path,'/')[last()],'_zones')}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: IIIF SVG overlays :)
+if (matches($exist:path, '/iiif/document/[\da-zA-Z_\.\-]+/overlays/[\da-zA-Z_\.\-]+\.svg')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/file/get-svg-file.xql">
+            <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+            <add-parameter name="svg.file.name" value="{tokenize($exist:path,'/')[last()]}"/>
+        </forward>
+    </dispatch>
+) else
+
+(: IIIF SVG overlays with data attributes :)
+if (matches($exist:path, '/iiif/document/[\da-zA-Z_\.\-]+/overlaysPlus/[\da-zA-Z_\.\-]+\.svg')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/resources/xql/svg/get-svg-file-with-data-atts.xql">
+            <add-parameter name="document.id" value="{tokenize($exist:path,'/')[last() - 2]}"/>
+            <add-parameter name="svg.file.name" value="{tokenize($exist:path,'/')[last()]}"/>
+        </forward>
     </dispatch>
 ) else
 
 (:~
- : LEGACY ROUTES - To be migrated to RESTXQ
- : These will be progressively moved to REST API modules
+ : OTHER API ENDPOINTS
  :)
 
 (: Context API :)
