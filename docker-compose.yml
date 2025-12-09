@@ -20,7 +20,7 @@ services:
       - "8082:8080"
       - "8443:8443"
     environment:
-      - EXIST_ENV=restxq
+      - EXIST_ENV=production
       - EXIST_CONTEXT_PATH=/
       # EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
     volumes:
