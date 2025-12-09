@@ -82,7 +82,7 @@ jobs:
       - name: Wait for eXist-DB startup
         run: |
           echo "Waiting 60 seconds for full startup (eXist + package deployment)..."
-          sleep 60
+          sleep 200
       
       - name: Check container is running
         run: |
