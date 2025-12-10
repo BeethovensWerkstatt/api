@@ -82,7 +82,7 @@ jobs:
       - name: Wait for eXist-DB startup
         run: |
           echo "Waiting 60 seconds for full startup (eXist + package deployment)..."
-          sleep 200
+          sleep 180
       
       - name: Check container is running
         run: |
@@ -96,7 +96,7 @@ jobs:
       - name: Test eXist-DB is accessible
         run: |
           echo "Testing eXist-DB main page..."
-          curl -f http://localhost:8080/exist/ || {
+          curl -f http://localhost:8080/ || {
             echo "Error: eXist-DB not accessible"
             docker logs bw-api-test
             exit 1
