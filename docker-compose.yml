@@ -22,7 +22,7 @@ services:
     environment:
       - EXIST_ENV=production
       - EXIST_CONTEXT_PATH=/
-      # EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
+      - EXIST_DEFAULT_APP_PATH=xmldb:exist:///db/apps/api
     volumes:
       # Mount the package for easy updates
       - ./dist/api-0.3.0.xar:/opt/exist/autodeploy/api.xar:ro
