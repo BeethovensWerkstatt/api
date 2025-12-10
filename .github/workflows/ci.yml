@@ -76,13 +76,15 @@ jobs:
           docker run -d --name bw-api-test \
             -p 8080:8080 \
             -e EXIST_PASSWORD=testpass123 \
+            -e EXIST_CONTEXT_PATH=/exist \
+            -e EXIST_ENV=development \
             bw-api:test
           echo "Container started, waiting for eXist-DB to initialize..."
       
       - name: Wait for eXist-DB startup
         run: |
           echo "Waiting 60 seconds for full startup (eXist + package deployment)..."
-          sleep 180
+          sleep 120
       
       - name: Check container is running
         run: |
@@ -96,7 +98,7 @@ jobs:
       - name: Test eXist-DB is accessible
         run: |
           echo "Testing eXist-DB main page..."
-          curl -f http://localhost:8080/ || {
+          curl -f http://localhost:8080/exist/ || {
             echo "Error: eXist-DB not accessible"
             docker logs bw-api-test
             exit 1
