@@ -76,8 +76,8 @@ jobs:
           docker run -d --name bw-api-test \
             -p 8080:8080 \
             -e EXIST_PASSWORD=testpass123 \
-            -e EXIST_CONTEXT_PATH=/exist \
             -e EXIST_ENV=development \
+            -e EXIST_CONTEXT_PATH=/exist \
             bw-api:test
           echo "Container started, waiting for eXist-DB to initialize..."
       

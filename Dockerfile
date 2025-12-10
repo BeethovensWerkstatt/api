@@ -31,7 +31,7 @@ FROM stadlerpeter/existdb:6.4.0-jre17
 # Using production mode (no RESTXQ - controller-based routing only)
 ENV EXIST_ENV="production"
 ENV EXIST_CONTEXT_PATH="/"
-# ENV EXIST_DEFAULT_APP_PATH="xmldb:exist:///db/apps/api"
+ENV EXIST_DEFAULT_APP_PATH="xmldb:exist:///db/apps/api"
 
 # Admin password MUST be set via environment variable at runtime:
 # docker run -e EXIST_PASSWORD="secure-password" ...
