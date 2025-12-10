@@ -689,3 +689,389 @@ Falls Sie **nicht alle** RESTXQ-Endpunkte zurückbauen möchten:
 - Aktuelle `controller.xql`: `source/eXist-db/controller.xql`
 - XQL-Dateien: `source/xql/`
 - RESTXQ-Module: `source/xqm/rest/`
+
+---
+
+## Anhang: Endpunkt-Vergleich controller-legacy.xql vs. controller.xql
+
+Diese Analyse vergleicht die Endpunkte in `controller-legacy.xql` (ältere RESTful-Implementierung) mit denen in `controller.xql` (aktuelle Controller-basierte Implementierung nach RESTXQ-Rollback).
+
+### URL-Pattern-Unterschiede
+
+**Hauptunterschied in der Architektur:**
+- **controller-legacy.xql**: Verwendet RESTful URLs mit Modul-Präfixen: `/module1/edition/{id}/...`
+- **controller.xql**: Verwendet flachere URLs für Module 1: `/document/{id}/...` und `.xql`-Suffixe für Module 2-4
+
+### In controller-legacy.xql vorhandene, aber in controller.xql fehlende Endpunkte
+
+#### Context API (1 Endpunkt)
+```
+✅ GET /{version}/context.json
+```
+- **Legacy**: `/\d/context.json` → `context.xql`
+- **Current**: Vorhanden mit gleichem Muster
+- **Status**: ✅ Identisch implementiert
+
+---
+
+#### IIIF Endpunkte (6 Endpunkte)
+```
+✅ GET /iiif/documents.json
+✅ GET /iiif/document/{documentId}/manifest.json
+✅ GET /iiif/document/{documentId}/manifest
+✅ GET /iiif/document/{documentId}/list/{canvasId}_zones
+✅ GET /iiif/document/{documentId}/overlays/{svgFileName}
+✅ GET /iiif/document/{documentId}/overlaysPlus/{svgFileName}
+```
+- **Status**: ✅ Alle 6 IIIF-Endpunkte in beiden Controllern vorhanden
+- **Unterschied**: Parameter-Namen unterschiedlich (`document.id` vs. `documentId`)
+
+---
+
+#### Module 1 VideApp (28 Endpunkte in Legacy)
+
+**URL-Muster-Unterschied:**
+- **Legacy**: `/module1/edition/{editionId}/...` oder `/module1/file/{fileId}...`
+- **Current**: `/document/{documentId}/...`
+
+##### In Legacy vorhanden, in Current **fehlend** oder **anders**:
+
+1. **❌ GET /module1/listall.json**
+   - Legacy: `get_all_MEI_files_from_DB_as_JSON.xql`
+   - Current: ✅ Umbenannt zu `/data.json`
+   - Status: ⚠️ URL geändert
+
+2. **❌ GET /module1/file/{fileId}.xml**
+   - Legacy: `get_MEI_file_as_XML.xql`
+   - Current: ✅ Neu: `/document/{documentId}/file.xml`
+   - Status: ⚠️ URL-Struktur geändert
+
+3. **❌ GET /module1/edition/{editionId}/finalstate.xml**
+   - Legacy: `get_final_state_as_XML.xql`
+   - Current: ✅ Neu: `/document/{documentId}/finalState.xml`
+   - Status: ⚠️ URL-Struktur geändert
+
+4. **❌ GET /module1/edition/{editionId}/element/{elementId}.xml**
+   - Legacy: `get_MEI_snippet_as_XML.xql`
+   - Current: ✅ Neu: `/document/{documentId}/snippet/{elementId}.xml`
+   - Status: ⚠️ URL-Struktur geändert
+
+5. **❌ GET /module1/edition/{editionId}/element/{elementId}/{w},{h}/facsimileinfo.json**
+   - Legacy: `get_facsimile_info_for_element_as_JSON.xql` mit Breite/Höhe-Parametern
+   - Current: ✅ Neu: `/document/{documentId}/element/{elementId}/facsimile.json` (w/h als Query-Parameter)
+   - Status: ⚠️ URL-Struktur geändert
+
+6. **❌ GET /module1/file/{fileId}.svg**
+   - Legacy: `get_SVG_file_as_XML.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+7. **❌ GET /module1/edition/{editionId}/states/overview.json**
+   - Legacy: `get_geneticStatesList_as_JSON.xql`
+   - Current: ✅ Neu: `/document/{documentId}/geneticStates.json`
+   - Status: ⚠️ URL-Struktur geändert
+
+8. **❌ GET /module1/edition/{editionId}/annotations.json**
+   - Legacy: `get_annotations_as_json.xql`
+   - Current: ✅ Neu: `/document/{documentId}/annotations.json`
+   - Status: ⚠️ URL-Struktur geändert
+
+9. **❌ GET /module1/edition/{editionId}/page/{pageId}/annotations.json**
+   - Legacy: `get_annotations_on_page_as_json.xql`
+   - Current: ✅ Neu: `/document/{documentId}/page/{pageId}/annotations.json`
+   - Status: ⚠️ URL-Struktur geändert
+
+10. **❌ GET /module1/edition/{editionId}/scars/categories.json**
+    - Legacy: `get_scar_categories_as_JSON.xql`
+    - Current: ❌ **Fehlt komplett**
+    - Status: ❌ Nicht implementiert
+
+11. **❌ GET /module1/edition/{editionId}/state/{stateId}/otherStates/{otherStates}/meiSnippet.xml**
+    - Legacy: `get_geneticState_as_XML.xql` mit anderen States
+    - Current: ✅ Neu: `/document/{documentId}/geneticState/{stateId}.xml` (ohne otherStates-Parameter)
+    - Status: ⚠️ Vereinfacht, otherStates fehlt
+
+12. **❌ GET /module1/edition/{editionId}/element/{elementId}/states/{states}/preview.xml**
+    - Legacy: `get_element_preview_as_XML.xql`
+    - Current: ✅ Neu: `/document/{documentId}/element/{elementId}/preview.xml` (states als Query-Parameter)
+    - Status: ⚠️ URL-Struktur geändert
+
+13. **❌ GET /module1/edition/{editionId}/element/{elementId}/{lang}/description.json**
+    - Legacy: `get_element_description_as_JSON.xql` mit Sprache im Pfad
+    - Current: ✅ Neu: `/document/{documentId}/element/{elementId}/description.json` (lang als Query-Parameter)
+    - Status: ⚠️ URL-Struktur geändert
+
+14. **❌ GET /module1/edition/{editionId}/firstState/meiSnippet.xml**
+    - Legacy: `get_geneticState_as_XML.xql` mit leerem stateId
+    - Current: ❌ **Fehlt komplett** (nur `/geneticState/{stateId}.xml`)
+    - Status: ❌ Nicht implementiert
+
+15. **❌ GET /module1/edition/{editionId}/reconstructionSetup.json**
+    - Legacy: `get_reconstruction_setup_as_JSON.xql`
+    - Current: ✅ Neu: `/document/{documentId}/reconstructionSetup.json`
+    - Status: ⚠️ URL-Struktur geändert
+
+16. **❌ GET /module1/edition/{editionId}/invarianceRelations.json**
+    - Legacy: `get_invariance_relations_as_JSON.xql`
+    - Current: ✅ Neu: `/document/{documentId}/invariances.json`
+    - Status: ⚠️ URL-Struktur geändert
+
+17. **❌ GET /module1/edition/{editionId}/shape/{shapeId}/info.json**
+    - Legacy: `get_shape_info_as_JSON.xql`
+    - Current: ❌ **Fehlt komplett**
+    - Status: ❌ Nicht implementiert
+
+18. **❌ GET /module1/edition/{editionId}/object/{objectId}/shapes.json**
+    - Legacy: `get_shapes_for_object_as_JSON.xql`
+    - Current: ❌ **Fehlt komplett**
+    - Status: ❌ Nicht implementiert
+
+19. **❌ GET /module1/edition/{editionId}/introduction.html**
+    - Legacy: `get_introduction_as_HTML.xql`
+    - Current: ✅ Neu: `/document/{documentId}/introduction.html`
+    - Status: ⚠️ URL-Struktur geändert
+
+20. **❌ GET /module1/edition/{editionId}/pages.json**
+    - Legacy: `get_pages_in_edition_as_JSON.xql`
+    - Current: ✅ Neu: `/document/{documentId}/pages.json`
+    - Status: ⚠️ URL-Struktur geändert
+
+21. **❌ GET /module1/edition/{editionId}/measures.json**
+    - Legacy: `get_measure_overview_as_JSON.xql`
+    - Current: ✅ Neu: `/document/{documentId}/measures.json`
+    - Status: ⚠️ URL-Struktur geändert
+
+**Module 1 Zusammenfassung:**
+- **Legacy hat**: 28 Endpunkte mit `/module1/edition/{id}/...` Pattern
+- **Current hat**: 17 Endpunkte mit `/document/{id}/...` Pattern
+- **Komplett fehlend**: 4 Endpunkte (scars/categories, shapes/info, firstState, SVG-Dateien)
+- **URL-Struktur geändert**: 14 Endpunkte (funktional äquivalent, aber andere URL)
+
+---
+
+#### Module 2 Analyse-Endpunkte (6 Legacy vs. 13 Current)
+
+**URL-Muster-Unterschied:**
+- **Legacy**: `/module2/data/{comparisonId}/mdiv/{mdivId}/transpose/{transpose}/...`
+- **Current**: `/module2/*.xql` (direkte XQL-Aufrufe mit Query-Parametern)
+
+##### In Legacy vorhanden:
+
+1. **❌ GET /module2/comparisons.json**
+   - Legacy: `getComparisonListing.xql`
+   - Current: ✅ Neu: `/module2/listComparisons.xql`
+   - Status: ⚠️ URL geändert
+
+2. **❌ GET /module2/data/{comparisonId}/mdiv/{mdivId}/transpose/{transpose}/basic.xml**
+   - Legacy: `getAnalysis.xql?method=comparison`
+   - Current: ✅ Neu: `/module2/getAnalysis.xql` (mit Query-Parametern)
+   - Status: ⚠️ URL-Struktur geändert (RESTful → Query-Parameter)
+
+3. **❌ GET /module2/data/{comparisonId}/mdiv/{mdivId}/transpose/{transpose}/eventDensity.xml**
+   - Legacy: `getAnalysis.xql?method=eventDensity`
+   - Current: ✅ Neu: `/module2/getAnalysis.xql` (mit method=eventDensity)
+   - Status: ⚠️ URL-Struktur geändert
+
+4. **❌ GET /module2/data/{comparisonId}/mdiv/{mdivId}/transpose/{transpose}/melodicComparison.xml**
+   - Legacy: `getAnalysis.xql?method=melodicComparison`
+   - Current: ✅ Neu: `/module2/getAnalysis.xql` (mit method=melodicComparison)
+   - Status: ⚠️ URL-Struktur geändert
+
+5. **❌ GET /module2/data/{comparisonId}/mdiv/{mdivId}/transpose/{transpose}/harmonicComparison.xml**
+   - Legacy: `getAnalysis.xql?method=harmonicComparison`
+   - Current: ✅ Neu: `/module2/getAnalysis.xql` (mit method=harmonicComparison)
+   - Status: ⚠️ URL-Struktur geändert
+
+6. **❌ GET /module2/{comparisonId}/intro.html**
+   - Legacy: `getTextIntroduction.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+**Module 2 hat zusätzlich in Current:**
+- `/module2/getAnalysisByMei.xql`
+- `/module2/getAnalysesDashboard.xql`
+- `/module2/getComparisonFragments.xql`
+- `/module2/getComparison.xql`
+- `/module2/getFragment.xql`
+- `/module2/getMei.xql`
+- `/module2/getWork.xql`
+- `/module2/getWorks.xql`
+- `/module2/listAnalyses.xql`
+- `/module2/listCombinations.xql`
+- `/module2/listWorksWithAnalyses.xql`
+
+**Module 2 Zusammenfassung:**
+- **Legacy hat**: 6 Analyse-Endpunkte mit RESTful URL-Struktur
+- **Current hat**: 13 XQL-Endpunkte mit direkten Dateinamen
+- **Fehlend**: 1 Endpunkt (`intro.html`)
+- **Current hat mehr Funktionalität**: 7 zusätzliche Endpunkte für erweiterte Analysen
+
+---
+
+#### Module 3 Werk-Endpunkte (9 Legacy vs. 3 Current)
+
+**URL-Muster-Unterschied:**
+- **Legacy**: `/module3/{workId}/...` (RESTful mit verschachtelten Ressourcen)
+- **Current**: `/module3/*.xql` (3 XQL-Dateien)
+
+##### In Legacy vorhanden, in Current fehlend:
+
+1. **❌ GET /module3/works.json**
+   - Legacy: `module3-get-works.xql`
+   - Current: ✅ Neu: `/module3/work-list.xql`
+   - Status: ⚠️ URL geändert
+
+2. **❌ GET /module3/{workId}.json**
+   - Legacy: `get-work.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+3. **❌ GET /module3/{workId}/manifestation/{manifestationId}.json**
+   - Legacy: `get-manifestation.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+4. **❌ GET /module3/{workId}/mdiv/{mdivId}.json**
+   - Legacy: `get-mdiv.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+5. **❌ GET /module3/{workId}/manifestation/{manifestationId}/measures.json**
+   - Legacy: `get-measures-in-mdiv.xql` (mit scope, mdivId, part Query-Parametern)
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+6. **❌ GET /module3/{workId}/measure/{measureId}.json**
+   - Legacy: `get-measure.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+7. **❌ GET /module3/{workId}/complaints/{complaintId}.json**
+   - Legacy: `get-complaint.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+8. **❌ GET /module3/{workId}/snippet/{contextId}.mei**
+   - Legacy: `get-complaint-text-by-annot.xql` (mit source, state, focus Query-Parametern)
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+9. **❌ GET /module3/{workId}/snippet/{contextId}.tei**
+   - Legacy: `get-complaint-TEI-text-by-annot.xql` (mit source, state Query-Parametern)
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+**Module 3 Zusammenfassung:**
+- **Legacy hat**: 9 Endpunkte mit verschachtelter RESTful-Struktur
+- **Current hat**: 3 XQL-Endpunkte (`available-works.xql`, `mei2json.xql`, `work-list.xql`)
+- **Komplett fehlend**: 8 von 9 Legacy-Endpunkten
+- **Status**: ❌ Massive Funktionsreduzierung in Module 3
+
+---
+
+#### Module 4 Dokument-Endpunkte (2 Legacy vs. 2 Current)
+
+1. **❌ GET /module4/documents.json**
+   - Legacy: `module4-get-documents.xql`
+   - Current: ✅ Neu: `/module4/getSourceSummary.xql` oder `/module4/get_source_summary_as_json.xql`
+   - Status: ⚠️ Unterschiedliche URLs
+
+2. **❌ GET /documents/{documentId}.json**
+   - Legacy: `get-document.xql`
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert
+
+**Module 4 Zusammenfassung:**
+- **Legacy**: 2 Endpunkte mit `/module4/` und `/documents/` Präfixen
+- **Current**: 2 XQL-Endpunkte mit unterschiedlichen Namen
+- **Fehlend**: 1 Endpunkt (`/documents/{documentId}.json`)
+
+---
+
+#### File & Element Service Endpunkte (3 Legacy vs. 2 Current)
+
+1. **✅ GET /file/{documentId}/element/{elementId}**
+   - Legacy: `file/get-element.xql`
+   - Current: ✅ `/element/{elementId}` → `file/get-element.xql`
+   - Status: ⚠️ URL-Struktur vereinfacht
+
+2. **✅ GET /file/{documentId}.xml**
+   - Legacy: `file/get-file.xql`
+   - Current: ✅ `/file/{fileId}` → `file/get-file.xql`
+   - Status: ⚠️ URL-Struktur vereinfacht
+
+3. **❌ GET /desc/{elementId}.json**
+   - Legacy: `tools/get_element_description_as_JSON.xql` (mit lang='de')
+   - Current: ❌ **Fehlt komplett**
+   - Status: ❌ Nicht implementiert (sollte in Module 1 sein: `/document/{documentId}/element/{elementId}/description.json`)
+
+---
+
+### Gesamtübersicht: Fehlende Endpunkte
+
+#### Komplett fehlende Endpunkte (15):
+
+**Module 1 (4):**
+1. `/module1/edition/{editionId}/scars/categories.json`
+2. `/module1/edition/{editionId}/shape/{shapeId}/info.json`
+3. `/module1/edition/{editionId}/object/{objectId}/shapes.json`
+4. `/module1/edition/{editionId}/firstState/meiSnippet.xml`
+
+**Module 2 (1):**
+5. `/module2/{comparisonId}/intro.html`
+
+**Module 3 (8):**
+6. `/module3/{workId}.json`
+7. `/module3/{workId}/manifestation/{manifestationId}.json`
+8. `/module3/{workId}/mdiv/{mdivId}.json`
+9. `/module3/{workId}/manifestation/{manifestationId}/measures.json`
+10. `/module3/{workId}/measure/{measureId}.json`
+11. `/module3/{workId}/complaints/{complaintId}.json`
+12. `/module3/{workId}/snippet/{contextId}.mei`
+13. `/module3/{workId}/snippet/{contextId}.tei`
+
+**Module 4 (1):**
+14. `/documents/{documentId}.json`
+
+**Tools (1):**
+15. `/desc/{elementId}.json`
+
+#### URL-Struktur geändert, aber funktional äquivalent (23):
+
+**Module 1 (14):** `/module1/edition/{id}/...` → `/document/{id}/...`
+**Module 2 (6):** RESTful Pfad-Parameter → Query-Parameter in `/module2/getAnalysis.xql`
+**Module 3 (1):** `/module3/works.json` → `/module3/work-list.xql`
+**Module 4 (1):** `/module4/documents.json` → verschiedene Namen
+**Services (1):** Pfad vereinfacht
+
+---
+
+### Empfehlungen
+
+#### Für vollständige Abwärtskompatibilität:
+
+1. **Module 1**: Fügen Sie URL-Rewrite-Regeln hinzu oder duplizieren Sie Routen:
+   ```xquery
+   (: Legacy URL support :)
+   if (matches($exist:path, '/module1/edition/([\da-zA-Z_\.\-]+)/(.*)')) then (
+       let $documentId := tokenize($exist:path,'/')[3]
+       let $rest := substring-after($exist:path, concat('/module1/edition/', $documentId, '/'))
+       return
+       <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+           <forward url="/document/{$documentId}/{$rest}"/>
+       </dispatch>
+   )
+   ```
+
+2. **Module 3**: Implementieren Sie die 8 fehlenden Endpunkte aus Legacy, da diese wichtige Werk-/Manifestations-/Measures-Funktionalität bieten.
+
+3. **Fehlende Funktionalität**: Priorisieren Sie:
+   - **Hoch**: Module 3 Endpunkte (für Werk-Navigation essentiell)
+   - **Mittel**: Module 1 Shapes/Scars (für Annotations-Features)
+   - **Niedrig**: `/desc/{elementId}.json` (redundant zu Module 1 description)
+
+#### Für Migration auf neue URLs:
+
+- Dokumentieren Sie alle URL-Änderungen in einem Migrations-Guide
+- Bieten Sie eine Übergangsphase mit beiden URL-Schemas
+- Aktualisieren Sie Frontend-Anwendungen auf neue URL-Struktur
