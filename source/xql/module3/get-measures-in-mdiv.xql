@@ -97,15 +97,6 @@ let $output :=
             'measures': array { $measures } 
         }
     )
-    else (
-        response:set-status-code(400),
-        map {
-            'error': 400,
-            'message': 'Invalid scope parameter. Expected: mdiv ID or empty string for manifestation scope',
-            'requestedScope': $scope,
-            'requestedWork': $document.id,
-            'requestedManifestation': $manifestation.id
-        }
-    )
+    else ((:TODO: 404 einbauen:))
 
 return $output

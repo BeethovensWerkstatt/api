@@ -1,30 +1,9 @@
 {
   "name": "api",
-  "version": "0.3.0",
+  "version": "0.2.0",
   "description": "An API that will makes independent data packages with mostly MEI data available",
-  "type": "module",
+  "main": "gulpfile.js",
   "scripts": {
-    "fetch-data": "node scripts/fetch-data.js",
-    "build": "node scripts/build.js",
-    "build:public": "node scripts/build.js --public",
-    "build:full": "npm run fetch-data && npm run build",
-    "build:full:public": "npm run fetch-data && npm run build:public",
-    "package": "node scripts/package.js",
-    "dist": "npm run build:public && npm run package",
-    "dist:local": "npm run build && npm run package",
-    "dist:full": "npm run fetch-data && npm run dist",
-    "watch": "node scripts/watch.js",
-    "deploy": "xst --server localhost upload build/ /db/apps/api",
-    "deploy:xql": "xst --server localhost upload build/resources/xql/ /db/apps/api/resources/xql/",
-    "deploy:xqm": "xst --server localhost upload build/resources/xqm/ /db/apps/api/resources/xqm/",
-    "deploy:xslt": "xst --server localhost upload build/resources/xslt/ /db/apps/api/resources/xslt/",
-    "deploy:controller": "xst --server localhost upload build/controller.xql /db/apps/api/controller.xql",
-    "install:xar": "xst --server localhost package install local-files dist/*.xar",
-    "docker:dev": "docker compose -f docker-compose.dev.yml up -d",
-    "docker:dev:stop": "docker compose -f docker-compose.dev.yml down",
-    "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
-    "docker:dev:rebuild": "npm run dist && docker compose -f docker-compose.dev.yml up -d --build",
-    "watch:docker": "test -f .existdb.json.docker && cp .existdb.json.docker .existdb.json && npm run watch || (echo 'Error: .existdb.json.docker not found. Run: cp .existdb.json.docker.template .existdb.json.docker' && exit 1)",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -48,8 +27,16 @@
   "homepage": "https://github.com/BeethovensWerkstatt/api#readme",
   "dependencies": {},
   "devDependencies": {
-    "@existdb/xst": "^3.3.0",
-    "archiver": "^7.0.1",
-    "chokidar": "^4.0.1"
+    "@existdb/gulp-exist": "^4.0.0",
+    "dateformat": "^4.4.1",
+    "del": "^6.0.0",
+    "fs": "0.0.1-security",
+    "git-rev-sync": "^3.0.1",
+    "gulp": "^4.0.2",
+    "gulp-bump": "^3.2.0",
+    "gulp-newer": "^1.4.0",
+    "gulp-replace": "^1.0.0",
+    "gulp-zip": "^5.0.2",
+    "simple-git": "^2.31.0"
   }
 }

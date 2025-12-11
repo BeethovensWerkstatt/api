@@ -1,9 +1,6 @@
 .DS_Store
 node_modules
 /existConfig.json
-/.existdb.json
-/.existdb.json.docker
-/.env
 /build
 /dist
 

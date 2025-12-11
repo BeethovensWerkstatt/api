@@ -34,32 +34,24 @@ let $document.external.id := ef:getDocumentLink($document.id)
 
 let $file := $database//id($document.id)
 
-let $output :=
-    if(not(exists($file)))
-    then(
-        response:set-status-code(404),
-        map {
-            'error': 404,
-            'message': 'Document not found',
-            'requestedDocument': $document.id
-        }
-    )
-    else(
-        let $manifestation := ($file//mei:manifestation)[1]
-        let $manifestation.id := $manifestation/string(@xml:id)
-        let $facsimile := ($file//mei:facsimile)[1]
-        let $manifestation.label := $manifestation/mei:physLoc/mei:repository/mei:identifier[@auth = 'RISM']/text() || ' ' || $manifestation/mei:physLoc/mei:identifier/text()
-        let $iiif.manifest := $config:iiif-basepath || 'document/' || $manifestation.id || '/manifest.json'
-        return map {
-            '@id': $document.external.id,
-            'label': $manifestation.label,
-            'frbr': map {
-                'level': 'manifestation'
-            },
-            'iiif': map {
-                'manifest': $iiif.manifest
-            }
-        }
-    )
+let $manifestation := ($file//mei:manifestation)[1]
+let $manifestation.id := $manifestation/string(@xml:id)
+let $facsimile := ($file//mei:facsimile)[1]
+
+let $manifestation.label := $manifestation/mei:physLoc/mei:repository/mei:identifier[@auth = 'RISM']/text() || ' ' || $manifestation/mei:physLoc/mei:identifier/text()
+
+let $iiif.manifest := $config:iiif-basepath || 'document/' || $manifestation.id || '/manifest.json'
+
+let $output := map {
+    '@id': $document.external.id,
+    'label': $manifestation.label,
+    'frbr': map {
+        'level': 'manifestation'
+    },
+    'iiif': map {
+        'manifest': $iiif.manifest
+    }
+}
+
 
 return $output

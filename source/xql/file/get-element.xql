@@ -41,21 +41,4 @@ let $file := $database//mei:mei[@xml:id = $document.id]
 
 let $element := $file/root()/id($element.id)
 
-return
-    if(not(exists($file)))
-    then(
-        response:set-status-code(404),
-        <error>
-            <code>404</code>
-            <message>File not found: {$document.id}</message>
-        </error>
-    )
-    else if(not(exists($element)))
-    then(
-        response:set-status-code(404),
-        <error>
-            <code>404</code>
-            <message>Element not found: {$element.id} in file {$document.id}</message>
-        </error>
-    )
-    else($element)
+return $element

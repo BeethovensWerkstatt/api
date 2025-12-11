@@ -84,13 +84,9 @@ let $output :=
         'work': $document.uri
     }
     ) else (
-        response:set-status-code(404),
+        (: TODO: add RESSOURCE NOT FOUND:)
         map {
-            'error': 404,
-            'message': 'Measure not found or could not be loaded properly',
-            'requestedMeasure': $measure.id,
-            'requestedMdiv': $mdiv.id,
-            'requestedWork': $document.id
+            
         }
     )
 

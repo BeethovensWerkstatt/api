@@ -36,13 +36,4 @@ let $document.uri := $config:file-basepath || $document.id || '.xml'
 (: get file from database :)
 let $file := $database//mei:mei[@xml:id = $document.id]
 
-return
-    if(exists($file))
-    then($file)
-    else(
-        response:set-status-code(404),
-        <error>
-            <code>404</code>
-            <message>File not found: {$document.id}</message>
-        </error>
-    )
+return $file

@@ -435,39 +435,17 @@ let $tags :=
         'implementation': array { $implementation }
     }
 
-return
-    if(not(exists($complete.file)))
-    then(
-        response:set-status-code(404),
-        map {
-            'error': 404,
-            'message': 'Work not found',
-            'requestedWork': $document.id
-        }
-    )
-    else if(not(exists($complaint.metamark)))
-    then(
-        response:set-status-code(404),
-        map {
-            'error': 404,
-            'message': 'Complaint not found',
-            'requestedComplaint': $complaint.id,
-            'requestedWork': $document.id
-        }
-    )
-    else(
-        map {
-            '@id': $public.complaint.id,
-            'label': $complaint.metamark/string(@label),
-            '@work': $document.uri,
-            'affects': $affects,
-            'revisionDocs': array { $revisionDocs },
-            'anteDocs': array { $anteDocs },
-            'postDocs': array { $postDocs },
-            'text': map {
-                'ante': $ante.text,
-                'post': $post.text
-            },
-            'tags': $tags
-        }
-    )
+return map {
+    '@id': $public.complaint.id,
+    'label': $complaint.metamark/string(@label),
+    '@work': $document.uri,
+    'affects': $affects,
+    'revisionDocs': array { $revisionDocs },
+    'anteDocs': array { $anteDocs },
+    'postDocs': array { $postDocs },
+    'text': map {
+        'ante': $ante.text,
+        'post': $post.text
+    },
+    'tags': $tags
+}

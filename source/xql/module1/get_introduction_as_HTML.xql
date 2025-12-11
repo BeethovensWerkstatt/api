@@ -24,24 +24,16 @@ declare option output:media-type "text/plain";
 let $edition.id := request:get-parameter('edition.id','')
 
 let $doc := collection($config:module1-root)//mei:mei[@xml:id = $edition.id]
+let $notes := $doc//mei:fileDesc/mei:notesStmt
 
-return
-    if(exists($doc))
-    then(
-        let $notes := $doc//mei:fileDesc/mei:notesStmt
-        let $xslPath := '../../xslt/module1/'
-        let $text := transform:transform($notes,
-                       doc(concat($xslPath,'mei2html.xsl')), <parameters><param name="purpose" value="getIntroduction"/></parameters>)
-        return 
-            <div class="meiTextView">
-                <h1>{$doc//mei:fileDesc//mei:title[@type = 'editionTitle']//text()}</h1>
-                {$text}
-            </div>
-    )
-    else(
-        response:set-status-code(404),
-        <div class="error">
-            <h1>Document Not Found</h1>
-            <p>No document found with ID: {$edition.id}</p>
-        </div>
-    )
+let $xslPath := '../../xslt/module1/' 
+
+let $text := transform:transform($notes,
+               doc(concat($xslPath,'mei2html.xsl')), <parameters><param name="purpose" value="getIntroduction"/></parameters>)
+
+
+return 
+    <div class="meiTextView">
+        <h1>{$doc//mei:fileDesc//mei:title[@type = 'editionTitle']//text()}</h1>
+        {$text}
+    </div>
