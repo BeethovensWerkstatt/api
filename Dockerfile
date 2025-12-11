@@ -3,7 +3,7 @@
 # 1. set up the build environment and build the expath-package
 # 2. run the eXist-db
 #########################
-FROM openjdk:8-jdk as builder
+FROM eclipse-temurin:8-jdk AS builder
 LABEL maintainer="Johannes Kepper"
 
 ENV API_BUILD_HOME="/opt/api-build"
