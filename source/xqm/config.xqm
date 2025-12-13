@@ -28,7 +28,7 @@ declare variable $config:app-root :=
 
 declare variable $config:public-base-uri := '$$deployTarget$$'; (: This will be set automatically through build.js :)
 
-declare variable $config:data-root := $config:app-root || '/data/';
+declare variable $config:data-root := $config:app-root || '/data/data/';
 
 declare variable $config:module1-root := $config:data-root || 'module1/';
 
