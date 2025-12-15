@@ -6,7 +6,9 @@
 FROM node:18-bookworm AS builder
 LABEL maintainer="Johannes Kepper"
 
+ARG GITHUB_REF_NAME=main
 ENV API_BUILD_HOME="/opt/api-build"
+ENV GITHUB_REF_NAME=${GITHUB_REF_NAME}
 
 WORKDIR ${API_BUILD_HOME}
 

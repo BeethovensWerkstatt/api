@@ -4,8 +4,15 @@ import { execSync } from 'child_process';
 
 /**
  * Get the current git branch name
+ * Supports GitHub Actions via GITHUB_REF_NAME environment variable
  */
 export function getGitBranch() {
+  // First check for GitHub Actions environment variable
+  if (process.env.GITHUB_REF_NAME) {
+    return process.env.GITHUB_REF_NAME;
+  }
+  
+  // Fall back to git command
   try {
     return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
   } catch (error) {

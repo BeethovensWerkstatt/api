@@ -62,6 +62,8 @@ jobs:
           context: .
           load: true
           tags: bw-api:test
+          build-args: |
+            GITHUB_REF_NAME=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
@@ -197,6 +199,8 @@ jobs:
           context: .
           load: true
           tags: bw-api:test-data
+          build-args: |
+            GITHUB_REF_NAME=${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
