@@ -23,8 +23,9 @@ import {
  * 6. Verifies data directory exists
  * 
  * Usage:
- *   node scripts/build.js
- *   node scripts/build.js --public  (for production with public base URI)
+ *   node scripts/build.js                    (local mode: localhost)
+ *   node scripts/build.js --public           (production mode: uses branch to determine URL)
+ *   DOCKER_BUILD=true node scripts/build.js  (automatically uses production mode)
  */
 
 const SOURCE_DIR = 'source';
@@ -186,7 +187,8 @@ async function verifyData() {
 
 async function main() {
   const args = process.argv.slice(2);
-  const isPublic = args.includes('--public');
+  // Check for --public flag or DOCKER_BUILD environment variable
+  const isPublic = args.includes('--public') || process.env.DOCKER_BUILD === 'true';
   
   console.log(`Building API (${isPublic ? 'production' : 'local'} mode)...\n`);
   
