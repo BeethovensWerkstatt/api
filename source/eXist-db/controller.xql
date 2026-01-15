@@ -1,19 +1,56 @@
 xquery version "3.0";
 
-(:declare namespace exist="http://exist-db.org/xquery/response";
-:)
+(:~
+ : URL Rewriting Controller
+ : 
+ : This controller handles URL routing for the Beethovens Werkstatt API.
+ : 
+ : Routing Strategy:
+ : - /api/* routes are forwarded to RESTXQ (new API endpoints)
+ : - Legacy routes (without /api prefix) continue to work via controller dispatching
+ : - Static resources are served directly
+ :
+ : @author Beethovens Werkstatt
+ : @version 2.0.0
+ :)
+
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:controller external;
 declare variable $exist:prefix external;
 declare variable $exist:root external;
 
-(: 
-EMA =
-GET /{identifier}/{measureRanges}/{stavesToMeasures}/{beatsToMeasures}/{completeness} 
-For now:
-/source/filename/measure-range/measures.json
-:)
+(: ============================================================
+   RESTXQ API ROUTES (/api/*)
+   All new API endpoints use RESTXQ for cleaner, annotated routing
+   ============================================================ :)
+
+(: Forward all /api/* requests to RESTXQ servlet :)
+if (starts-with($exist:path, '/api/')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward servlet="RestXqServlet"/>
+    </dispatch>
+
+) else
+
+(: Handle CORS preflight requests :)
+if (request:get-method() = 'OPTIONS') then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    response:set-header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"),
+    response:set-header("Access-Control-Allow-Headers", "Content-Type, Authorization"),
+    response:set-header("Access-Control-Max-Age", "86400"),
+    response:set-status-code(204),
+    <empty/>
+
+) else
+
+(: ============================================================
+   LEGACY ROUTES (backwards compatibility)
+   These routes are kept for backwards compatibility.
+   They will be gradually migrated to /api/* RESTXQ routes.
+   ============================================================ :)
 
 (: get a JSON-LD compatible definitions of contexts :)
 if(matches($exist:path,'/\d/context.json')) then (
