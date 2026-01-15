@@ -1,16 +1,32 @@
 xquery version "3.1";
 
+(:~
+ : Configuration Module
+ : 
+ : Provides application-wide configuration settings.
+ : Supports environment-based configuration loaded from XML files.
+ : 
+ : Environment is determined by:
+ : 1. BW_ENV system property (development, staging, production)
+ : 2. Defaults to "development" if not set
+ :
+ : @author Beethovens Werkstatt
+ : @version 1.0.0
+ :)
+
 module namespace config="https://api.beethovens-werkstatt.de";
 
 declare namespace repo="http://exist-db.org/xquery/repo";
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace request="http://exist-db.org/xquery/request";
 declare namespace system="http://exist-db.org/xquery/system";
+declare namespace util="http://exist-db.org/xquery/util";
 declare namespace tei="http://www.tei-c.org/ns/1.0";
+declare namespace cfg="https://api.beethovens-werkstatt.de/config";
 
-(:
-    Determine the application root collection from the current module load path.
-:)
+(:~
+ : Determine the application root collection from the current module load path.
+ :)
 declare variable $config:app-root :=
     let $rawPath := system:get-module-load-path()
     let $modulePath :=
@@ -26,7 +42,49 @@ declare variable $config:app-root :=
         substring-before($modulePath, '/resources/')
 ;
 
-declare variable $config:public-base-uri := '$$deployTarget$$'; (: This will be set automatically through build.js :)
+(:~
+ : Current environment (development, staging, production)
+ :)
+declare variable $config:environment :=
+    let $env := system:get-property("bw.env")
+    return if ($env) then $env else "development";
+
+(:~
+ : Environment-specific configuration document
+ :)
+declare variable $config:env-config :=
+    let $config-path := $config:app-root || "/config/" || $config:environment || ".xml"
+    return
+        if (doc-available($config-path)) then
+            doc($config-path)/cfg:config
+        else (
+            util:log("warn", "[BW-API] Config file not found: " || $config-path || ", using defaults"),
+            ()
+        );
+
+(:~
+ : Get a configuration value with fallback
+ :)
+declare function config:get($path as xs:string, $default as xs:string) as xs:string {
+    let $value := $config:env-config/*[local-name() = $path]/string()
+    return if ($value and $value != "") then $value else $default
+};
+
+(:~
+ : Check if a feature is enabled
+ :)
+declare function config:is-enabled($feature as xs:string) as xs:boolean {
+    let $element := $config:env-config/*[local-name() = $feature]
+    return $element/@enabled = "true"
+};
+
+(: ============ Core Configuration Variables ============ :)
+
+(:~
+ : Public base URI for API endpoints
+ : This is replaced at build time with the appropriate URL
+ :)
+declare variable $config:public-base-uri := '$$deployTarget$$'; (: Set automatically through build.js :)
 
 declare variable $config:data-root := $config:app-root || '/data/data/';
 
@@ -54,3 +112,34 @@ declare variable $config:expath-descriptor := doc(concat($config:app-root, '/exp
 declare variable $config:app-version := $config:expath-descriptor/@version/string();
 
 declare variable $config:api-url := $config:public-base-uri;
+
+(: ============ Feature Flags ============ :)
+
+(:~
+ : Whether CORS is enabled
+ :)
+declare variable $config:cors-enabled := config:is-enabled("cors");
+
+(:~
+ : Whether debug mode is enabled
+ :)
+declare variable $config:debug-enabled := config:is-enabled("debug");
+
+(:~
+ : Whether caching is enabled
+ :)
+declare variable $config:cache-enabled := config:is-enabled("cache");
+
+(:~
+ : Cache TTL in seconds (0 = no cache)
+ :)
+declare variable $config:cache-ttl := 
+    let $ttl := config:get("cache/ttl", "0")
+    return xs:integer($ttl);
+
+(: ============ API Paths ============ :)
+
+(:~
+ : API prefix (used for RESTXQ routing)
+ :)
+declare variable $config:api-prefix := config:get("api/prefix", "/api");
