@@ -2,19 +2,51 @@
 
 This is the main data API of the Beethovens Werkstatt project. It provides access to MEI-encoded music data through various modules, with support for IIIF, genetic editions, and comparative analysis.
 
+## Features
+
+- **RESTXQ API** with custom `/api/` prefix routing
+- **OpenAPI 3.0** specification with Swagger UI at `/api/docs`
+- **IIIF Presentation API 2.1** support for document access
+- **XQSuite Testing** framework for XQuery unit tests
+- **Docker** support for development and production
+- **Environment-based Configuration** (development, staging, production)
+- **CI/CD Pipeline** with GitHub Actions
+
 ## Prerequisites
 
-- Node.js 18 or later
+- Node.js 20 or later
 - Git
-- Local eXist-DB instance (for development)
+- Docker (recommended) or local eXist-db 6.x instance
 
 ## Quick Start
+
+### Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/BeethovensWerkstatt/api.git
+cd api
+
+# Install dependencies
+npm install
+
+# Start development environment
+npm run docker:dev
+
+# The API will be available at:
+# - Main: http://localhost:8080/exist/apps/api/
+# - API endpoints: http://localhost:8080/exist/apps/api/api/
+# - Swagger UI: http://localhost:8080/exist/apps/api/api/docs
+# - Health check: http://localhost:8080/exist/apps/api/api/health
+```
+
+### Without Docker
 
 ```bash
 # Install dependencies
 npm install
 
-# Configure eXist-DB connection
+# Configure eXist-db connection
 cp .existdb.json.template .existdb.json
 # Edit .existdb.json with your password
 
@@ -25,12 +57,21 @@ npm run build:full
 npm run package
 ```
 
+## Documentation
+
+- **[Development Guide](docs/DEVELOPMENT.md)** - Detailed development setup and workflow
+- **[OpenAPI Specification](OPENAPI.md)** - API endpoint documentation
+- **[API Docs (Swagger)](http://localhost:8080/exist/apps/api/api/docs)** - Interactive API explorer (when running)
+
 ## Available Commands
 
 ### Data Management
 
 ```bash
 npm run fetch-data        # Clone/update data repositories
+npm run fetch-data -- --branch dev  # Use specific data branch
+npm run fetch-data -- --check       # Check for updates (dry run)
+npm run fetch-data -- --clean       # Clean and re-fetch
 ```
 
 **Branch mapping:**
@@ -45,6 +86,12 @@ npm run build:public      # Build for production
 npm run build:full        # Fetch data + build (local)
 ```
 
+### Testing
+
+```bash
+npm run test              # Run XQSuite tests
+```
+
 ### Packaging & Distribution
 
 ```bash
@@ -56,7 +103,7 @@ npm run dist:full         # Fetch data + build + package
 ### Development
 
 ```bash
-npm run watch             # Watch files and auto-deploy to local eXist-DB
+npm run watch             # Watch files and auto-deploy to local eXist-db
 
 # Docker-based development (recommended)
 npm run docker:dev        # Start dev container with all eXist apps
@@ -74,7 +121,7 @@ npm run deploy:xql        # Deploy XQuery scripts only
 npm run deploy:xqm        # Deploy XQuery modules only
 npm run deploy:xslt       # Deploy XSLT only
 npm run deploy:controller # Deploy controller only
-npm run install:xar       # Install .xar to eXist-DB
+npm run install:xar       # Install .xar to eXist-db
 ```
 
 ## Project Structure
