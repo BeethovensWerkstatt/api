@@ -1,24 +1,39 @@
 # Development Dockerfile with eXist-DB apps accessible
 # Keeps /exist context path but makes all apps available
+#
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up -d
+#   npm run watch:docker
+#
+# Features:
+#   - All eXist-db apps accessible (eXide, Monex, etc.)
+#   - Hot-reload via mounted package
+#   - Development logging enabled
 
 FROM stadlerpeter/existdb:6.4.0-jre17
+
+LABEL org.opencontainers.image.title="Beethovens Werkstatt API (Dev)"
+LABEL org.opencontainers.image.description="Development build with full eXist-db access"
 
 # Development mode with all default apps
 ENV EXIST_ENV="development"
 ENV EXIST_CONTEXT_PATH="/exist"
 # No EXIST_DEFAULT_APP_PATH - keeps all apps accessible
 
-# Set password for development
-ENV EXIST_PASSWORD="admin123"
+# Development environment settings
+ENV BW_ENV="development"
+ENV BW_DEBUG="true"
+
+# Password is set via docker-compose environment or at runtime
+# Do NOT hardcode passwords in Dockerfile
 
 WORKDIR /opt/exist
 
-# For local development, mount the package instead of copying:
-# docker run -v $(pwd)/dist/api-*.xar:/opt/exist/autodeploy/api.xar ...
-# Or copy it for a self-contained dev image:
-# COPY dist/api-*.xar ${EXIST_HOME}/autodeploy/
+# Health check
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 --start-period=45s \
+    CMD curl -f http://localhost:8080/exist/apps/api/api/health || exit 1
 
 # Expose standard ports
 EXPOSE 8080 8443
 
-# Use the base image's entrypoint (no custom cleanup needed for dev)
+# Use the base image's entrypoint
