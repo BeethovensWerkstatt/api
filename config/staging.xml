@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Staging Environment Configuration
+    
+    This file contains settings for the staging/dev deployment.
+    It is loaded by config.xqm based on the BW_ENV system property.
+-->
+<config xmlns="https://api.beethovens-werkstatt.de/config">
+    <!-- Base URI for API endpoints -->
+    <baseUri>https://dev-api.beethovens-werkstatt.de</baseUri>
+    
+    <!-- CORS configuration -->
+    <cors enabled="true">
+        <allowOrigin>*</allowOrigin>
+        <allowMethods>GET, POST, OPTIONS</allowMethods>
+        <allowHeaders>Content-Type, Authorization</allowHeaders>
+    </cors>
+    
+    <!-- Debug settings -->
+    <debug enabled="true">
+        <logLevel>info</logLevel>
+        <showStackTrace>false</showStackTrace>
+    </debug>
+    
+    <!-- Cache settings -->
+    <cache enabled="true">
+        <ttl>300</ttl>
+    </cache>
+    
+    <!-- Data repositories -->
+    <dataRepos>
+        <repo name="data" branch="dev" autoUpdate="false"/>
+        <repo name="data-cache" branch="main" autoUpdate="false"/>
+    </dataRepos>
+    
+    <!-- API versioning -->
+    <api>
+        <prefix>/api</prefix>
+        <defaultVersion>1</defaultVersion>
+    </api>
+</config>

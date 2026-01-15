@@ -170,6 +170,48 @@ async function buildHTML() {
   console.log('✓ Built HTML files');
 }
 
+async function buildConfig(replacements) {
+  console.log('Building configuration files...');
+  
+  const configSrc = 'config';
+  const configDest = path.join(BUILD_DIR, 'config');
+  
+  if (await exists(configSrc)) {
+    await fs.mkdir(configDest, { recursive: true });
+    const files = await fs.readdir(configSrc);
+    for (const file of files) {
+      if (file.endsWith('.xml')) {
+        const srcPath = path.join(configSrc, file);
+        const destPath = path.join(configDest, file);
+        await processTemplate(srcPath, destPath, replacements);
+      }
+    }
+  }
+  
+  console.log('✓ Built configuration files');
+}
+
+async function buildTests(replacements) {
+  console.log('Building test files...');
+  
+  const testSrc = 'test/xqsuite';
+  const testDest = path.join(BUILD_DIR, 'test', 'xqsuite');
+  
+  if (await exists(testSrc)) {
+    await fs.mkdir(testDest, { recursive: true });
+    const files = await fs.readdir(testSrc);
+    for (const file of files) {
+      if (file.endsWith('.xql') || file.endsWith('.xqm')) {
+        const srcPath = path.join(testSrc, file);
+        const destPath = path.join(testDest, file);
+        await processTemplate(srcPath, destPath, replacements);
+      }
+    }
+  }
+  
+  console.log('✓ Built test files');
+}
+
 async function verifyData() {
   console.log('Verifying data directories...');
   
@@ -200,6 +242,8 @@ async function main() {
     await buildXQuery(replacements);
     await buildXSLT();
     await buildHTML();
+    await buildConfig(replacements);
+    await buildTests(replacements);
     await verifyData();
     
     console.log('\n✓ Build complete!');

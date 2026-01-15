@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Development Environment Configuration
+    
+    This file contains settings specific to local development.
+    It is loaded by config.xqm based on the BW_ENV system property.
+-->
+<config xmlns="https://api.beethovens-werkstatt.de/config">
+    <!-- Base URI for API endpoints -->
+    <baseUri>http://localhost:8082/exist/apps/api</baseUri>
+    
+    <!-- CORS configuration -->
+    <cors enabled="true">
+        <allowOrigin>*</allowOrigin>
+        <allowMethods>GET, POST, PUT, DELETE, OPTIONS</allowMethods>
+        <allowHeaders>Content-Type, Authorization</allowHeaders>
+    </cors>
+    
+    <!-- Debug settings -->
+    <debug enabled="true">
+        <logLevel>debug</logLevel>
+        <showStackTrace>true</showStackTrace>
+    </debug>
+    
+    <!-- Cache settings -->
+    <cache enabled="false">
+        <ttl>0</ttl>
+    </cache>
+    
+    <!-- Data repositories -->
+    <dataRepos>
+        <repo name="data" branch="dev" autoUpdate="false"/>
+        <repo name="data-cache" branch="main" autoUpdate="false"/>
+    </dataRepos>
+    
+    <!-- API versioning -->
+    <api>
+        <prefix>/api</prefix>
+        <defaultVersion>1</defaultVersion>
+    </api>
+</config>
