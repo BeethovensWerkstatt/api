@@ -28,7 +28,9 @@
     "test": "node scripts/run-tests.js",
     "test:verbose": "node scripts/run-tests.js --verbose",
     "test:deploy": "npm run deploy && npm run test",
-    "lint": "echo 'XQuery linting not yet configured'",
+    "lint": "npm run lint:js && echo 'XQuery linting not yet configured'",
+    "lint:js": "standard",
+    "lint:js:fix": "standard --fix",
     "validate": "npm run lint && npm run test"
   },
   "repository": {
@@ -50,10 +52,10 @@
     "url": "https://github.com/BeethovensWerkstatt/api/issues"
   },
   "homepage": "https://github.com/BeethovensWerkstatt/api#readme",
-  "dependencies": {},
   "devDependencies": {
     "@existdb/xst": "^3.3.0",
     "archiver": "^7.0.1",
-    "chokidar": "^4.0.1"
+    "chokidar": "^4.0.1",
+    "standard": "^17.1.2"
   }
 }
