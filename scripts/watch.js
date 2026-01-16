@@ -14,28 +14,37 @@ import { existsSync, readFileSync } from 'fs';
  * 
  * Requirements:
  *   - Local eXist-DB instance running
- *   - .existdb.json or existConfig.json with connection details
+ *   - .existdb.json with connection details
  */
 
 const SOURCE_DIR = 'source';
+const CONFIG_FILE = '.existdb.json';
 
 // Check if eXist-DB connection is configured
 function checkExistConfig() {
-  if (!existsSync('.existdb.json') && !existsSync('existConfig.json')) {
+  if (!existsSync(CONFIG_FILE)) {
     console.error('❌ Error: No eXist-DB configuration found!');
     console.error('Please create .existdb.json with your connection details.');
     console.error('Example:');
     console.error(JSON.stringify({
       servers: {
         localhost: {
-          server: "http://localhost:8080/exist",
+          server: "http://localhost:8082/exist",
           user: "admin",
           password: ""
         }
+      },
+      sync: {
+        server: "localhost"
       }
     }, null, 2));
     process.exit(1);
   }
+}
+
+// Helper to run xst with config
+function xst(args) {
+  return `xst --config ${CONFIG_FILE} ${args}`;
 }
 
 function deployXQuery(filePath) {
@@ -46,17 +55,20 @@ function deployXQuery(filePath) {
     
     // Deploy to eXist-DB using xst
     const relativePath = path.relative(SOURCE_DIR, filePath);
-    let targetPath;
+    let targetCollection;
     
     if (relativePath.startsWith('xql/')) {
-      targetPath = `/db/apps/api/resources/${relativePath}`;
+      targetCollection = `/db/apps/api/resources/xql/`;
     } else if (relativePath.startsWith('xqm/')) {
-      targetPath = `/db/apps/api/resources/${relativePath}`;
+      targetCollection = `/db/apps/api/resources/xqm/`;
     }
     
-    if (targetPath) {
+    if (targetCollection) {
       const buildPath = path.join('build', 'resources', relativePath);
-      execSync(`xst upload ${buildPath} ${targetPath}`, { stdio: 'inherit' });
+      // Get the directory from the relative path
+      const relDir = path.dirname(relativePath);
+      const actualTarget = `/db/apps/api/resources/${relDir}/`;
+      execSync(xst(`upload ${buildPath} ${actualTarget}`), { stdio: 'inherit' });
       console.log(`✓ Deployed ${relativePath}`);
     }
   } catch (error) {
@@ -68,7 +80,7 @@ function deployController() {
   console.log('Deploying controller.xql');
   try {
     execSync('node scripts/build.js', { stdio: 'inherit' });
-    execSync('xst upload build/controller.xql /db/apps/api/controller.xql', { stdio: 'inherit' });
+    execSync(xst('upload build/controller.xql /db/apps/api/'), { stdio: 'inherit' });
     console.log('✓ Deployed controller.xql');
   } catch (error) {
     console.error('Error deploying controller:', error.message);
@@ -80,10 +92,13 @@ function deployXSLT(filePath) {
   try {
     const relativePath = path.relative(path.join(SOURCE_DIR, 'xslt'), filePath);
     const buildPath = path.join('build', 'resources', 'xslt', relativePath);
-    const targetPath = `/db/apps/api/resources/xslt/${relativePath}`;
+    const relDir = path.dirname(relativePath);
+    const targetCollection = relDir === '.' 
+      ? '/db/apps/api/resources/xslt/'
+      : `/db/apps/api/resources/xslt/${relDir}/`;
     
     execSync('node scripts/build.js', { stdio: 'inherit' });
-    execSync(`xst upload ${buildPath} ${targetPath}`, { stdio: 'inherit' });
+    execSync(xst(`upload ${buildPath} ${targetCollection}`), { stdio: 'inherit' });
     console.log(`✓ Deployed ${relativePath}`);
   } catch (error) {
     console.error(`Error deploying ${filePath}:`, error.message);
@@ -95,10 +110,10 @@ function deployHTML(filePath) {
   try {
     const fileName = path.basename(filePath);
     const buildPath = path.join('build', fileName);
-    const targetPath = `/db/apps/api/${fileName}`;
+    const targetCollection = `/db/apps/api/`;
     
     execSync('node scripts/build.js', { stdio: 'inherit' });
-    execSync(`xst upload ${buildPath} ${targetPath}`, { stdio: 'inherit' });
+    execSync(xst(`upload ${buildPath} ${targetCollection}`), { stdio: 'inherit' });
     console.log(`✓ Deployed ${fileName}`);
   } catch (error) {
     console.error(`Error deploying ${filePath}:`, error.message);
@@ -113,11 +128,12 @@ function main() {
 
   // Watch XQuery files
   const xqueryWatcher = chokidar.watch([
-    `${SOURCE_DIR}/xql/**/*.xql`,
-    `${SOURCE_DIR}/xqm/**/*.xqm`
+    `${SOURCE_DIR}/xql`,
+    `${SOURCE_DIR}/xqm`
   ], {
     persistent: true,
-    ignoreInitial: true
+    ignoreInitial: true,
+    ignored: (path, stats) => stats?.isFile() && !(path.endsWith('.xql') || path.endsWith('.xqm'))
   });
 
   xqueryWatcher.on('change', deployXQuery);
@@ -136,10 +152,11 @@ function main() {
 
   // Watch XSLT files
   const xsltWatcher = chokidar.watch(
-    `${SOURCE_DIR}/xslt/**/*.xsl`,
+    `${SOURCE_DIR}/xslt`,
     {
       persistent: true,
-      ignoreInitial: true
+      ignoreInitial: true,
+      ignored: (path, stats) => stats?.isFile() && !path.endsWith('.xsl')
     }
   );
 
@@ -148,10 +165,11 @@ function main() {
 
   // Watch HTML files
   const htmlWatcher = chokidar.watch(
-    `${SOURCE_DIR}/html/**/*.html`,
+    `${SOURCE_DIR}/html`,
     {
       persistent: true,
-      ignoreInitial: true
+      ignoreInitial: true,
+      ignored: (path, stats) => stats?.isFile() && !path.endsWith('.html')
     }
   );
 
