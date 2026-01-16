@@ -43,13 +43,13 @@ let $files :=
   let $title := 
     for $title in $file/mei:meiHead/mei:fileDesc/mei:titleStmt/mei:title[@type = 'main']
     return map {
-      'title': $title/text(),
+      'title': normalize-space($title/text()),
       '@lang': $title/string(@xml:lang)
     }
     
   let $composer.elem := $file//mei:fileDesc/mei:titleStmt/mei:composer/mei:persName
   let $composer := map {
-    'name': $composer.elem/text(),
+    'name': normalize-space($composer.elem/text()),
     '@id': $composer.elem/string(@auth.uri) || $composer.elem/string(@codedval),
     'internalId': $composer.elem/string(@xml:id)
   }
