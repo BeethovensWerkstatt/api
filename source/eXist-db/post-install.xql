@@ -24,15 +24,22 @@ declare variable $target external;
  : Add new API modules here when created
  :)
 let $modules := (
-    (: Core API modules - RESTXQ enabled :)
+    (: Core API modules :)
     $target || "/resources/xqm/rest/api-base.xqm",
     $target || "/resources/xqm/rest/openapi-api.xqm",
-    $target || "/resources/xqm/rest/iiif-api.xqm"
     
-    (: Future modules - uncomment when ready :)
-    (: $target || "/resources/xqm/rest/module1-api.xqm", :)
-    (: $target || "/resources/xqm/rest/module3-api.xqm", :)
-    (: $target || "/resources/xqm/rest/documents-api.xqm" :)
+    (: IIIF endpoints :)
+    $target || "/resources/xqm/rest/iiif-api.xqm",
+    
+    (: Module endpoints :)
+    $target || "/resources/xqm/rest/module1-api.xqm",
+    $target || "/resources/xqm/rest/module2-api.xqm",
+    $target || "/resources/xqm/rest/module3-api.xqm",
+    $target || "/resources/xqm/rest/module4-api.xqm",
+    
+    (: Utility endpoints :)
+    $target || "/resources/xqm/rest/file-api.xqm",
+    $target || "/resources/xqm/rest/tools-api.xqm"
 )
 
 let $_ := util:log("info", "[BW-API] Post-install: Starting RESTXQ module registration...")

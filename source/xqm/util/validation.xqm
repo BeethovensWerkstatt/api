@@ -12,8 +12,6 @@ xquery version "3.1";
 
 module namespace validate = "https://api.beethovens-werkstatt.de/util/validation";
 
-import module namespace err = "https://api.beethovens-werkstatt.de/util/error" at "./error.xqm";
-
 (:~
  : Regex patterns for common validations
  :)
@@ -174,8 +172,8 @@ declare function validate:sanitize-string($input as xs:string?) as xs:string {
     if (empty($input)) then
         ""
     else
-        (: Remove null bytes and control characters except newline/tab :)
-        let $cleaned := replace($input, "[&#x00;-&#x08;&#x0B;&#x0C;&#x0E;-&#x1F;]", "")
+        (: Remove control characters except newline/tab - use codepoints-to-string approach :)
+        let $cleaned := replace($input, "[&#x01;-&#x08;&#x0B;&#x0C;&#x0E;-&#x1F;]", "")
         return normalize-space($cleaned)
 };
 

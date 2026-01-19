@@ -34,10 +34,10 @@ npm install
 npm run docker:dev
 
 # The API will be available at:
-# - Main: http://localhost:8080/exist/apps/api/
-# - API endpoints: http://localhost:8080/exist/apps/api/api/
-# - Swagger UI: http://localhost:8080/exist/apps/api/api/docs
-# - Health check: http://localhost:8080/exist/apps/api/api/health
+# - Main: http://localhost:8082/exist/apps/api/
+# - API endpoints: http://localhost:8082/exist/apps/api/api/
+# - Swagger UI: http://localhost:8082/exist/apps/api/api/docs
+# - Health check: http://localhost:8082/exist/apps/api/api/health
 ```
 
 ### Without Docker
@@ -61,7 +61,7 @@ npm run package
 
 - **[Development Guide](docs/DEVELOPMENT.md)** - Detailed development setup and workflow
 - **[OpenAPI Specification](OPENAPI.md)** - API endpoint documentation
-- **[API Docs (Swagger)](http://localhost:8080/exist/apps/api/api/docs)** - Interactive API explorer (when running)
+- **[API Docs (Swagger)](http://localhost:8082/exist/apps/api/api/docs)** - Interactive API explorer (when running with docker:dev)
 
 ## Available Commands
 
@@ -131,6 +131,7 @@ source/
 ├── eXist-db/        # eXist-DB configuration
 ├── xql/             # XQuery endpoints
 ├── xqm/             # XQuery modules
+│   └── rest/        # RESTXQ API modules
 ├── xslt/            # XSLT transformations
 └── html/            # HTML files
 
@@ -144,6 +145,95 @@ scripts/
 build/               # Build output (not in git)
 dist/                # Distribution packages (not in git)
 ```
+
+## Adding New API Routes
+
+All API routes are defined using RESTXQ in the `source/xqm/rest/` folder. The project uses a forwarding pattern where `controller.xql` forwards requests to the RestXqServlet.
+
+### Step 1: Create or Update a RESTXQ Module
+
+Create a new file in `source/xqm/rest/` (e.g., `my-api.xqm`):
+
+```xquery
+xquery version "3.1";
+
+module namespace my-api = "https://api.beethovens-werkstatt.de/rest/my";
+
+import module namespace api-base = "https://api.beethovens-werkstatt.de/rest/base" at "./api-base.xqm";
+
+declare namespace rest = "http://exquery.org/ns/restxq";
+declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+
+(:~
+ : List all items
+ : @return JSON array of items
+ :)
+declare
+    %rest:GET
+    %rest:path("/my-module/items.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function my-api:list-items() {
+    (: Option 1: Call existing XQL script :)
+    api-base:forward-to-xql("/resources/xql/my-module/get-items.xql", map {})
+    
+    (: Option 2: Return data directly :)
+    (: api-base:json-response(array { "item1", "item2" }) :)
+};
+
+(:~
+ : Get specific item by ID
+ : @param $id The item identifier
+ : @return JSON item object
+ :)
+declare
+    %rest:GET
+    %rest:path("/my-module/{$id}.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function my-api:get-item($id as xs:string) {
+    api-base:forward-to-xql("/resources/xql/my-module/get-item.xql", map {
+        "item.id": $id
+    })
+};
+```
+
+### Step 2: Add Route Forwarding to controller.xql
+
+Add a forwarding rule in `source/eXist-db/controller.xql` after the existing RESTXQ route sections:
+
+```xquery
+(: My Module Routes - my-api.xqm :)
+if(starts-with(lower-case($exist:path), '/my-module/')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="/restxq{$exist:path}" absolute="yes"/>
+    </dispatch>
+) else
+```
+
+### Step 3: Deploy and Test
+
+```bash
+# If using file watcher, changes deploy automatically
+npm run watch:docker
+
+# Or manually deploy
+npm run deploy
+```
+
+Test your endpoint:
+```bash
+curl http://localhost:8082/exist/apps/api/my-module/items.json
+```
+
+### Key Conventions
+
+1. **Route paths** in RESTXQ should match the URL path without `/exist/apps/api` prefix
+2. **CORS headers** are set automatically by `api-base:forward-to-xql()` or use `api-base:json-response()`
+3. **Parameters** from URLs use `{$paramName}` syntax in `%rest:path`
+4. **Query parameters** use `%rest:query-param("name", "{$var}", "default")`
+5. **XQDoc comments** (`:~ ... :)`) become OpenAPI documentation
 
 ## eXist-DB Configuration
 

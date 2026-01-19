@@ -11,22 +11,22 @@ xquery version "3.1";
  : @version 1.0.0
  :)
 
-module namespace err = "https://api.beethovens-werkstatt.de/util/error";
+module namespace bwerr = "https://api.beethovens-werkstatt.de/util/error";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
 (:~
  : HTTP status codes and their descriptions
  :)
-declare variable $err:HTTP_BAD_REQUEST := 400;
-declare variable $err:HTTP_UNAUTHORIZED := 401;
-declare variable $err:HTTP_FORBIDDEN := 403;
-declare variable $err:HTTP_NOT_FOUND := 404;
-declare variable $err:HTTP_METHOD_NOT_ALLOWED := 405;
-declare variable $err:HTTP_CONFLICT := 409;
-declare variable $err:HTTP_UNPROCESSABLE_ENTITY := 422;
-declare variable $err:HTTP_INTERNAL_ERROR := 500;
-declare variable $err:HTTP_SERVICE_UNAVAILABLE := 503;
+declare variable $bwerr:HTTP_BAD_REQUEST := 400;
+declare variable $bwerr:HTTP_UNAUTHORIZED := 401;
+declare variable $bwerr:HTTP_FORBIDDEN := 403;
+declare variable $bwerr:HTTP_NOT_FOUND := 404;
+declare variable $bwerr:HTTP_METHOD_NOT_ALLOWED := 405;
+declare variable $bwerr:HTTP_CONFLICT := 409;
+declare variable $bwerr:HTTP_UNPROCESSABLE_ENTITY := 422;
+declare variable $bwerr:HTTP_INTERNAL_ERROR := 500;
+declare variable $bwerr:HTTP_SERVICE_UNAVAILABLE := 503;
 
 (:~
  : Create a standardized API error response
@@ -36,7 +36,7 @@ declare variable $err:HTTP_SERVICE_UNAVAILABLE := 503;
  : @param $details Optional map with additional error details
  : @return A map representing the error response
  :)
-declare function err:api-error(
+declare function bwerr:api-error(
     $status as xs:integer,
     $message as xs:string,
     $details as map(*)?
@@ -62,8 +62,8 @@ declare function err:api-error(
  : @param $details Optional error details
  : @return Error response map
  :)
-declare function err:bad-request($message as xs:string, $details as map(*)?) as map(*) {
-    err:api-error($err:HTTP_BAD_REQUEST, $message, $details)
+declare function bwerr:bad-request($message as xs:string, $details as map(*)?) as map(*) {
+    bwerr:api-error($bwerr:HTTP_BAD_REQUEST, $message, $details)
 };
 
 (:~
@@ -72,8 +72,8 @@ declare function err:bad-request($message as xs:string, $details as map(*)?) as 
  : @param $message Error message
  : @return Error response map
  :)
-declare function err:bad-request($message as xs:string) as map(*) {
-    err:bad-request($message, ())
+declare function bwerr:bad-request($message as xs:string) as map(*) {
+    bwerr:bad-request($message, ())
 };
 
 (:~
@@ -82,8 +82,8 @@ declare function err:bad-request($message as xs:string) as map(*) {
  : @param $resource The resource that was not found
  : @return Error response map
  :)
-declare function err:not-found($resource as xs:string) as map(*) {
-    err:api-error($err:HTTP_NOT_FOUND, "Resource not found: " || $resource, ())
+declare function bwerr:not-found($resource as xs:string) as map(*) {
+    bwerr:api-error($bwerr:HTTP_NOT_FOUND, "Resource not found: " || $resource, ())
 };
 
 (:~
@@ -93,8 +93,8 @@ declare function err:not-found($resource as xs:string) as map(*) {
  : @param $details Optional error details
  : @return Error response map
  :)
-declare function err:not-found-with-message($message as xs:string, $details as map(*)?) as map(*) {
-    err:api-error($err:HTTP_NOT_FOUND, $message, $details)
+declare function bwerr:not-found-with-message($message as xs:string, $details as map(*)?) as map(*) {
+    bwerr:api-error($bwerr:HTTP_NOT_FOUND, $message, $details)
 };
 
 (:~
@@ -104,10 +104,10 @@ declare function err:not-found-with-message($message as xs:string, $details as m
  : @param $details Optional error details (only shown in debug mode)
  : @return Error response map
  :)
-declare function err:internal-error($message as xs:string, $details as map(*)?) as map(*) {
+declare function bwerr:internal-error($message as xs:string, $details as map(*)?) as map(*) {
     (: In production, hide internal details :)
-    let $show-details := system:get-property("bw.debug") = "true"
-    return err:api-error($err:HTTP_INTERNAL_ERROR, $message, 
+    let $show-details := environment-variable("BW_DEBUG") = "true"
+    return bwerr:api-error($bwerr:HTTP_INTERNAL_ERROR, $message, 
         if ($show-details) then $details else ()
     )
 };
@@ -118,8 +118,8 @@ declare function err:internal-error($message as xs:string, $details as map(*)?) 
  : @param $message Error message
  : @return Error response map
  :)
-declare function err:internal-error($message as xs:string) as map(*) {
-    err:internal-error($message, ())
+declare function bwerr:internal-error($message as xs:string) as map(*) {
+    bwerr:internal-error($message, ())
 };
 
 (:~
@@ -129,8 +129,8 @@ declare function err:internal-error($message as xs:string) as map(*) {
  : @param $validationErrors Map of field names to error messages
  : @return Error response map
  :)
-declare function err:validation-error($message as xs:string, $validationErrors as map(*)?) as map(*) {
-    err:api-error($err:HTTP_UNPROCESSABLE_ENTITY, $message, $validationErrors)
+declare function bwerr:validation-error($message as xs:string, $validationErrors as map(*)?) as map(*) {
+    bwerr:api-error($bwerr:HTTP_UNPROCESSABLE_ENTITY, $message, $validationErrors)
 };
 
 (:~
@@ -140,7 +140,7 @@ declare function err:validation-error($message as xs:string, $validationErrors a
  : @param $fn The function to execute
  : @return Either the function result or an error response
  :)
-declare function err:try-catch($fn as function() as item()*) as item()* {
+declare function bwerr:try-catch($fn as function() as item()*) as item()* {
     try {
         $fn()
     } catch * {
@@ -150,6 +150,6 @@ declare function err:try-catch($fn as function() as item()*) as item()* {
             "module": $err:module,
             "line": $err:line-number
         }
-        return err:internal-error("An unexpected error occurred", $details)
+        return bwerr:internal-error("An unexpected error occurred", $details)
     }
 };

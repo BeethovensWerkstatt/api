@@ -96,3 +96,42 @@ declare function api-base:bad-request($message as xs:string) {
 declare function api-base:server-error($message as xs:string) {
     api-base:error-response(500, "Internal server error: " || $message)
 };
+(:~
+ : Forward request to an XQL script with parameters
+ : 
+ : This is a migration helper that forwards RESTXQ requests to existing XQL scripts.
+ : Use this to gradually migrate legacy endpoints while keeping the same backend logic.
+ : 
+ : Note: CORS headers are set by the controller.xql before forwarding to RESTXQ,
+ : so we don't need to set them here. The legacy scripts may call response:set-header()
+ : which will fail in RESTXQ context - this is expected and handled.
+ :
+ : @param $xql-path Path to the XQL script relative to app root (e.g., "/resources/xql/module1/script.xql")
+ : @param $params Map of parameter names to values
+ : @return The result of evaluating the XQL script
+ :)
+declare function api-base:forward-to-xql($xql-path as xs:string, $params as map(*)) {
+    (: Build the full path to the XQL script :)
+    let $full-path := "/db/apps/api" || $xql-path
+    
+    (: Read and parse the XQL file :)
+    let $xql-content := util:binary-doc($full-path)
+    let $xql-text := util:binary-to-string($xql-content)
+    
+    (: Remove or comment out response:set-header calls that break in RESTXQ context :)
+    let $cleaned-xql := replace($xql-text, 
+        'response:set-header\s*\([^)]+\)[,;]?',
+        '(: CORS handled by RESTXQ :) true()',
+        '')
+    
+    (: Convert map to parameter sequence for util:eval :)
+    let $param-seq := 
+        for $key in map:keys($params)
+        return (xs:QName($key), $params($key))
+    
+    return
+        if (count($param-seq) > 0) then
+            util:eval($cleaned-xql, false(), $param-seq)
+        else
+            util:eval($cleaned-xql, false())
+};

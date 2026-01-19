@@ -8,6 +8,7 @@
  *   node scripts/run-tests.js                    # Run all tests
  *   node scripts/run-tests.js --filter="iiif"   # Run filtered tests
  *   node scripts/run-tests.js --verbose         # Show detailed output
+ *   node scripts/run-tests.js --syntax-only     # Quick syntax validation only
  *
  * Prerequisites:
  *   - eXist-db running (locally or Docker)
@@ -32,6 +33,7 @@ const colors = {
 // Parse command line arguments
 const args = process.argv.slice(2)
 const verbose = args.includes('--verbose') || args.includes('-v')
+const syntaxOnly = args.includes('--syntax-only')
 const filterArg = args.find(arg => arg.startsWith('--filter='))
 const filter = filterArg ? filterArg.split('=')[1] : null
 
@@ -52,6 +54,46 @@ function loadConfig () {
     return config.servers?.localhost || config
   } catch (error) {
     console.error(`${colors.red}Error parsing ${configPath}:${colors.reset}`, error.message)
+    process.exit(1)
+  }
+}
+
+/**
+ * Run syntax-only check via simple XQuery compilation
+ */
+function runSyntaxCheck () {
+  console.log(`${colors.cyan}${colors.bright}🔍 Checking XQuery Syntax${colors.reset}\n`)
+
+  const config = loadConfig()
+  const server = config.server || 'http://localhost:8082'
+
+  console.log(`${colors.blue}Server:${colors.reset} ${server}\n`)
+
+  // Simple query that will trigger compilation of all modules
+  const syntaxQuery = "try { doc('/db/apps/api/resources/xqm/config.xqm') } catch * { concat('ERROR: ', $err:description) }"
+
+  try {
+    const result = execSync(`xst --server localhost run '${syntaxQuery}'`, {
+      encoding: 'utf-8',
+      timeout: 30000
+    })
+
+    if (result.includes('ERROR:')) {
+      console.log(`${colors.red}${result}${colors.reset}`)
+      process.exit(1)
+    } else {
+      console.log(`${colors.green}${colors.bright}XQuery syntax validation passed!${colors.reset}`)
+      process.exit(0)
+    }
+  } catch (error) {
+    console.error(`${colors.red}Error during syntax check:${colors.reset}`)
+    console.error(error.message)
+
+    if (error.message.includes('ECONNREFUSED')) {
+      console.error(`\n${colors.yellow}Hint: Make sure eXist-db is running.${colors.reset}`)
+      console.error('Start with: npm run docker:dev')
+    }
+
     process.exit(1)
   }
 }
@@ -167,4 +209,8 @@ function parseAndDisplayResults (xmlResult) {
 }
 
 // Run
-runTests()
+if (syntaxOnly) {
+  runSyntaxCheck()
+} else {
+  runTests()
+}

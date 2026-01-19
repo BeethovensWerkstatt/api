@@ -62,7 +62,7 @@ declare function openapi:generate-spec() as map(*) {
                 "description": "Production server"
             },
             map {
-                "url": "http://localhost:8080/exist/apps/api",
+                "url": "http://localhost:8082/exist/apps/api",
                 "description": "Local development server"
             }
         },
@@ -224,17 +224,4 @@ declare function openapi:generate-schemas() as map(*) {
             }
         }
     }
-};
-
-(:~
- : Generate OpenAPI spec as JSON string
- :)
-declare
-    %rest:GET
-    %rest:path("/openapi.json")
-    %rest:produces("application/json")
-    %output:method("json")
-function openapi:get-spec() {
-    response:set-header("Access-Control-Allow-Origin", "*"),
-    openapi:generate-spec()
 };

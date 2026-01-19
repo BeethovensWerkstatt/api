@@ -44,10 +44,11 @@ declare variable $config:app-root :=
 
 (:~
  : Current environment (development, staging, production)
+ : Reads from BW_ENV environment variable, defaults to "development"
  :)
 declare variable $config:environment :=
-    let $env := system:get-property("bw.env")
-    return if ($env) then $env else "development";
+    let $env := environment-variable("BW_ENV")
+    return if ($env and $env != "") then $env else "development";
 
 (:~
  : Environment-specific configuration document

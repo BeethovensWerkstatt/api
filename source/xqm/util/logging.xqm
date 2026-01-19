@@ -24,12 +24,12 @@ declare variable $log:LEVEL_WARN := "warn";
 declare variable $log:LEVEL_ERROR := "error";
 
 (:~
- : Get the current log level from system properties
+ : Get the current log level from environment variable
  : Defaults to "info" if not configured
  :)
 declare variable $log:current-level := 
-    let $configured := system:get-property("bw.log.level")
-    return if ($configured) then $configured else $log:LEVEL_INFO;
+    let $configured := environment-variable("BW_LOG_LEVEL")
+    return if ($configured and $configured != "") then $configured else $log:LEVEL_INFO;
 
 (:~
  : Numeric priority for log levels (higher = more severe)

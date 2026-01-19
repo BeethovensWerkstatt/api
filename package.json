@@ -28,9 +28,10 @@
     "test": "node scripts/run-tests.js",
     "test:verbose": "node scripts/run-tests.js --verbose",
     "test:deploy": "npm run deploy && npm run test",
-    "lint": "npm run lint:js && echo 'XQuery linting not yet configured'",
+    "lint": "npm run lint:js && npm run lint:xquery",
     "lint:js": "standard",
     "lint:js:fix": "standard --fix",
+    "lint:xquery": "node scripts/run-tests.js --syntax-only",
     "validate": "npm run lint && npm run test"
   },
   "repository": {

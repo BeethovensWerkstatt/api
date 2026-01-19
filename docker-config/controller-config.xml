@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns="http://exist.sourceforge.net/NS/exist" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://exist.sourceforge.net/NS/exist file:../../schema/controller-config.xsd">
+  <!-- Webstart servlet -->
+  <forward pattern="/webstart" servlet="jnlp"/>
+  
+  <!-- XMLRPC servlet -->
+  <forward pattern="/xmlrpc" servlet="org.exist.xmlrpc.RpcServlet"/>
+  
+  <!-- betterFORM resource-servlet -->
+  <forward pattern=".*bfResources/" servlet="ResourceServlet"/>
+  
+  <!-- REST interface -->
+  <forward pattern="/(rest|servlet)/" servlet="EXistServlet"/>
+  
+  <!-- WebDAV interface -->
+  <forward pattern="/webdav/" servlet="milton"/>
+  
+  <!-- RESTXQ - global endpoint -->
+  <forward pattern="/restxq/" servlet="RestXqServlet"/>
+  
+  <!-- The JMX status servlet used to monitor the db -->
+  <forward pattern="/status" servlet="JMXServlet"/>
+  
+  <root pattern="/apps" path="xmldb:exist:///db/apps"/>
+  <root pattern=".*" path="/"/>
+  
+  <forward pattern=".*\.(xq|xql|xqy|xquery)$" servlet="XQueryServlet"/>
+</configuration>

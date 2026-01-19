@@ -16,7 +16,7 @@ import module namespace config = "https://api.beethovens-werkstatt.de" at "../co
 import module namespace iiif = "https://edirom.de/iiif" at "../iiif.xqm";
 import module namespace ef = "https://edirom.de/file" at "../file.xqm";
 import module namespace api-base = "https://api.beethovens-werkstatt.de/rest/base" at "./api-base.xqm";
-import module namespace err = "https://api.beethovens-werkstatt.de/util/error" at "../util/error.xqm";
+import module namespace bwerr = "https://api.beethovens-werkstatt.de/util/error" at "../util/error.xqm";
 import module namespace validate = "https://api.beethovens-werkstatt.de/util/validation" at "../util/validation.xqm";
 import module namespace log = "https://api.beethovens-werkstatt.de/util/logging" at "../util/logging.xqm";
 
@@ -42,10 +42,35 @@ declare namespace mei = "http://www.music-encoding.org/ns/mei";
  :)
 declare
     %rest:GET
-    %rest:path("/api/iiif/documents")
+    %rest:path("/exist/apps/api/iiif/documents.json")
     %rest:produces("application/json")
     %output:method("json")
 function iiif-api:list-documents() {
+    iiif-api:list-documents-impl()
+};
+
+(:~ Debug route - same endpoint with different path :)
+declare
+    %rest:GET
+    %rest:path("/apps/api/iiif/documents.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function iiif-api:list-documents-alt() {
+    iiif-api:list-documents-impl()
+};
+
+(:~ Debug route - simple path :)
+declare
+    %rest:GET
+    %rest:path("/iiif/documents.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function iiif-api:list-documents-simple() {
+    iiif-api:list-documents-impl()
+};
+
+(:~ Implementation :)
+declare function iiif-api:list-documents-impl() {
     let $_ := log:info("IIIF API: list-documents")
     
     let $database := collection($config:data-root)
@@ -80,10 +105,24 @@ function iiif-api:list-documents() {
  :)
 declare
     %rest:GET
-    %rest:path("/api/iiif/document/{$documentId}/manifest.json")
+    %rest:path("/iiif/document/{$documentId}/manifest.json")
     %rest:produces("application/json")
     %output:method("json")
 function iiif-api:get-manifest($documentId as xs:string) {
+    iiif-api:get-manifest-impl($documentId)
+};
+
+(:~ Alternate path for /exist/apps/api prefix :)
+declare
+    %rest:GET
+    %rest:path("/exist/apps/api/iiif/document/{$documentId}/manifest.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function iiif-api:get-manifest-full-path($documentId as xs:string) {
+    iiif-api:get-manifest-impl($documentId)
+};
+
+declare function iiif-api:get-manifest-impl($documentId as xs:string) {
     let $_ := log:info("IIIF API: get-manifest", map { "documentId": $documentId })
     
     (: Validate input :)
@@ -110,11 +149,21 @@ function iiif-api:get-manifest($documentId as xs:string) {
  :)
 declare
     %rest:GET
-    %rest:path("/api/iiif/document/{$documentId}/manifest")
+    %rest:path("/iiif/document/{$documentId}/manifest")
     %rest:produces("application/json")
     %output:method("json")
 function iiif-api:get-manifest-alt($documentId as xs:string) {
-    iiif-api:get-manifest($documentId)
+    iiif-api:get-manifest-impl($documentId)
+};
+
+(:~ Alternate path with /exist/apps/api prefix :)
+declare
+    %rest:GET
+    %rest:path("/exist/apps/api/iiif/document/{$documentId}/manifest")
+    %rest:produces("application/json")
+    %output:method("json")
+function iiif-api:get-manifest-alt-full-path($documentId as xs:string) {
+    iiif-api:get-manifest-impl($documentId)
 };
 
 (:~
@@ -131,10 +180,24 @@ function iiif-api:get-manifest-alt($documentId as xs:string) {
  :)
 declare
     %rest:GET
-    %rest:path("/api/iiif/document/{$documentId}/list/{$canvasId}_zones")
+    %rest:path("/iiif/document/{$documentId}/list/{$canvasId}_zones")
     %rest:produces("application/json")
     %output:method("json")
 function iiif-api:get-measure-zones($documentId as xs:string, $canvasId as xs:string) {
+    iiif-api:get-measure-zones-impl($documentId, $canvasId)
+};
+
+(:~ Alternate path with /exist/apps/api prefix :)
+declare
+    %rest:GET
+    %rest:path("/exist/apps/api/iiif/document/{$documentId}/list/{$canvasId}_zones")
+    %rest:produces("application/json")
+    %output:method("json")
+function iiif-api:get-measure-zones-full-path($documentId as xs:string, $canvasId as xs:string) {
+    iiif-api:get-measure-zones-impl($documentId, $canvasId)
+};
+
+declare function iiif-api:get-measure-zones-impl($documentId as xs:string, $canvasId as xs:string) {
     let $_ := log:info("IIIF API: get-measure-zones", map { "documentId": $documentId, "canvasId": $canvasId })
     
     let $facsimile := collection($config:data-root)//mei:facsimile[@xml:id = $documentId]
@@ -168,11 +231,69 @@ function iiif-api:get-measure-zones($documentId as xs:string, $canvasId as xs:st
  :)
 declare
     %rest:GET
-    %rest:path("/api/iiif/document/{$documentId}/overlays/{$svgFileName}")
+    %rest:path("/iiif/document/{$documentId}/overlays/{$svgFileName}")
     %rest:produces("image/svg+xml")
 function iiif-api:get-svg-overlays($documentId as xs:string, $svgFileName as xs:string) {
+    iiif-api:get-svg-overlays-impl($documentId, $svgFileName)
+};
+
+(:~ Alternate path with /exist/apps/api prefix :)
+declare
+    %rest:GET
+    %rest:path("/exist/apps/api/iiif/document/{$documentId}/overlays/{$svgFileName}")
+    %rest:produces("image/svg+xml")
+function iiif-api:get-svg-overlays-full-path($documentId as xs:string, $svgFileName as xs:string) {
+    iiif-api:get-svg-overlays-impl($documentId, $svgFileName)
+};
+
+declare function iiif-api:get-svg-overlays-impl($documentId as xs:string, $svgFileName as xs:string) {
     let $_ := log:info("IIIF API: get-svg-overlays", map { "documentId": $documentId, "svgFileName": $svgFileName })
     
+    let $facsimile := collection($config:data-root)//mei:facsimile[@xml:id = $documentId]
+    let $svg := $facsimile//mei:graphic[ends-with(@target, $svgFileName)]
+    
+    return
+        if (empty($svg)) then
+            api-base:error-response(404, "SVG not found: " || $svgFileName)
+        else
+            let $svg-doc := doc($svg/@target)
+            return api-base:xml-response($svg-doc)
+};
+
+(:~
+ : Get SVG overlays with enhanced data attributes
+ :
+ : Returns SVG with additional data attributes for monita identification.
+ :
+ : @param $documentId The document identifier
+ : @param $svgFileName The SVG filename
+ : @return SVG file with enhanced data attributes
+ :
+ : @openapi:summary Get enhanced SVG overlay for canvas
+ : @openapi:response 200 image/svg+xml SVG overlay with data attributes
+ :)
+declare
+    %rest:GET
+    %rest:path("/iiif/document/{$documentId}/overlaysPlus/{$svgFileName}")
+    %rest:produces("image/svg+xml")
+function iiif-api:get-svg-overlays-plus($documentId as xs:string, $svgFileName as xs:string) {
+    iiif-api:get-svg-overlays-plus-impl($documentId, $svgFileName)
+};
+
+(:~ Alternate path with /exist/apps/api prefix :)
+declare
+    %rest:GET
+    %rest:path("/exist/apps/api/iiif/document/{$documentId}/overlaysPlus/{$svgFileName}")
+    %rest:produces("image/svg+xml")
+function iiif-api:get-svg-overlays-plus-full-path($documentId as xs:string, $svgFileName as xs:string) {
+    iiif-api:get-svg-overlays-plus-impl($documentId, $svgFileName)
+};
+
+declare function iiif-api:get-svg-overlays-plus-impl($documentId as xs:string, $svgFileName as xs:string) {
+    (: TODO: Migrate logic from get-svg-file-with-data-atts.xql :)
+    let $_ := log:info("IIIF API: get-svg-overlays-plus", map { "documentId": $documentId, "svgFileName": $svgFileName })
+    
+    (: For now, forward to the XQL script logic - will be refactored :)
     let $facsimile := collection($config:data-root)//mei:facsimile[@xml:id = $documentId]
     let $svg := $facsimile//mei:graphic[ends-with(@target, $svgFileName)]
     
