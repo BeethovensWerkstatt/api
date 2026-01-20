@@ -13,9 +13,12 @@ xquery version "3.1";
 module namespace module4-api = "https://api.beethovens-werkstatt.de/rest/module4";
 
 import module namespace api-base = "https://api.beethovens-werkstatt.de/rest/base" at "./api-base.xqm";
+import module namespace config = "https://api.beethovens-werkstatt.de" at "../config.xqm";
+import module namespace ef = "https://edirom.de/file" at "../file.xqm";
 
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace mei = "http://www.music-encoding.org/ns/mei";
 
 (:~
  : @openapi:tag Module4
@@ -51,7 +54,7 @@ function module4-api:list-documents() {
  :)
 declare
     %rest:GET
-    %rest:path("/module4/{$documentId}.json")
+    %rest:path("/module4/document/{$documentId}.json")
     %rest:produces("application/json")
     %output:method("json")
 function module4-api:get-document($documentId as xs:string) {

@@ -67,17 +67,17 @@ if(matches($exist:path,'/\d/context.json')) then (
    These routes are handled by RESTXQ modules in xqm/rest/
    ============================================================ :)
 
-(: OpenAPI Documentation - via XQL scripts :)
+(: OpenAPI Documentation - via RESTXQ :)
 if($exist:path = '/docs') then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/docs.xql"/>
+        <forward url="/restxq/docs" absolute="yes"/>
     </dispatch>
 
 ) else if($exist:path = '/openapi.json') then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="{$exist:controller}/resources/xql/openapi.xql"/>
+        <forward url="/restxq/openapi.json" absolute="yes"/>
     </dispatch>
 
 ) else

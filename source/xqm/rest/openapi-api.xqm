@@ -31,10 +31,9 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
  :)
 declare
     %rest:GET
-    %rest:path("/exist/apps/api/openapi.json")
+    %rest:path("/openapi.json")
     %rest:produces("application/json")
     %output:method("json")
-(: Allow anonymous access :)
 function openapi-api:get-spec() {
     api-base:json-response(openapi:generate-spec())
 };
@@ -50,10 +49,9 @@ function openapi-api:get-spec() {
  :)
 declare
     %rest:GET
-    %rest:path("/exist/apps/api/docs")
+    %rest:path("/docs")
     %rest:produces("text/html")
     %output:method("html5")
-(: Allow anonymous access :)
 function openapi-api:swagger-ui() {
     <html>
         <head>

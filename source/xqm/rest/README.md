@@ -7,15 +7,15 @@ This directory contains RESTXQ modules that define all API endpoints using decla
 ```
 rest/
 ├── api-base.xqm        # Base module with CORS helpers and response formatters
-├── iiif-api.xqm        # IIIF Presentation API (5 endpoints)
-├── module1-api.xqm     # Digital Edition (17 endpoints)
-├── module2-api.xqm     # Analysis (13 endpoints)
-├── module3-api.xqm     # Sketch Analysis (3 endpoints)
-├── module4-api.xqm     # Engraving Comparison (2 endpoints)
-└── services-api.xqm    # Context, EMA, File services (4 endpoints)
+├── iiif-api.xqm        # IIIF Presentation API endpoints
+├── module1-api.xqm     # Digital Edition endpoints
+├── module2-api.xqm     # Analysis endpoints
+├── module3-api.xqm     # Sketch Analysis endpoints
+├── module4-api.xqm     # Engraving Comparison endpoints
+├── file-api.xqm        # File access endpoints
+├── tools-api.xqm       # Description and document endpoints
+└── openapi-api.xqm     # OpenAPI documentation endpoints
 ```
-
-**Total:** 44 endpoints across 6 modules
 
 ## How RESTXQ Works
 
