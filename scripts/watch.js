@@ -68,7 +68,14 @@ function deployXQuery (filePath) {
       // Get the directory from the relative path
       const relDir = path.dirname(relativePath)
       const actualTarget = `/db/apps/api/resources/${relDir}/`
+      const fileName = path.basename(filePath)
+      const dbPath = `${actualTarget}${fileName}`
+      
       execSync(xst(`upload ${buildPath} ${actualTarget}`), { stdio: 'inherit' })
+      
+      // Set execute permissions for RESTXQ modules to work without authentication
+      execSync(xst(`exec 'sm:chmod(xs:anyURI("${dbPath}"), "rwxr-xr-x")'`), { stdio: 'inherit' })
+      
       console.log(`✓ Deployed ${relativePath}`)
     }
   } catch (error) {

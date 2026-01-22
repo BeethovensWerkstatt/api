@@ -118,20 +118,43 @@ declare function api-base:forward-to-xql($xql-path as xs:string, $params as map(
     let $xql-content := util:binary-doc($full-path)
     let $xql-text := util:binary-to-string($xql-content)
     
-    (: Remove or comment out response:set-header calls that break in RESTXQ context :)
+    (: Remove or comment out response:set-header calls - preserve trailing comma/semicolon :)
     let $cleaned-xql := replace($xql-text, 
-        'response:set-header\s*\([^)]+\)[,;]?',
-        '(: CORS handled by RESTXQ :) true()',
+        'response:set-header\s*\([^)]+\)\s*([,;])',
+        '(: CORS handled by RESTXQ :) true()$1',
+        '')
+    (: Also handle case without trailing punctuation :)
+    let $cleaned-xql := replace($cleaned-xql, 
+        'response:set-header\s*\([^)]+\)(\s*[^,;])',
+        '(: CORS handled by RESTXQ :) true()$1',
         '')
     
-    (: Convert map to parameter sequence for util:eval :)
+    (: Remove response:set-status-code calls - preserve trailing comma/semicolon :)
+    let $cleaned-xql2 := replace($cleaned-xql, 
+        'response:set-status-code\s*\([^)]+\)\s*([,;])',
+        '(: Status handled by RESTXQ :) true()$1',
+        '')
+    (: Also handle case without trailing punctuation :)
+    let $cleaned-xql2 := replace($cleaned-xql2, 
+        'response:set-status-code\s*\([^)]+\)(\s*[^,;])',
+        '(: Status handled by RESTXQ :) true()$1',
+        '')
+    
+    (: Replace request:get-parameter calls with the actual values from $params :)
+    let $final-xql := fold-left(map:keys($params), $cleaned-xql2, function($xql, $key) {
+        let $value := $params($key)
+        let $pattern := "request:get-parameter\s*\(\s*'" || $key || "'\s*,\s*'[^']*'\s*\)"
+        return replace($xql, $pattern, "'" || $value || "'")
+    })
+    
+    (: Convert map to parameter sequence for util:eval - as backup for external variables :)
     let $param-seq := 
         for $key in map:keys($params)
         return (xs:QName($key), $params($key))
     
     return
         if (count($param-seq) > 0) then
-            util:eval($cleaned-xql, false(), $param-seq)
+            util:eval($final-xql, false(), $param-seq)
         else
-            util:eval($cleaned-xql, false())
+            util:eval($final-xql, false())
 };
