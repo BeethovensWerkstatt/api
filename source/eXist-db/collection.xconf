@@ -3,6 +3,23 @@
 	<index xmlns:xs="http://www.w3.org/2001/XMLSchema"
 		xmlns:mei="http://www.music-encoding.org/ns/mei">
 		<fulltext default="none" attributes="false"/>
+		<range>
+			<create qname="mei:source">
+				<field name="source-target" match="@target" type="xs:string"/>
+			</create>
+			<create qname="mei:genDesc">
+				<field name="genDesc-corresp" match="@corresp" type="xs:string"/>
+			</create>
+			<create qname="mei:genDesc">
+				<field name="genDesc-class" match="@class" type="xs:string"/>
+			</create>
+			<create qname="mei:zone">
+				<field name="zone-data" match="@data" type="xs:string"/>
+			</create>
+			<create qname="mei:relation">
+				<field name="relation-plist" match="@plist" type="xs:string"/>
+			</create>
+		</range>
 		<!--<range>
         	<create qname="mei:zone">
         		<field name="zone-data" match="@data" type="xs:string"/>

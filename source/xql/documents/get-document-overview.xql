@@ -24,6 +24,12 @@ declare namespace local="http://www.beethovens-werkstatt.de";
 declare option output:method "json";
 declare option output:media-type "application/json";
 
+(:~
+ : Get pixel dimensions and cropping info from a graphic element
+ :
+ : @param $graphicFacs The mei:graphic element
+ : @return Map with width, height, xywh and rotation
+ :)
 declare function local:getPx($graphicFacs as element(mei:graphic)) as map(*) {
   let $width := number($graphicFacs/@width)
   let $height := number($graphicFacs/@height)
@@ -54,110 +60,106 @@ declare function local:getPx($graphicFacs as element(mei:graphic)) as map(*) {
   }
 };
 
-declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc), $surface as element(mei:surface), $database) as map(*) {
-  let $label := $genDescWz/string(@label)  
-  let $sources := $database//mei:source[ends-with(@target,'#' || $genDescWz/string(@xml:id))]
-  
-  let $at := 
-    for $source in $sources
-    let $doc := $source/root()
-    let $uri := document-uri($doc)
-    where ends-with($uri, '_at.xml')
-    return $doc
-  let $dt := 
-    for $source in $sources
-    let $doc := $source/root()
-    let $uri := document-uri($doc)
-    where ends-with($uri, '_dt.xml')
-    return $doc
-
-  let $genDescId := $genDescWz/string(@xml:id)
-  let $identifier :=
-    let $svgId := $genDescWz/substring-after(@corresp,'#')
-    let $zoneId := $surface//mei:zone[@data = '#' || $genDescId]/string(@xml:id)
-    let $atFilename := tokenize(document-uri($at),'/')[last()]
-    let $dtFilename := tokenize(document-uri($dt), '/')[last()]
-    return map {
-      'svgId': $svgId,
-      'genDescId': $genDescId,
-      'zoneId': $zoneId,
-      'atFilename': $atFilename,
-      'dtFilename': $dtFilename
-    }
-      
-  (: 
-  let $wzProps := 
-    let $metaClarification := exists($dt//mei:metaMark[@function = 'clarification'])
-    let $metaNavigation := exists($dt//mei:metaMark[@function = 'navigation'])
-    let $otherMeta := exists($dt//mei:metaMark[@function and not(@function = ('clarification', 'navigation'))])
-    let $layers := array { 
-      for $layer in $genDescWz/mei:genState
-      let $layerId := $layer/string(@xml:id)
-      return $layerId
-    }
-    let $staves := count(distinct-values($dt//mei:staffDef[string(@n)]))
-    let $pos := 
-      let $zone := $surface//mei:zone[@data = '#' || $genDescId]
-      let $x := number($zone/@ulx)
-      let $y := number($zone/@uly)
-      let $w := round(number($zone/@lrx) - $x)
-      let $h := round(number($zone/@lry) - $y)
-      let $rotate := if ($zone/@rotate) then (number($zone/@rotate)) else (0)
-      return map {
-        'x': $x,
-        'y': $y,
-        'w': $w,
-        'h': $h,
-        'rotate': $rotate
-      }
-    return map {
-      'metaClarification': $metaClarification,
-      'metaNavigation': $metaNavigation,
-      'otherMeta': $otherMeta,
-      'layers': $layers,
-      'staves': $staves,
-      'pos': $pos
-    }
-
-  
-  let $sketchProps := 
-    let $tempo := 
-      let $val := if ($at//mei:tempo) then (($at//mei:tempo)[1]/normalize-space(text())) else ('')
-      let $supplied := not(exists($at//mei:tempo/@corresp))
-      return map {
-        'val': $val,
-        'supplied': $supplied
-      }
-    let $meterSig := 
-      let $val := if ($at//mei:meterSig) then (($at//mei:meterSig)[1]/string(@count) || '/' || ($at//mei:meterSig)[1]/string(@unit)) else ('')
-      let $supplied := not(exists(($at//mei:meterSig)[1]/@corresp))
-      return map {
-        'val': $val,
-        'supplied': $supplied
-      }
-    let $keySig :=
-      let $val := ($at//mei:staffDef)[1]/count(child::mei:keyAccid) || ($at//mei:staffDef)[1]//mei:keyAccid[1]/string(@accid)
-      let $supplied := exists((mei:scoreDef)[1]//mei:keyAccid[not(@corresp)])
-      return map {
-        'val': $val,
-        'supplied': $supplied
-      }
-    let $atMeasures := count($at//mei:measure)
-    let $writingZones := array {
-      for $annot in $at//mei:annot['#bw_writingZoneBegin' = tokenize(normalize-space(@class), ' ')]
-      return $annot/substring-after(@corresp, '#')
-    }
-    return map {
-      'tempo': $tempo,
-      'meterSig': $meterSig,
-      'keySig': $keySig,
-      'atMeasures': $atMeasures,
-      'writingZones': $writingZones
-    }
+(:~
+  : Get properties of the diplomatic transcription of a writing zone
+  :
+  : @param $dt The diplomatic transcription document
+  : @param $surface The surface element containing the writing zone
+  : @param $genDescWz The genDesc element for the writing zone
+  : @param $genDescId The id of the genDesc element
+  : @return Map of diplo properties
   :)
-  (:
-  let $workRelations := 
-    for $relation in collection($config:data-root || 'links/')//mei:relation[ends-with(@plist, tokenize(document-uri($at), '/')[last()])]
+declare function local:getDiploProperties($dt, $surface as element(mei:surface), $genDescWz as element(mei:genDesc), $genDescId as xs:string) as map(*) {
+  let $metaClarification := exists($dt//mei:metaMark[@function = 'clarification'])
+  let $metaNavigation := exists($dt//mei:metaMark[@function = 'navigation'])
+  let $otherMeta := exists($dt//mei:metaMark[@function and not(@function = ('clarification', 'navigation'))])
+  let $layers := array { 
+    for $layer in $genDescWz/mei:genState
+    let $layerId := $layer/string(@xml:id)
+    return $layerId
+  }
+  let $staves := count(distinct-values($dt//mei:staffDef[string(@n)]))
+  let $pos := 
+    let $zone := $surface//mei:zone[@data = '#' || $genDescId]
+    let $x := number($zone/@ulx)
+    let $y := number($zone/@uly)
+    let $w := round(number($zone/@lrx) - $x)
+    let $h := round(number($zone/@lry) - $y)
+    let $rotate := if ($zone/@rotate) then (number($zone/@rotate)) else (0)
+    return map {
+      'x': $x,
+      'y': $y,
+      'w': $w,
+      'h': $h,
+      'rotate': $rotate
+    }
+  return map {
+    'metaClarification': $metaClarification,
+    'metaNavigation': $metaNavigation,
+    'otherMeta': $otherMeta,
+    'layers': $layers,
+    'staves': $staves,
+    'pos': $pos
+  }
+};
+
+(:~
+ : Get properties of the annotated transcript of a writing zone
+ :
+ : @param $at The sketch transcription document
+ : @return Map of sketch properties
+ :)
+declare function local:getSketchProperties($at) as map(*) {
+  let $tempo := $at/child::node()[1]/local-name()
+    (: let $val := if ($at//mei:tempo) then (($at//mei:tempo)[1]/normalize-space(text())) else ('')
+    let $supplied := not(exists($at//mei:tempo/@corresp))
+    return map {
+      'val': $val,
+      'supplied': $supplied
+    } :)
+  (:let $meterSig := 
+    let $val := if ($at//mei:meterSig) then (($at//mei:meterSig)[1]/string(@count) || '/' || ($at//mei:meterSig)[1]/string(@unit)) else ('')
+    let $supplied := not(exists(($at//mei:meterSig)[1]/@corresp))
+    return map {
+      'val': $val,
+      'supplied': $supplied
+    }
+  let $keySig :=
+    let $val := ($at//mei:staffDef)[1]/count(child::mei:keyAccid) || ($at//mei:staffDef)[1]//mei:keyAccid[1]/string(@accid)
+    let $supplied := exists((mei:scoreDef)[1]//mei:keyAccid[not(@corresp)])
+    return map {
+      'val': $val,
+      'supplied': $supplied
+    }
+  let $atMeasures := count($at//mei:measure)
+  let $writingZones := array {
+    for $annot in $at//mei:annot['#bw_writingZoneBegin' = tokenize(normalize-space(@class), ' ')]
+    return $annot/substring-after(@corresp, '#')
+  }:)
+  return map {
+    'tempo': $tempo
+  }
+  (: ,
+    'meterSig': $meterSig,
+    'keySig': $keySig,
+    'atMeasures': $atMeasures,
+    'writingZones': $writingZones :)
+};
+
+(:~
+ : Get work relations for a given annotated transcript
+ :
+ : @param $at The sketch transcription document
+ : @return Array of work relation maps
+ :)
+declare function local:getWorkRelations($at) as map(*)* {
+  let $ref := tokenize(document-uri($at), '/')[last()]
+  let $allRelations := collection($config:data-root || 'links/')//mei:relation
+  
+  let $relations := 
+    for $relation in $allRelations
+    let $targetRaw := $relation/string(@plist)
+    where ends-with($targetRaw, $ref)
     let $relationId := $relation/string(@xml:id)
     let $type := $relation/string(@rel)
     let $targetRaw := $relation/string(@target)
@@ -251,26 +253,69 @@ declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc),
           'label': $label
         }
       )
+    
     return map {
       'relationId': $relationId,
       'type': $type,
-      'opus': $opus,
       'work': $work,
+      'opus': $opus,
       'target': $target
     }
-    :)
+  return $relations
+};
+
+(:~
+ : Get details of a writing zone
+ :
+ : @param $genDescWz The genDesc element for the writing zone
+ : @param $surface The surface element containing the writing zone
+ : @param $database The database collection
+ : @return Map with writing zone details
+ :)
+declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc), $surface as element(mei:surface), $database) as map(*) {
+  let $label := $genDescWz/string(@label)
+  let $sourceRef := '#' || $genDescWz/string(@xml:id)
+  let $sources := $database//mei:source[ends-with(@target, $sourceRef)]
+  
+  let $at := 
+    for $source in $sources
+    let $doc := $source/root()
+    let $uri := document-uri($doc)
+    where ends-with($uri, '_at.xml')
+    return $doc
+  let $dt := 
+    for $source in $sources
+    let $doc := $source/root()
+    let $uri := document-uri($doc)
+    where ends-with($uri, '_dt.xml')
+    return $doc
+
+  let $genDescId := $genDescWz/string(@xml:id)
+  let $identifier :=
+    let $svgId := $genDescWz/substring-after(@corresp,'#')
+    let $zoneId := $surface//mei:zone[@data = '#' || $genDescId]/string(@xml:id)
+    let $atFilename := tokenize(document-uri($at),'/')[last()]
+    let $dtFilename := tokenize(document-uri($dt), '/')[last()]
+    return map {
+      'svgId': $svgId,
+      'genDescId': $genDescId,
+      'zoneId': $zoneId,
+      'atFilename': $atFilename,
+      'dtFilename': $dtFilename
+    }
+  let $wzProps := local:getDiploProperties($dt, $surface, $genDescWz, $genDescId)
+  
+  let $sketchProps := local:getSketchProperties($at)
+  
+  let $workRelations := local:getWorkRelations($at)
   
   return map {
     'label': $label,
     'identifier': $identifier,
-    'existsDt': exists($dt),
-    'existsAt': exists($at)
-  }
-  (: 
-    
     'wzProps': $wzProps,
-    'workRelations': array { $workRelations },
-    'sketchProps': $sketchProps :)
+    'sketchProps': $sketchProps,
+    'workRelations': array { $workRelations }
+  }
 };
 
 declare function local:parsePage ($elem as element(), $foliumType as xs:string, $whichFolioSide as xs:string, $geneticOperations as array(*), $mm as map(*), $database) as map(*) {
