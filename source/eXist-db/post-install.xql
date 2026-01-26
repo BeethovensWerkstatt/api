@@ -37,6 +37,12 @@ let $modules := (
     $target || "/resources/xqm/rest/module3-api.xqm",
     $target || "/resources/xqm/rest/module4-api.xqm",
     
+    (: Edition endpoints :)
+    $target || "/resources/xqm/rest/editions-api.xqm",
+
+    (: Document endpoints :)
+    $target || "/resources/xqm/rest/documents-api.xqm",
+    
     (: Utility endpoints :)
     $target || "/resources/xqm/rest/file-api.xqm",
     $target || "/resources/xqm/rest/tools-api.xqm"

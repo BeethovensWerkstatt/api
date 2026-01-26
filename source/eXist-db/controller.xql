@@ -127,6 +127,15 @@ if(starts-with(lower-case($exist:path), '/module4/')) then (
 
 ) else
 
+(: Edition Routes - edition-api.xqm :)
+if(starts-with(lower-case($exist:path), '/editions')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="/restxq{$exist:path}" absolute="yes"/>
+    </dispatch>
+
+) else
+
 (: File Routes - file-api.xqm :)
 if(starts-with(lower-case($exist:path), '/file/')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
@@ -145,8 +154,8 @@ if(starts-with(lower-case($exist:path), '/desc/')) then (
 
 ) else
 
-(: Documents Routes - tools-api.xqm :)
-if(starts-with(lower-case($exist:path), '/documents/')) then (
+(: Document Routes - documents-api.xqm & tools-api.xqm :)
+if(starts-with(lower-case($exist:path), '/document')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="/restxq{$exist:path}" absolute="yes"/>
