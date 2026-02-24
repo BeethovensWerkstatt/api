@@ -110,14 +110,14 @@ declare function local:getDiploProperties($dt, $surface as element(mei:surface),
  : @return Map of sketch properties
  :)
 declare function local:getSketchProperties($at) as map(*) {
-  let $tempo := $at/child::node()[1]/local-name()
-    (: let $val := if ($at//mei:tempo) then (($at//mei:tempo)[1]/normalize-space(text())) else ('')
-    let $supplied := not(exists($at//mei:tempo/@corresp))
+  let $tempo := (: $at/child::node()[1]/local-name() :)
+    let $val := if ($at//mei:tempo) then (($at//mei:tempo)[1]/string-join(text(), ' ') => normalize-space()) else ('')
+    let $supplied := not(exists($at//mei:tempo/@corresp)) and not($val eq '')
     return map {
       'val': $val,
       'supplied': $supplied
-    } :)
-  (:let $meterSig := 
+    }
+  let $meterSig := 
     let $val := if ($at//mei:meterSig) then (($at//mei:meterSig)[1]/string(@count) || '/' || ($at//mei:meterSig)[1]/string(@unit)) else ('')
     let $supplied := not(exists(($at//mei:meterSig)[1]/@corresp))
     return map {
@@ -126,24 +126,25 @@ declare function local:getSketchProperties($at) as map(*) {
     }
   let $keySig :=
     let $val := ($at//mei:staffDef)[1]/count(child::mei:keyAccid) || ($at//mei:staffDef)[1]//mei:keyAccid[1]/string(@accid)
-    let $supplied := exists((mei:scoreDef)[1]//mei:keyAccid[not(@corresp)])
+    let $supplied := exists(($at//mei:scoreDef)[1]//mei:keyAccid[not(@corresp)])
     return map {
       'val': $val,
       'supplied': $supplied
     }
   let $atMeasures := count($at//mei:measure)
+  let $staves := count(distinct-values($at//mei:staffDef[string(@n)]))
   let $writingZones := array {
     for $annot in $at//mei:annot['#bw_writingZoneBegin' = tokenize(normalize-space(@class), ' ')]
     return $annot/substring-after(@corresp, '#')
-  }:)
-  return map {
-    'tempo': $tempo
   }
-  (: ,
+  return map {
+    'tempo': $tempo,
     'meterSig': $meterSig,
     'keySig': $keySig,
     'atMeasures': $atMeasures,
-    'writingZones': $writingZones :)
+    'writingZones': $writingZones,
+    'staves': $staves
+  }
 };
 
 (:~
