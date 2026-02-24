@@ -18,6 +18,8 @@ declare namespace util="http://exist-db.org/xquery/util";
 declare namespace transform="http://exist-db.org/xquery/transform";
 declare namespace response="http://exist-db.org/xquery/response";
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace range="http://exist-db.org/xquery/range";
+declare namespace ft="http://exist-db.org/xquery/lucene";
 declare namespace local="http://www.beethovens-werkstatt.de";
 
 (: set output to JSON:)
@@ -155,8 +157,11 @@ declare function local:getSketchProperties($at) as map(*) {
  :)
 declare function local:getWorkRelations($at) as map(*)* {
   let $ref := tokenize(document-uri($at), '/')[last()]
-  let $allRelations := collection($config:data-root || 'links/')//mei:relation
-  
+  (: let $allRelations := collection($config:data-root || 'links/')//mei:relation :)
+  (: let $allRelations := 
+    collection($config:data-root || 'links/')//mei:relation[range:field-ends-with("relation-plist", $ref)] :)
+  let $allRelations := collection($config:data-root || 'links/')//mei:relation[ft:query(@plist, $ref)][ends-with(@plist, $ref)]
+
   let $relations := 
     for $relation in $allRelations
     let $targetRaw := $relation/string(@plist)
@@ -308,14 +313,13 @@ declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc),
   
   let $sketchProps := local:getSketchProperties($at)
   
-  let $workRelations := local:getWorkRelations($at)
+  (: let $workRelations := local:getWorkRelations($at) :)
   
   return map {
     'label': $label,
     'identifier': $identifier,
     'wzProps': $wzProps,
-    'sketchProps': $sketchProps,
-    'workRelations': array { $workRelations }
+    'sketchProps': $sketchProps
   }
 };
 

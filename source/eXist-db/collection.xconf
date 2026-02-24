@@ -19,6 +19,12 @@
 			<create qname="mei:relation">
 				<field name="relation-plist" match="@plist" type="xs:string"/>
 			</create>
+			<create qname="mei:relation">
+				<field name="relation-target" match="@target" type="xs:string"/>
+			</create>
+			<create qname="mei:relation">
+				<field name="relation-rel" match="@rel" type="xs:string"/>
+			</create>
 		</range>
 		<!--<range>
         	<create qname="mei:zone">
@@ -34,6 +40,9 @@
 		<lucene>
 			<analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
 			<analyzer id="ws" class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
+			<analyzer id="path" class="org.apache.lucene.analysis.path.PathHierarchyTokenizerFactory" delimiter="/"/>
+			<text match="//mei:relation/@plist" analyzer="path"/>
+			<text match="//mei:relation/@target" analyzer="path"/>
 			<text match="//mei:zone/@data" analyzer="ws"/>
 			<text match="//mei:measure/@facs" analyzer="ws"/>
 			<text match="//mei:staff/@facs" analyzer="ws"/>
