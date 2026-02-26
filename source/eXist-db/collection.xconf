@@ -9,8 +9,6 @@
 			</create>
 			<create qname="mei:genDesc">
 				<field name="genDesc-corresp" match="@corresp" type="xs:string"/>
-			</create>
-			<create qname="mei:genDesc">
 				<field name="genDesc-class" match="@class" type="xs:string"/>
 			</create>
 			<create qname="mei:zone">
@@ -18,11 +16,7 @@
 			</create>
 			<create qname="mei:relation">
 				<field name="relation-plist" match="@plist" type="xs:string"/>
-			</create>
-			<create qname="mei:relation">
 				<field name="relation-target" match="@target" type="xs:string"/>
-			</create>
-			<create qname="mei:relation">
 				<field name="relation-rel" match="@rel" type="xs:string"/>
 			</create>
 		</range>
