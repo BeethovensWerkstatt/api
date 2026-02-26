@@ -157,11 +157,10 @@ declare function local:getSketchProperties($at) as map(*) {
  :)
 declare function local:getWorkRelations($at) as map(*)* {
   let $ref := tokenize(document-uri($at), '/')[last()]
-  (: let $allRelations := collection($config:data-root || 'links/')//mei:relation :)
-  (: let $allRelations := 
-    collection($config:data-root || 'links/')//mei:relation[range:field-ends-with("relation-plist", $ref)] :)
-  let $allRelations := collection($config:data-root || 'links/')//mei:relation[ft:query(@plist, $ref)][ends-with(@plist, $ref)]
-
+  let $allRelations := 
+    if ($ref and $ref != '') then
+      collection($config:data-root || 'links/')//mei:relation[range:field-ends-with("relation-plist", $ref)]
+    else ()
   let $relations := 
     for $relation in $allRelations
     let $targetRaw := $relation/string(@plist)
@@ -313,13 +312,14 @@ declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc),
   
   let $sketchProps := local:getSketchProperties($at)
   
-  (: let $workRelations := local:getWorkRelations($at) :)
+  let $workRelations := local:getWorkRelations($at)
   
   return map {
     'label': $label,
     'identifier': $identifier,
     'wzProps': $wzProps,
-    'sketchProps': $sketchProps
+    'sketchProps': $sketchProps,
+    'workRelations': $workRelations
   }
 };
 
