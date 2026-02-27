@@ -127,7 +127,7 @@ declare function local:getSketchProperties($at) as map(*) {
       'supplied': $supplied
     }
   let $keySig :=
-    let $val := ($at//mei:staffDef)[1]/count(child::mei:keyAccid) || ($at//mei:staffDef)[1]//mei:keyAccid[1]/string(@accid)
+    let $val := if ($at//mei:staffDef[1]//mei:keyAccid) then(($at//mei:staffDef)[1]/count(descendant::mei:keyAccid) || ($at//mei:staffDef)[1]//mei:keyAccid[1]/string(@accid)) else('0')
     let $supplied := exists(($at//mei:scoreDef)[1]//mei:keyAccid[not(@corresp)])
     return map {
       'val': $val,
@@ -159,12 +159,10 @@ declare function local:getWorkRelations($at) as map(*)* {
   let $ref := tokenize(document-uri($at), '/')[last()]
   let $allRelations := 
     if ($ref and $ref != '') then
-      collection($config:data-root || 'links/')//mei:relation[range:field-ends-with("relation-plist", $ref)]
+      collection($config:data-root || 'links/')/range:field-ends-with("relation-plist", $ref)
     else ()
   let $relations := 
     for $relation in $allRelations
-    let $targetRaw := $relation/string(@plist)
-    where ends-with($targetRaw, $ref)
     let $relationId := $relation/string(@xml:id)
     let $type := $relation/string(@rel)
     let $targetRaw := $relation/string(@target)
