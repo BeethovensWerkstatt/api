@@ -470,22 +470,22 @@ docker-compose -f docker-compose.dev.yml up -d
 
 ```bash
 # 1. IIIF-Endpunkte testen
-curl http://localhost:8082/exist/apps/api/iiif/documents.json
-curl http://localhost:8082/exist/apps/api/iiif/document/DOCUMENT_ID/manifest.json
+curl http://localhost:8080/exist/apps/api/iiif/documents.json
+curl http://localhost:8080/exist/apps/api/iiif/document/DOCUMENT_ID/manifest.json
 
 # 2. Module 1
-curl http://localhost:8082/exist/apps/api/data.json
-curl http://localhost:8082/exist/apps/api/document/DOCUMENT_ID/pages.json
+curl http://localhost:8080/exist/apps/api/data.json
+curl http://localhost:8080/exist/apps/api/document/DOCUMENT_ID/pages.json
 
 # 3. Module 2
-curl http://localhost:8082/exist/apps/api/module2/getWorks.xql
+curl http://localhost:8080/exist/apps/api/module2/getWorks.xql
 
 # 4. Services
-curl http://localhost:8082/exist/apps/api/file/FILE_ID
-curl http://localhost:8082/exist/apps/api/1/context.json
+curl http://localhost:8080/exist/apps/api/file/FILE_ID
+curl http://localhost:8080/exist/apps/api/1/context.json
 
 # 5. CORS-Header prüfen
-curl -I http://localhost:8082/exist/apps/api/data.json | grep -i "access-control"
+curl -I http://localhost:8080/exist/apps/api/data.json | grep -i "access-control"
 ```
 
 ---

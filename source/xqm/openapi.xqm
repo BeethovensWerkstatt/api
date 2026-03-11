@@ -62,7 +62,7 @@ declare function openapi:generate-spec() as map(*) {
                 "description": "Production server"
             },
             map {
-                "url": "http://localhost:8082/exist/apps/api",
+                "url": "http://localhost:8080/exist/apps/api",
                 "description": "Local development server"
             }
         },

@@ -34,10 +34,10 @@ npm install
 npm run docker:dev
 
 # The API will be available at:
-# - Main: http://localhost:8082/exist/apps/api/
-# - API endpoints: http://localhost:8082/exist/apps/api/api/
-# - Swagger UI: http://localhost:8082/exist/apps/api/api/docs
-# - Health check: http://localhost:8082/exist/apps/api/api/health
+# - Main: http://localhost:8080/exist/apps/api/
+# - API endpoints: http://localhost:8080/exist/apps/api/api/
+# - Swagger UI: http://localhost:8080/exist/apps/api/api/docs
+# - Health check: http://localhost:8080/exist/apps/api/api/health
 ```
 
 ### Without Docker
@@ -61,7 +61,7 @@ npm run package
 
 - **[Development Guide](docs/DEVELOPMENT.md)** - Detailed development setup and workflow
 - **[OpenAPI Specification](OPENAPI.md)** - API endpoint documentation
-- **[API Docs (Swagger)](http://localhost:8082/exist/apps/api/api/docs)** - Interactive API explorer (when running with docker:dev)
+- **[API Docs (Swagger)](http://localhost:8080/exist/apps/api/api/docs)** - Interactive API explorer (when running with docker:dev)
 
 ## Available Commands
 
@@ -224,7 +224,7 @@ npm run deploy
 
 Test your endpoint:
 ```bash
-curl http://localhost:8082/exist/apps/api/my-module/items.json
+curl http://localhost:8080/exist/apps/api/my-module/items.json
 ```
 
 ### Key Conventions
@@ -298,11 +298,11 @@ npm run watch:docker
 **Security Note:** The development setup uses a default password (`admin123`) if you don't configure `.env`. This is fine for local development since it's only accessible on `localhost`. For production, always use the production Dockerfile with a secure password.
 
 **What you get:**
-- API at `http://localhost:8082/exist/apps/api/`
-- **eXide** at `http://localhost:8082/exist/apps/eXide/` (XQuery IDE)
-- **Monex** at `http://localhost:8082/exist/apps/monex/` (Monitoring)
-- Dashboard at `http://localhost:8082/exist/apps/dashboard/`
-- REST API at `http://localhost:8082/exist/rest/`
+- API at `http://localhost:8080/exist/apps/api/`
+- **eXide** at `http://localhost:8080/exist/apps/eXide/` (XQuery IDE)
+- **Monex** at `http://localhost:8080/exist/apps/monex/` (Monitoring)
+- Dashboard at `http://localhost:8080/exist/apps/dashboard/`
+- REST API at `http://localhost:8080/exist/rest/`
 - All RESTXQ endpoints
 - Auto-deploy on file changes
 

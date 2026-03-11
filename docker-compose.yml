@@ -35,7 +35,7 @@ services:
       dockerfile: Dockerfile
     container_name: bw-api-existdb
     ports:
-      - "8082:8080"  # Direct access (optional, for debugging)
+      - "8080:8080"  # Direct access (optional, for debugging)
     environment:
       - EXIST_ENV=production
       - EXIST_CONTEXT_PATH=/

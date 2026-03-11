@@ -65,7 +65,7 @@ function runSyntaxCheck () {
   console.log(`${colors.cyan}${colors.bright}🔍 Checking XQuery Syntax${colors.reset}\n`)
 
   const config = loadConfig()
-  const server = config.server || 'http://localhost:8082'
+  const server = config.server || 'http://localhost:8080'
 
   console.log(`${colors.blue}Server:${colors.reset} ${server}\n`)
 
@@ -105,7 +105,7 @@ function runTests () {
   console.log(`${colors.cyan}${colors.bright}🧪 Running XQSuite Tests${colors.reset}\n`)
 
   const config = loadConfig()
-  const server = config.server || 'http://localhost:8082'
+  const server = config.server || 'http://localhost:8080'
 
   console.log(`${colors.blue}Server:${colors.reset} ${server}`)
   console.log(`${colors.blue}Filter:${colors.reset} ${filter || 'none'}\n`)

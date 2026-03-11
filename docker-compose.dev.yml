@@ -9,12 +9,12 @@
 #   3. npm run watch:docker         # Watch and deploy changes
 #
 # Access Points:
-#   - API:       http://localhost:8082/exist/apps/api/
-#   - RESTXQ:    http://localhost:8082/exist/apps/api/api/
-#   - Docs:      http://localhost:8082/exist/apps/api/api/docs
-#   - eXide:     http://localhost:8082/exist/apps/eXide/
-#   - Monex:     http://localhost:8082/exist/apps/monex/
-#   - Dashboard: http://localhost:8082/exist/apps/dashboard/
+#   - API:       http://localhost:8080/exist/apps/api/
+#   - RESTXQ:    http://localhost:8080/exist/apps/api/api/
+#   - Docs:      http://localhost:8080/exist/apps/api/api/docs
+#   - eXide:     http://localhost:8080/exist/apps/eXide/
+#   - Monex:     http://localhost:8080/exist/apps/monex/
+#   - Dashboard: http://localhost:8080/exist/apps/dashboard/
 
 services:
   existdb-dev:
@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: bw-api-dev
     ports:
-      - "8082:8080"
+      - "8080:8080"
       - "8444:8443"
     environment:
       - EXIST_ENV=development

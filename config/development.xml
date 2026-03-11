@@ -7,7 +7,7 @@
 -->
 <config xmlns="https://api.beethovens-werkstatt.de/config">
     <!-- Base URI for API endpoints -->
-    <baseUri>http://localhost:8082/exist/apps/api</baseUri>
+    <baseUri>http://localhost:8080/exist/apps/api</baseUri>
     
     <!-- CORS configuration -->
     <cors enabled="true">

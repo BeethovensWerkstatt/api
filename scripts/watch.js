@@ -29,7 +29,7 @@ function checkExistConfig () {
     console.error(JSON.stringify({
       servers: {
         localhost: {
-          server: 'http://localhost:8082/exist',
+          server: 'http://localhost:8080/exist',
           user: 'admin',
           password: 'admin123'
         }
