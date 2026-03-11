@@ -421,6 +421,16 @@ let $documentId := request:get-parameter('documentId','')
 
 let $sourceDoc := $database//id($documentId)
 
+let $manifestationId := $sourceDoc//mei:manifestation/string(@xml:id)
+let $manifestLink := $config:iiif-basepath ||  'document/' || $manifestationId || '/manifest.json'
+
+let $mainTitle := if ($sourceDoc//mei:title[@type = 'main'] and ($sourceDoc//mei:title[@type = 'main'])[1]/normalize-space(text()) ne '')
+  then (($sourceDoc//mei:title[@type = 'main'])[1]/normalize-space(text()))
+  else ('unknown')
+let $abbrevTitle := if ($sourceDoc//mei:title[@type = 'abbreviated'] and ($sourceDoc//mei:title[@type = 'abbreviated'])[1]/normalize-space(text()) ne '')
+  then (($sourceDoc//mei:title[@type = 'abbreviated'])[1]/normalize-space(text()))
+  else ('unknown')
+
 (: if document not found, return error :)
 let $output :=
     if(not(exists($sourceDoc)))
@@ -439,11 +449,11 @@ let $output :=
       return map {
         'source': map {
           'pages': array { $folia },
-          'manifest': 'TODO',
-          'label': 'TODO'
+          'manifest': $manifestLink,
+          'label': $abbrevTitle
         },
         'id': $documentId,
-        'title': 'TODO'
+        'title': $mainTitle
       }
     )
 

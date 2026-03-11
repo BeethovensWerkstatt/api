@@ -31,6 +31,8 @@ services:
       - EXIST_PASSWORD=${EXIST_DEV_PASSWORD:-admin123}
       - BW_ENV=development
       - BW_DEBUG=true
+      # Required for cglib compatibility with JRE 17 (JDK_JAVA_OPTIONS is ignored by Java 8 launcher)
+      - JDK_JAVA_OPTIONS=--add-opens java.base/java.lang=ALL-UNNAMED
     volumes:
       # Mount the package for easy updates (use version from package.json)
       - ./dist:/opt/exist/autodeploy-src:ro

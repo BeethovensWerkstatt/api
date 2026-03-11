@@ -79,3 +79,12 @@ declare function ef:getDocumentLink($document.id as xs:string) as xs:string {
     let $link := $config:documents-basepath || $document.id || '.json'
     return $link
 };
+
+(:~
+ : Helper function to get a document by path, returns empty sequence if not available
+ :)
+declare function ef:getDocByPath($path as xs:string) as document-node()? {
+    if (doc-available($path))
+    then fn:parse-xml(fn:serialize(doc($path)))
+    else ()
+};

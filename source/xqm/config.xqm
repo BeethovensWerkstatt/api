@@ -89,6 +89,8 @@ declare variable $config:public-base-uri := '$$deployTarget$$'; (: Set automatic
 
 declare variable $config:data-root := $config:app-root || '/data/data/';
 
+declare variable $config:data-cache-root := $config:app-root || '/data-cache/cache/';
+
 declare variable $config:module1-root := $config:data-root || 'module1/';
 
 declare variable $config:module3-root := $config:data-root || 'module3/';
@@ -113,6 +115,8 @@ declare variable $config:expath-descriptor := doc(concat($config:app-root, '/exp
 declare variable $config:app-version := $config:expath-descriptor/@version/string();
 
 declare variable $config:api-url := $config:public-base-uri;
+
+declare variable $config:prerendered-basepath := $config:public-base-uri || '/document/prerendered/';
 
 (: ============ Feature Flags ============ :)
 

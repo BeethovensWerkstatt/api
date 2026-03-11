@@ -8,7 +8,7 @@ xquery version "3.0";
  : 
  : Routing Strategy:
  : - /api/* routes → RESTXQ servlet (for new prefixed endpoints)
- : - /iiif/*, /module[1-4]/*, /file/*, /desc/*, /documents/*, /docs, /openapi.json 
+ : - /iiif/*, /module[1-4]/*, /file/*, /desc/*, /documents/*, /genDesc/*, /docs, /openapi.json 
  :   → RESTXQ via /restxq path forwarding
  : - Static resources are served directly
  :
@@ -156,6 +156,15 @@ if(starts-with(lower-case($exist:path), '/desc/')) then (
 
 (: Document Routes - documents-api.xqm & tools-api.xqm :)
 if(starts-with(lower-case($exist:path), '/document')) then (
+    response:set-header("Access-Control-Allow-Origin", "*"),
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="/restxq{$exist:path}" absolute="yes"/>
+    </dispatch>
+
+) else
+
+(: GenDesc Routes - documents-api.xqm :)
+if(starts-with(lower-case($exist:path), '/gendesc/')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="/restxq{$exist:path}" absolute="yes"/>

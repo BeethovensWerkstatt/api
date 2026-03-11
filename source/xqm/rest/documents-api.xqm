@@ -59,3 +59,49 @@ function documents-api:list-documents() {
 function documents-api:get-document($documentId as xs:string) {
     api-base:forward-to-xql("/resources/xql/documents/get-document-overview.xql", map { "documentId": $documentId })
 };
+
+(:~
+ : Get transcription details for a specific genetic description
+ :
+ : @param $genDescId The genetic description identifier
+ : @return JSON object with transcription details
+ :
+ : @openapi:summary Get transcription details for a genDesc
+ : @openapi:response 200 application/json Transcription details object
+ :)
+declare
+    %rest:GET
+    %rest:path("/document/genDesc/{$genDescId}.json")
+    %rest:produces("application/json")
+    %output:method("json")
+function documents-api:get-transcription-details($genDescId as xs:string) {
+    api-base:forward-to-xql("/resources/xql/documents/get-transcription-details.xql", map { "genDescId": $genDescId })
+};
+
+(:~
+ : Get prerendered transcription SVG for a specific genetic description
+ :
+ : @param $fileName The file name of the prerendered SVG
+ : @return SVG object with transcription details
+ :
+ : @openapi:summary Get prerendered transcription SVG for a genDesc
+ : @openapi:response 200 image/svg+xml Transcription details object
+ :)
+declare
+    %rest:GET
+    %rest:path("/document/prerendered/{$fileName}.svg")
+    %rest:produces("image/svg+xml")
+    %output:method("xml")
+function documents-api:get-prerendered-transcription-svg($fileName as xs:string) {
+    let $fullName   := $fileName || '.svg'
+    let $paddedPage := fn:analyze-string($fullName, 'p(\d{3})')/fn:match/string()
+    let $paddedWz   := fn:analyze-string($fullName, 'wz(\d{2})')/fn:match/string()
+    let $docType    :=
+        if      (ends-with($fullName, '_at.svg')) then '/annotatedTranscripts/'
+        else if (ends-with($fullName, '_dt.svg')) then '/diplomaticTranscripts/'
+        else if (ends-with($fullName, '_ft.svg')) then '/fluidTranscripts/'
+        else ''
+    let $docName := substring-before($fullName, '_' || $paddedPage || '_' || $paddedWz)
+    let $path    := $config:data-cache-root || 'sources/' || $docName || $docType || $paddedPage || '/' || $fullName
+    return ef:getDocByPath($path)
+};
