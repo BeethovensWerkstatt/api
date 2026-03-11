@@ -60,7 +60,7 @@ let $atInternalMeiPath := $config:data-root || 'sources/' || $docName || '/annot
 let $atInternalSymlinkPath := $config:data-root || 'sources/' || $docName || '/annotatedTranscripts/' || $atSymlinkName
 
 let $rightAtPath := 
-  if (doc-available($atInternalMeiPath)) then $atMeiName
+  if (doc-available($atInternalMeiPath)) then $atInternalMeiPath
   else if (doc-available($atInternalSymlinkPath)) then 
   (
     let $symlinkDoc := doc($atInternalSymlinkPath)
