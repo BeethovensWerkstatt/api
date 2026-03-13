@@ -64,9 +64,24 @@ async function getTemplateReplacements (isPublic = false) {
     deployTarget = 'http://localhost:8080/exist/apps/api'
   }
 
+  // For local (dev) builds, append a timestamp so each build gets a unique
+  // version string. eXist-db autodeploy skips packages whose version is
+  // already installed, so a static version means code changes are silently
+  // ignored. The timestamp ensures every `dist:local` is treated as new.
+  let version = packageJson.version
+  if (!isPublic) {
+    const now = new Date()
+    const ts = now.getFullYear().toString().slice(-2) +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0')
+    version = `${packageJson.version}.${ts}`
+  }
+
   return {
     deployed: formatISODateTime(),
-    version: packageJson.version,
+    version,
     desc: packageJson.description,
     license: packageJson.license,
     abbrev: packageJson.name,

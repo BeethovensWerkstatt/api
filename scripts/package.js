@@ -16,10 +16,43 @@ import { getPackageJson } from './utils.js'
 const BUILD_DIR = 'build'
 const DIST_DIR = 'dist'
 
+// Read the resolved version from the built expath-pkg.xml so the .xar filename
+// always matches the version inside (including any dev timestamp suffix added
+// by build.js for local builds).
+async function getBuiltVersion (fallback) {
+  try {
+    const content = await fs.readFile(path.join(BUILD_DIR, 'expath-pkg.xml'), 'utf8')
+    const match = content.match(/<package[^>]+version="([^"]+)"/)
+
+    return match ? match[1] : fallback
+  } catch {
+    return fallback
+  }
+}
+
+// Remove any previously generated .xar files for this package so only the
+// latest build is present in dist/ (prevents stale packages accumulating).
+async function cleanDist (name) {
+  try {
+    const entries = await fs.readdir(DIST_DIR)
+    for (const entry of entries) {
+      if (entry.startsWith(`${name}-`) && entry.endsWith('.xar')) {
+        await fs.unlink(path.join(DIST_DIR, entry))
+        console.log(`  Removed old package: ${entry}`)
+      }
+    }
+  } catch {
+    // dist/ may not exist yet; createXar will handle that
+  }
+}
+
 async function createXar () {
   const packageJson = await getPackageJson()
-  const version = packageJson.version
   const name = packageJson.name
+
+  await cleanDist(name)
+
+  const version = await getBuiltVersion(packageJson.version)
   const xarFileName = `${name}-${version}.xar`
   const xarPath = path.join(DIST_DIR, xarFileName)
 

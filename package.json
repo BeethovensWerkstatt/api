@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "An API that will makes independent data packages with mostly MEI data available",
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
     "docker:dev": "docker compose -f docker-compose.dev.yml up -d",
     "docker:dev:stop": "docker compose -f docker-compose.dev.yml down",
     "docker:dev:logs": "docker compose -f docker-compose.dev.yml logs -f",
-    "docker:dev:rebuild": "npm run dist && docker compose -f docker-compose.dev.yml up -d --build",
+    "docker:dev:rebuild": "npm run dist:local && docker compose -f docker-compose.dev.yml up -d --build",
     "watch:docker": "test -f .existdb.json.docker && cp .existdb.json.docker .existdb.json && npm run watch || (echo 'Error: .existdb.json.docker not found. Run: cp .existdb.json.docker.template .existdb.json.docker' && exit 1)",
     "test": "node scripts/run-tests.js",
     "test:verbose": "node scripts/run-tests.js --verbose",
