@@ -36,7 +36,9 @@ services:
     volumes:
       # Mount the package for easy updates (use version from package.json)
       - ./dist:/opt/exist/autodeploy-src:ro
-    restart: unless-stopped
+      # Persist eXist-db data between restarts
+      - exist-dev-data:/opt/exist/data
+    restart: on-failure
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/exist/apps/api/api/health"]
       interval: 30s

@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "An API that will makes independent data packages with mostly MEI data available",
   "type": "module",
   "scripts": {

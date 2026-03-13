@@ -42,6 +42,8 @@ services:
       - EXIST_DEFAULT_APP_PATH=xmldb:exist:///db/apps/api
       - EXIST_PASSWORD=${EXIST_PASSWORD:?EXIST_PASSWORD is required}
       - BW_ENV=production
+      # Required for cglib compatibility with JRE 17
+      - JDK_JAVA_OPTIONS=--add-opens java.base/java.lang=ALL-UNNAMED
     volumes:
       - exist-data:/opt/exist/data
       - exist-backups:/opt/exist/backups
