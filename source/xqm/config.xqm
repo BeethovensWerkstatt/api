@@ -118,6 +118,8 @@ declare variable $config:api-url := $config:public-base-uri;
 
 declare variable $config:prerendered-basepath := $config:public-base-uri || '/document/prerendered/';
 
+declare variable $config:svg-shapes-basepath := $config:public-base-uri || '/document/shapes/';
+
 (: ============ Feature Flags ============ :)
 
 (:~

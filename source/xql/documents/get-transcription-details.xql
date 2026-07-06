@@ -77,14 +77,90 @@ let $at :=
   then doc($rightAtPath) 
   else ()
 
-let $systems := 
-  for $system in $at//mei:sb
-  let $doc := tokenize($system/@corresp,'/')[last()] => substring-before('#')
-  let $id := substring-after($system/@corresp,'#')
+let $atDtLinks := map:merge(
+  for $elem in $at//mei:*[@corresp][ancestor::mei:scoreDef or ancestor-or-self::mei:measure]
+  return map:entry(
+    $elem/@xml:id/string(),
+    array { for $corresp in ($elem/@corresp => normalize-space() => tokenize(' ')) return substring-after($corresp, '#') }
+  )
+)
+
+let $writingZones := 
+  for $wz in $at//mei:annot[@class = '#bw_writingZoneBegin']
+  let $wzId := $wz/@xml:id/string()
+  let $genDescId := substring-after($wz/@corresp, '#')
+  let $genDescFilePath := resolve-uri(substring-before($wz/@corresp, '#'), base-uri($at))
+  let $genDesc := if (doc-available($genDescFilePath)) then doc($genDescFilePath)/id($genDescId) else ()
+  let $zone := doc($genDescFilePath)/range:field-eq("zone-data", '#' || $genDescId)[1]
+  let $surface := $zone/ancestor::mei:surface[1]
+  let $surfaceId := $surface/@xml:id/string()
+  let $graphic := $surface/mei:graphic[@type = 'facsimile'][1]
+  let $shapesGraphic := $surface/mei:graphic[@type = 'shapes'][1]
+  let $allFoliumLike := doc($genDescFilePath)//mei:foliaDesc//mei:*
+  let $foliumLike := $allFoliumLike[some $att in @* satisfies ($att eq ('#' || $surfaceId))][1]
+  let $shapesGroupId := substring-after($genDesc/@corresp,'#')
+  let $prerenderedDtAllSystems := $config:prerendered-basepath || $dtSvgName
+
+  let $dtFileLink := substring-before($wz/following::mei:sb[1]/@corresp/string(),'#')
+  let $dtFileUri := resolve-uri($dtFileLink, base-uri($at))
+  let $dtFile := if (doc-available($dtFileUri)) then doc($dtFileUri) else ()
+  let $dtShapeLinks := map:merge(
+    for $elem in $dtFile//mei:*[@facs]
+    return map:entry(
+      $elem/@xml:id/string(),
+      array { for $facs in ($elem/@facs => normalize-space() => tokenize(' ')) return substring-after($facs, '#') }
+    )
+  )
+  let $systems := 
+    for $system in $wz/following::mei:sb[preceding::mei:annot[@class = '#bw_writingZoneBegin'][1]/@xml:id/string() = $wzId]
+    let $docName := tokenize($system/@corresp,'/')[last()] => substring-before('#')
+    let $id := substring-after($system/@corresp,'#')
+    let $dtSystem := $dtFile/id($id)
+    let $firstRastrumId := ($dtSystem//mei:staffDef)[1]/@decls => substring-after('#')
+    let $rastrum := $sourceDoc/id($firstRastrumId)
+    let $rotation := if ($rastrum) then $rastrum/@rotate/number() else 0
+    return map {
+      'id': $id,
+      'dt': $config:prerendered-basepath || replace($docName, '_dt.xml', '_sys' || $id || '_dt.svg'),
+      'at': $config:prerendered-basepath || replace($docName, '_dt.xml', '_sys' || $id || '_at.svg'),
+      'ft': $config:prerendered-basepath || replace($docName, '_dt.xml', '_sys' || $id || '_ft.svg'),
+      'rotation': map {
+        'pivot': map {
+          'x': $rastrum/@system.leftmar/number(),
+          'y': $rastrum/@system.topmar/number()
+        },
+        'angle': $rotation
+      }
+    }
+
   return map {
-    'id': $id,
-    'dt': $config:prerendered-basepath || replace($doc, '_dt.xml', '_sys' || $id || '_dt.svg'),
-    'at': $config:prerendered-basepath || replace($doc, '_dt.xml', '_sys' || $id || '_at.svg')
+    'id': $genDescId,
+    'doc': substring-before(tokenize(substring-before(normalize-space($wz/@corresp), '#'),'/')[last()],'.xml'),
+    'n': $genDesc/@label/string(),
+    'page': map {
+      'label' : $surface/@label/string(),
+      'id' : $surface/@xml:id/string(),
+      'image': $graphic/@target/string(),
+      'shapes': $config:svg-shapes-basepath || tokenize($shapesGraphic/@target/string(), '/')[last()],
+      'shapesGroupId': $shapesGroupId,
+      'px': map {
+        'height': $graphic/@height/number(),
+        'width': $graphic/@width/number()
+      },
+      'mm': map {
+        'height': $foliumLike/@height/number(),
+        'width': $foliumLike/@width/number()
+      }
+    },
+    'rect': map {
+      'x': $zone/@ulx/number(),
+      'y': $zone/@uly/number(),
+      'w': $zone/@lrx/number() - $zone/@ulx/number(),
+      'h': $zone/@lry/number() - $zone/@uly/number()
+    },
+    'renderedWz': $prerenderedDtAllSystems,
+    'shapeLinks': $dtShapeLinks,
+    'systems': array { $systems }
   }
 
 let $dtSvgPath := $config:prerendered-basepath || $dtSvgName
@@ -105,11 +181,16 @@ return
             'at': map {
               'name': tokenize($rightAtPath, '/')[last()],
               'symlinked': tokenize($rightAtPath, '/')[last()] ne $atMeiName,
-              'uri': $config:prerendered-basepath || tokenize($rightAtPath, '/')[last()]
+              'uri': $config:prerendered-basepath || tokenize($rightAtPath, '/')[last()],
+              'renderedSvg': $config:prerendered-basepath || tokenize($rightAtPath, '/')[last()] => replace('_at.xml', '_at.svg'),
+              'dtLinks': $atDtLinks
+            },
+            'ft': map {
+              'uri': $config:prerendered-basepath || replace($dtSvgName, '_dt.svg', '_ft.svg')
             },
             'dt': map {
               'name': $dtMeiName,
               'uri': $config:prerendered-basepath || $dtMeiName
             },
-            'systems': array { $systems }
+            'writingZones': array { $writingZones }
         }

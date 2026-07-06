@@ -156,10 +156,10 @@ declare function local:getSketchProperties($at) as map(*) {
  : @return Array of work relation maps
  :)
 declare function local:getWorkRelations($at) as map(*)* {
-  let $ref := tokenize(document-uri($at), '/')[last()]
+  let $ref := string(tokenize(document-uri($at), '/')[last()])
   let $allRelations := 
     if ($ref and $ref != '') then
-      collection($config:data-root || 'links/')/range:field-ends-with("relation-plist", $ref)
+      collection($config:data-root || 'links')/range:field-ends-with("relation-plist", string($ref)) (:/*[ends-with(@rel, $ref)]:) (: range:field-ends-with("relation-plist", string($ref)) :)
     else ()
   let $relations := 
     for $relation in $allRelations
@@ -264,7 +264,7 @@ declare function local:getWorkRelations($at) as map(*)* {
       'opus': $opus,
       'target': $target
     }
-  return $relations
+  return $relations (: map { 'allRelations': count($allRelations), 'dataRoot': $config:data-root || 'links/' } :) (:  :)
 };
 
 (:~
@@ -317,7 +317,7 @@ declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc),
     'identifier': $identifier,
     'wzProps': $wzProps,
     'sketchProps': $sketchProps,
-    'workRelations': $workRelations
+    'workRelations': array { $workRelations }
   }
 };
 
@@ -360,7 +360,8 @@ declare function local:parsePage ($elem as element(), $foliumType as xs:string, 
     "writingZones": array { $writingZones },
     "surfaceLabel": $surfaceLabel,
     "mm": $mm,
-    "surfaceId": $surfaceId
+    "surfaceId": $surfaceId,
+    "shapesLink": if ($surface/mei:graphic[@type = 'shapes']) then ($config:svg-shapes-basepath || tokenize($surface/mei:graphic[@type = 'shapes']/@target/string(), '/')[last()]) else ('')
   }
 
 };

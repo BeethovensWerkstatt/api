@@ -105,3 +105,25 @@ function documents-api:get-prerendered-transcription-svg($fileName as xs:string)
     let $path    := $config:data-cache-root || 'sources/' || $docName || $docType || $paddedPage || '/' || $fullName
     return ef:getDocByPath($path)
 };
+
+(:~
+ : Get prerendered transcription SVG for a specific genetic description
+ :
+ : @param $fileName The file name of the prerendered SVG
+ : @return SVG object with transcription details
+ :
+ : @openapi:summary Get prerendered transcription SVG for a genDesc
+ : @openapi:response 200 image/svg+xml Transcription details object
+ :)
+declare
+    %rest:GET
+    %rest:path("/document/shapes/{$fileName}.svg")
+    %rest:produces("image/svg+xml")
+    %output:method("xml")
+function documents-api:get-svg-shapes($fileName as xs:string) {
+    let $fullName   := $fileName || '.svg'
+    let $paddedPage := fn:analyze-string($fullName, 'p(\d{3})')/fn:match/string()
+    let $docName := substring-before($fullName, '_' || $paddedPage || '.svg')
+    let $path    := $config:data-root || 'sources/' || $docName || '/svg/' || $fullName
+    return ef:getDocByPath($path)
+};
