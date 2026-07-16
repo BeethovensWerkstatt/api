@@ -59,7 +59,7 @@ async function getTemplateReplacements (isPublic = false) {
   if (isPublic) {
     deployTarget = branch === 'main'
       ? 'https://api.beethovens-werkstatt.de'
-      : 'https://dev-api.beethovens-werkstatt.de'
+      : 'https://dev-api2.beethovens-werkstatt.de'
   } else {
     deployTarget = 'http://localhost:8080/exist/apps/api'
   }
