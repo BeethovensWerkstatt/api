@@ -27,11 +27,16 @@ declare variable $exist:root external;
    All API endpoints use RESTXQ for cleaner, annotated routing
    ============================================================ :)
 
-(: Forward /api/* requests to RESTXQ servlet :)
+(: Forward /api/* requests to RESTXQ servlet
+   NB: a bare servlet-name forward (<forward servlet="RestXqServlet"/>) does not
+   route correctly - RestXqServlet has no <servlet-mapping> of its own, so a
+   named-dispatcher forward bypasses its real request handling (observed as a
+   405 with "Allow: TRACE, OPTIONS", e.g. on /api/health). Forwarding by URL,
+   like all other RESTXQ routes below, works correctly. :)
 if (starts-with($exist:path, '/api/')) then (
     response:set-header("Access-Control-Allow-Origin", "*"),
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward servlet="RestXqServlet"/>
+        <forward url="/restxq{$exist:path}" absolute="yes"/>
     </dispatch>
 
 ) else

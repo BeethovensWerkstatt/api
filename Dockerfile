@@ -54,6 +54,20 @@ USER root
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# The base image's adjust-conf-files.xsl (run by its entrypoint.sh at container
+# startup) strips any servlet not in its hardcoded "production-servlets"
+# whitelist when EXIST_ENV=production - and RestXqServlet isn't on that list.
+# That silently removes both the "/restxq/" forward in controller-config.xml
+# AND the RestXqServlet <servlet> declaration in web.xml, which breaks every
+# RESTXQ-based route in this app (all of source/xqm/rest/*-api.xqm) once
+# EXIST_DEFAULT_APP_PATH/EXIST_CONTEXT_PATH="/" is used for production.
+# Whitelisting RestXqServlet keeps all other production hardening intact
+# (webdav/xmlrpc/eXide/direct-REST stay locked down) while still allowing our
+# controller.xql to forward "/restxq/..." requests to RestXqServlet.
+RUN perl -0777 -pi -e "s/('XQueryURLRewrite')(\s*\)\"\/>)/\$1,\n        'RestXqServlet'\$2/" ${EXIST_HOME}/adjust-conf-files.xsl \
+    && grep -q "'RestXqServlet'" ${EXIST_HOME}/adjust-conf-files.xsl \
+    || (echo "FATAL: failed to whitelist RestXqServlet in adjust-conf-files.xsl - base image may have changed" && exit 1)
+
 COPY --from=builder /opt/api-build/dist/api-*.xar ${EXIST_HOME}/autodeploy/
 RUN chown wegajetty:wegajetty ${EXIST_HOME}/autodeploy/api-*.xar \
     && ls -lh ${EXIST_HOME}/autodeploy/api-*.xar
