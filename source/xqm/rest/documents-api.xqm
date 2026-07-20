@@ -18,6 +18,7 @@ import module namespace ef = "https://edirom.de/file" at "../file.xqm";
 declare namespace rest = "http://exquery.org/ns/restxq";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace mei = "http://www.music-encoding.org/ns/mei";
+declare namespace util = "http://exist-db.org/xquery/util";
 
 (:~
  : @openapi:tag Documents
@@ -126,4 +127,29 @@ function documents-api:get-svg-shapes($fileName as xs:string) {
     let $docName := substring-before($fullName, '_' || $paddedPage || '.svg')
     let $path    := $config:data-root || 'sources/' || $docName || '/svg/' || $fullName
     return ef:getDocByPath($path)
+};
+
+(:~
+ : Get MIDI file for a specific writing zone
+ :
+ : @param $fileName The file name of the MIDI file
+ : @return MIDI file object
+ :
+ : @openapi:summary Get MIDI file for a writing zone
+ : @openapi:response 200 audio/midi MIDI file object
+ :)
+declare
+    %rest:GET
+    %rest:path("/document/midi/{$fileName}.mid")
+    %rest:produces("audio/midi")
+    %output:method("binary")
+function documents-api:get-midi-file($fileName as xs:string) {
+    let $fullName   := $fileName || '.mid'
+    let $paddedPage := fn:analyze-string($fullName, 'p(\d{3})')/fn:match/string()
+    let $docName := substring-before($fullName, '_' || $paddedPage || '_wz')
+    let $path    := $config:data-cache-root || 'sources/' || $docName || '/annotatedMidi/' || $paddedPage || '/' || $fullName
+    let $midi := util:binary-doc($path)
+    return
+        if (exists($midi)) then $midi
+        else api-base:not-found($path)
 };
