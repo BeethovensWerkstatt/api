@@ -100,10 +100,15 @@ function documents-api:get-prerendered-transcription-svg($fileName as xs:string)
     let $docType    :=
         if      (ends-with($fullName, '_at.svg')) then '/annotatedTranscripts/'
         else if (ends-with($fullName, '_dt.svg')) then '/diplomaticTranscripts/'
-        else if (ends-with($fullName, '_ft.svg')) then '/fluidTranscripts/'
+        else if (matches($fullName, '_ft(_v\d{3})?.svg')) then '/fluidTranscripts/'
         else ''
     let $docName := substring-before($fullName, '_' || $paddedPage || '_' || $paddedWz)
-    let $path    := $config:data-cache-root || 'sources/' || $docName || $docType || $paddedPage || '/' || $fullName
+    let $requiresGenStateVersion := matches($fullName, '_wz\d{2}_ft_v\d{3}.svg')
+    let $genStateFolder := 
+        if ($requiresGenStateVersion)
+        then substring($fullName, 1, string-length($fileName) - 5) || '/'
+        else ''
+    let $path    := $config:data-cache-root || 'sources/' || $docName || $docType || '/' || $paddedPage || '/' || $genStateFolder || $fullName
     return ef:getDocByPath($path)
 };
 
@@ -147,9 +152,18 @@ function documents-api:get-midi-file($fileName as xs:string) {
     let $fullName   := $fileName || '.mid'
     let $paddedPage := fn:analyze-string($fullName, 'p(\d{3})')/fn:match/string()
     let $docName := substring-before($fullName, '_' || $paddedPage || '_wz')
-    let $path    := $config:data-cache-root || 'sources/' || $docName || '/annotatedMidi/' || $paddedPage || '/' || $fullName
+    let $requiresGenStateVersion := matches($fullName, '_(orig|reg)_v\d{3}')
+    let $genStateFolder := 
+        if (not($requiresGenStateVersion))
+        then ''
+        else if (matches($fullName, '_orig_v\d{3}.mid'))
+        then substring($fullName, 1, string-length($fileName) - 10) || '/'
+        else if (matches($fullName, '_reg_v\d{3}.mid'))
+        then substring($fullName, 1, string-length($fileName) - 9) || '/'
+        else ''
+    let $path := $config:data-cache-root || 'sources/' || $docName || '/annotatedMidi/' || $paddedPage || '/' || $genStateFolder || $fullName     
     let $midi := util:binary-doc($path)
+
     return
-        if (exists($midi)) then $midi
-        else api-base:not-found($path)
+        $midi
 };
