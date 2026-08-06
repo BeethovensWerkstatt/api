@@ -278,7 +278,7 @@ declare function local:getWorkRelations($at) as map(*)* {
 declare function local:getWritingZoneDetails($genDescWz as element(mei:genDesc), $surface as element(mei:surface), $database) as map(*) {
   let $label := $genDescWz/string(@label)
   let $sourceRef := '#' || $genDescWz/string(@xml:id)
-  let $sources := $database//mei:source[ends-with(@target, $sourceRef)]
+  let $sources := $database//mei:source[contains(@target, $sourceRef)]
   
   let $at := 
     for $source in $sources
