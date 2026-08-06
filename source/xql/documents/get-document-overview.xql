@@ -159,7 +159,7 @@ declare function local:getWorkRelations($at) as map(*)* {
   let $ref := string(tokenize(document-uri($at), '/')[last()])
   let $allRelations := 
     if ($ref and $ref != '') then
-      collection($config:data-root || 'links')/range:field-ends-with("relation-plist", string($ref)) (:/*[ends-with(@rel, $ref)]:) (: range:field-ends-with("relation-plist", string($ref)) :)
+      collection($config:data-root || 'links')/range:field-ends-with("relation-plist", string($ref)) (:/*[ends-with(@rel, $ref)]:)
     else ()
   let $relations := 
     for $relation in $allRelations
