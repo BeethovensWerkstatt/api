@@ -353,7 +353,7 @@ declare function local:parsePage ($elem as element(), $foliumType as xs:string, 
     else (string((count($surface/preceding-sibling::mei:surface) + 1)))
 
   let $target := $graphicFacs/string(@target) => substring-before('#')
-  let $px := $target (: ($graphicFacs) :)
+  let $px := local:getPx($graphicFacs)
     
   let $genDesc := $surface/root()//mei:genDesc[@corresp = '#' || $surface/@xml:id][1]
       
