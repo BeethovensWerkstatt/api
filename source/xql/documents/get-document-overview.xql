@@ -75,11 +75,23 @@ declare function local:getDiploProperties($dt, $surface as element(mei:surface),
   let $metaClarification := exists($dt//mei:metaMark[@function = 'clarification'])
   let $metaNavigation := exists($dt//mei:metaMark[@function = 'navigation'])
   let $otherMeta := exists($dt//mei:metaMark[@function and not(@function = ('clarification', 'navigation'))])
-  let $layers := array { 
-    for $layer in $genDescWz/mei:genState
-    let $layerId := $layer/string(@xml:id)
-    return $layerId
-  }
+  let $layers := 
+    if ($genDescWz/mei:genState['#bw_textStufe' = tokenize(normalize-space(@class), ' ')])
+    then (
+      array { 
+        for $layer in $genDescWz/mei:genState['#bw_textStufe' = tokenize(normalize-space(@class), ' ')]
+        let $layerId := $layer/string(@xml:id)
+        return $layerId
+      }
+    )
+    else (
+      array { 
+        for $layer in $genDescWz/mei:genState
+        let $layerId := $layer/string(@xml:id)
+        return $layerId
+      }
+    )
+  
   let $staves := count(distinct-values($dt//mei:staffDef[string(@n)]))
   let $pos := 
     let $zone := $surface//mei:zone[@data = '#' || $genDescId]
@@ -341,7 +353,7 @@ declare function local:parsePage ($elem as element(), $foliumType as xs:string, 
     else (string((count($surface/preceding-sibling::mei:surface) + 1)))
 
   let $target := $graphicFacs/string(@target) => substring-before('#')
-  let $px := local:getPx($graphicFacs)
+  let $px := $target (: ($graphicFacs) :)
     
   let $genDesc := $surface/root()//mei:genDesc[@corresp = '#' || $surface/@xml:id][1]
       
