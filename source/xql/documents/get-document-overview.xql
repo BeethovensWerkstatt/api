@@ -37,14 +37,21 @@ declare function local:getPx($graphicFacs as element(mei:graphic)) as map(*) {
   let $height := number($graphicFacs/@height)
   let $params := if ($graphicFacs/string(@target) => contains('#xywh=')) then ($graphicFacs/string(@target) => substring-after('#xywh=')) else ('')
   let $amp := '&amp;amp;'
-  let $xywh  := 
-    if ($params != '') 
-    then (for $num in (substring-before($params, $amp) => tokenize(',')) return number($num)) 
-    else ()
-  let $x := if ($xywh) then ($xywh[1]) else (0)
-  let $y := if ($xywh) then ($xywh[2]) else (0)
-  let $w := if ($xywh) then ($xywh[3]) else ($width)
-  let $h := if ($xywh) then ($xywh[4]) else ($height)
+  let $xywhString := 
+    if ($params != '' and contains($params, 'rotate=')) 
+    then (
+      let $tooMuch := substring-before($params, 'rotate=')
+      let $justRight := substring($tooMuch, 1, string-length($tooMuch) - 1)
+      return $justRight
+    )
+    else if ($params != '')
+    then ($params)
+    else ('')
+  let $xywhArray := tokenize($xywhString, ',')
+  let $x := if ($xywhString != '') then (number($xywhArray[1])) else (0)
+  let $y := if ($xywhString != '') then (number($xywhArray[2])) else (0)
+  let $w := if ($xywhString != '') then (number($xywhArray[3])) else ($width)
+  let $h := if ($xywhString != '') then (number($xywhArray[4])) else ($height)
   let $rotation := 
     if (contains($params, 'rotate=')) 
     then (number(substring-after($params, 'rotate='))) 
