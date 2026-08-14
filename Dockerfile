@@ -27,7 +27,7 @@ RUN npm run dist:full
 # Now running the eXist-db
 # and adding our freshly built xar-package
 #########################
-FROM stadlerpeter/existdb:6.4.0-jre17
+FROM stadlerpeter/existdb:6.3.0-jre17
 
 LABEL org.opencontainers.image.title="Beethovens Werkstatt API"
 LABEL org.opencontainers.image.description="API for MEI-encoded music data and genetic editions"
