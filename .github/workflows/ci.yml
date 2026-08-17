@@ -227,10 +227,10 @@ jobs:
             fi
 
             for url in \
-              "http://localhost:8080/exist/" \
-              "http://localhost:8080/exist" \
-              "http://localhost:8080/"; do
-              CODE=$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)
+              "http://127.0.0.1:8080/exist/" \
+              "http://127.0.0.1:8080/exist" \
+              "http://127.0.0.1:8080/"; do
+              CODE=$(curl --ipv4 --connect-timeout 3 --max-time 10 --retry 2 --retry-delay 1 --retry-all-errors -sS -o /dev/null -w "%{http_code}" "$url" || true)
               if [ "$CODE" = "200" ] || [ "$CODE" = "301" ] || [ "$CODE" = "302" ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
                 echo "eXist-DB responds on $url (HTTP $CODE)"
                 READY=1
@@ -264,9 +264,25 @@ jobs:
       - name: Test eXist-DB is accessible
         run: |
           echo "Testing eXist-DB main page..."
-          CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/exist/ || true)
-          if [ "$CODE" != "200" ] && [ "$CODE" != "301" ] && [ "$CODE" != "302" ] && [ "$CODE" != "401" ] && [ "$CODE" != "403" ]; then
-            echo "Error: eXist-DB not accessible (HTTP $CODE)"
+          READY=0
+          STABLE_OK=0
+          for i in {1..24}; do
+            CODE=$(curl --ipv4 --connect-timeout 3 --max-time 10 --retry 2 --retry-delay 1 --retry-all-errors -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/exist/ || true)
+            if [ "$CODE" = "200" ] || [ "$CODE" = "301" ] || [ "$CODE" = "302" ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
+              STABLE_OK=$((STABLE_OK + 1))
+              if [ "$STABLE_OK" -ge 2 ]; then
+                READY=1
+                break
+              fi
+            else
+              STABLE_OK=0
+            fi
+            echo "Main page not stable yet (HTTP $CODE), attempt $i/24..."
+            sleep 2
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Error: eXist-DB not accessible (last HTTP $CODE)"
             docker logs bw-api-test
             exit 1
           fi
@@ -277,7 +293,7 @@ jobs:
           echo "Testing API application..."
           READY=0
           for i in {1..36}; do
-            CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/api/ || true)
+            CODE=$(curl --ipv4 --connect-timeout 3 --max-time 10 --retry 2 --retry-delay 1 --retry-all-errors -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/exist/apps/api/ || true)
             if [ "$CODE" = "200" ] || [ "$CODE" = "301" ] || [ "$CODE" = "302" ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
               READY=1
               break
@@ -296,7 +312,7 @@ jobs:
       - name: Test Controller-based IIIF endpoints
         run: |
           echo "Testing Controller-based IIIF endpoint..."
-          RESPONSE=$(curl -s http://localhost:8080/exist/apps/api/iiif/documents.json)
+          RESPONSE=$(curl --ipv4 -sS http://127.0.0.1:8080/exist/apps/api/iiif/documents.json)
           
           # Check if we get valid JSON with array structure
           if ! echo "$RESPONSE" | jq -e 'type == "array"' > /dev/null 2>&1; then
@@ -312,7 +328,7 @@ jobs:
       - name: Test OpenAPI spec availability
         run: |
           echo "Testing OpenAPI spec endpoint..."
-          SPEC=$(curl -s http://localhost:8080/exist/apps/api/openapi.json)
+          SPEC=$(curl --ipv4 -sS http://127.0.0.1:8080/exist/apps/api/openapi.json)
           
           # Validate it's valid JSON
           if ! echo "$SPEC" | jq empty 2>/dev/null; then
@@ -328,7 +344,7 @@ jobs:
       - name: Test Swagger UI is accessible
         run: |
           echo "Testing Swagger UI..."
-          curl -f http://localhost:8080/exist/apps/api/docs.html || {
+          curl --ipv4 -f http://127.0.0.1:8080/exist/apps/api/docs.html || {
             echo "Error: Swagger UI not accessible"
             exit 1
           }
