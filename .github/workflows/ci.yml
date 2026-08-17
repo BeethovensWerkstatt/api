@@ -62,15 +62,6 @@ jobs:
     name: XQSuite Unit Tests
     runs-on: ubuntu-latest
     needs: build-test
-    
-    services:
-      existdb:
-        image: stadlerpeter/existdb:6.4.0
-        env:
-          EXIST_ENV: ci
-          EXIST_DEFAULT_APP_PATH: auto
-        ports:
-          - 8080:8080
 
     steps:
       - name: Check out repository
@@ -90,12 +81,29 @@ jobs:
       
       - name: Install dependencies
         run: npm ci
+
+      - name: Start eXist-db container
+        run: |
+          docker run -d --name existdb-ci \
+            -p 8080:8080 \
+            -e EXIST_ENV=ci \
+            -e EXIST_DEFAULT_APP_PATH=auto \
+            stadlerpeter/existdb:6.4.0
+
+          echo "Container started, waiting for eXist-db to be ready..."
       
       - name: Wait for eXist-db
         run: |
           echo "Waiting for eXist-db to be ready..."
           READY=0
           for i in {1..30}; do
+            if ! docker ps --format '{{.Names}}' | grep -q '^existdb-ci$'; then
+              echo "Error: eXist-db container exited during startup"
+              docker ps -a | grep existdb-ci || true
+              docker logs existdb-ci || true
+              exit 1
+            fi
+
             if curl -sf http://localhost:8080/exist/; then
               echo "eXist-db is ready!"
               READY=1
@@ -107,6 +115,7 @@ jobs:
 
           if [ "$READY" -ne 1 ]; then
             echo "Error: eXist-db did not become ready in time"
+            docker logs existdb-ci || true
             exit 1
           fi
       
@@ -137,6 +146,18 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 7
+
+      - name: Show eXist-db logs on failure
+        if: failure()
+        run: |
+          echo "=== eXist-db Container Status ==="
+          docker ps -a | grep existdb-ci || true
+          echo "=== eXist-db Logs ==="
+          docker logs existdb-ci || true
+
+      - name: Stop eXist-db container
+        if: always()
+        run: docker rm -f existdb-ci || true
 
   docker-build-test:
     name: Docker Build and Integration Test
