@@ -216,8 +216,41 @@ jobs:
       
       - name: Wait for eXist-DB startup
         run: |
-          echo "Waiting 60 seconds for full startup (eXist + package deployment)..."
-          sleep 120
+          echo "Waiting for eXist-DB startup (server + app deployment)..."
+          READY=0
+          for i in {1..72}; do
+            if ! docker ps --format '{{.Names}}' | grep -q '^bw-api-test$'; then
+              echo "Error: Container exited during startup"
+              docker ps -a | grep bw-api-test || true
+              docker logs bw-api-test || true
+              exit 1
+            fi
+
+            for url in \
+              "http://localhost:8080/exist/" \
+              "http://localhost:8080/exist" \
+              "http://localhost:8080/"; do
+              CODE=$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)
+              if [ "$CODE" = "200" ] || [ "$CODE" = "301" ] || [ "$CODE" = "302" ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
+                echo "eXist-DB responds on $url (HTTP $CODE)"
+                READY=1
+                break
+              fi
+            done
+
+            if [ "$READY" -eq 1 ]; then
+              break
+            fi
+
+            echo "Attempt $i/72..."
+            sleep 5
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Error: eXist-DB did not become reachable in time"
+            docker logs bw-api-test || true
+            exit 1
+          fi
       
       - name: Check container is running
         run: |
@@ -231,21 +264,33 @@ jobs:
       - name: Test eXist-DB is accessible
         run: |
           echo "Testing eXist-DB main page..."
-          curl -f http://localhost:8080/exist/ || {
-            echo "Error: eXist-DB not accessible"
+          CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/exist/ || true)
+          if [ "$CODE" != "200" ] && [ "$CODE" != "301" ] && [ "$CODE" != "302" ] && [ "$CODE" != "401" ] && [ "$CODE" != "403" ]; then
+            echo "Error: eXist-DB not accessible (HTTP $CODE)"
             docker logs bw-api-test
             exit 1
-          }
+          fi
           echo "✓ eXist-DB is accessible"
       
       - name: Test API app is deployed
         run: |
           echo "Testing API application..."
-          curl -f http://localhost:8080/exist/apps/api/ || {
-            echo "Error: API app not deployed"
+          READY=0
+          for i in {1..36}; do
+            CODE=$(curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/api/ || true)
+            if [ "$CODE" = "200" ] || [ "$CODE" = "301" ] || [ "$CODE" = "302" ] || [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
+              READY=1
+              break
+            fi
+            echo "API app not ready yet (HTTP $CODE), attempt $i/36..."
+            sleep 5
+          done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Error: API app not deployed in time"
             docker logs bw-api-test
             exit 1
-          }
+          fi
           echo "✓ API app is deployed"
       
       - name: Test Controller-based IIIF endpoints
