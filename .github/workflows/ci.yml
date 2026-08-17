@@ -71,12 +71,6 @@ jobs:
           EXIST_DEFAULT_APP_PATH: auto
         ports:
           - 8080:8080
-        options: >-
-          --health-cmd "curl -f http://localhost:8080/exist/ || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 15
-          --health-start-period 90s
 
     steps:
       - name: Check out repository
@@ -100,14 +94,21 @@ jobs:
       - name: Wait for eXist-db
         run: |
           echo "Waiting for eXist-db to be ready..."
+          READY=0
           for i in {1..30}; do
             if curl -sf http://localhost:8080/exist/; then
               echo "eXist-db is ready!"
+              READY=1
               break
             fi
             echo "Attempt $i/30..."
             sleep 5
           done
+
+          if [ "$READY" -ne 1 ]; then
+            echo "Error: eXist-db did not become ready in time"
+            exit 1
+          fi
       
       - name: Install package to eXist-db
         run: |
