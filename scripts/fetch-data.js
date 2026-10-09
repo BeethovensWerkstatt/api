@@ -1,6 +1,7 @@
 import { execSync } from 'child_process'
 import { existsSync, writeFileSync, mkdirSync } from 'fs'
 import { getGitBranch } from './utils.js'
+import fs from 'fs'
 
 /**
  * Fetch data from Git repositories
@@ -222,6 +223,14 @@ function main () {
       results.push({ repo: repo.name, success })
     }
     console.log('')
+    if (existsSync(repo.target)) {
+      const commit = getGitCommit(repo.target)
+      console.log(`   Commit: ${commit}`)
+      fs.writeFileSync(`${repo.target}/metadata.xml`,
+        `<?xml version="1.0" encoding="UTF-8"?><repo><name>${repo.name}</name><branch>${branch}</branch><commit>${commit}</commit></repo>`
+      )
+    }
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }
 
   // Generate and save metadata
