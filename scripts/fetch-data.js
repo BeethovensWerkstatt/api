@@ -51,6 +51,16 @@ function getGitCommit (repoDir) {
     return null
   }
 }
+/**
+ * Get the current commit date of a repository
+ */
+function getGitCommitDate (repoDir) {
+  try {
+    return new Date(execSync(`git -C ${repoDir} log -1 --format=%cd`, { encoding: 'utf-8' }).trim()).toISOString()
+  } catch {
+    return null
+  }
+}
 
 /**
  * Get the current branch of a repository
@@ -155,6 +165,7 @@ function generateDataVersions () {
     if (existsSync(repo.target)) {
       versions[repo.name] = {
         commit: getGitCommit(repo.target),
+        date: getGitCommitDate(repo.target),
         branch: getRepoBranch(repo.target),
         fetchedAt: new Date().toISOString()
       }
@@ -223,13 +234,6 @@ function main () {
       results.push({ repo: repo.name, success })
     }
     console.log('')
-    if (existsSync(repo.target)) {
-      const commit = getGitCommit(repo.target)
-      console.log(`   Commit: ${commit}`)
-      fs.writeFileSync(`${repo.target}/metadata.xml`,
-        `<?xml version="1.0" encoding="UTF-8"?><repo><name>${repo.name}</name><branch>${branch}</branch><commit>${commit}</commit></repo>`
-      )
-    }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }
 
