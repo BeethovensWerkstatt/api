@@ -14,7 +14,7 @@ ENV DOCKER_BUILD=true
 WORKDIR ${API_BUILD_HOME}
 
 RUN apt-get update \
-    && apt-get install -y git
+    && apt-get install -y git yq
 
 COPY package*.json ./
 RUN npm ci

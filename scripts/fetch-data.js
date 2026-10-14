@@ -159,16 +159,21 @@ function determineBranch (repo, overrideBranch) {
  * Generate data versions metadata
  */
 function generateDataVersions () {
-  const versions = {}
+  const versions = {
+    repositories: {
+      repo: []
+    }
+  }
 
   for (const repo of REPOSITORIES) {
     if (existsSync(repo.target)) {
-      versions[repo.name] = {
+      versions.repositories.repo.push({
+        "+@name": repo.name, // use "+@name" for compatibility with yq
         commit: getGitCommit(repo.target),
         date: getGitCommitDate(repo.target),
         branch: getRepoBranch(repo.target),
         fetchedAt: new Date().toISOString()
-      }
+      })
     }
   }
 
@@ -181,6 +186,7 @@ function generateDataVersions () {
 function writeDataMetadata (versions) {
   const metadataDir = 'build'
   const metadataPath = `${metadataDir}/data-versions.json`
+  const metadataXmlPath = `${metadataDir}/data-versions.xml`
 
   if (!existsSync(metadataDir)) {
     mkdirSync(metadataDir, { recursive: true })
@@ -188,6 +194,8 @@ function writeDataMetadata (versions) {
 
   writeFileSync(metadataPath, JSON.stringify(versions, null, 2))
   console.log(`\n✓ Data versions written to ${metadataPath}`)
+  execSync(`yq -p=json -o=xml ${metadataPath} > ${metadataXmlPath}`)
+  console.log(`✓ Data versions written to ${metadataXmlPath}`)
 }
 
 function main () {
