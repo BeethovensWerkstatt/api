@@ -1,7 +1,7 @@
 import { execSync } from 'child_process'
 import { existsSync, writeFileSync, mkdirSync } from 'fs'
 import { getGitBranch } from './utils.js'
-import fs from 'fs'
+import { create } from 'xmlbuilder2'
 
 /**
  * Fetch data from Git repositories
@@ -168,7 +168,7 @@ function generateDataVersions () {
   for (const repo of REPOSITORIES) {
     if (existsSync(repo.target)) {
       versions.repositories.repo.push({
-        "+@name": repo.name, // use "+@name" for compatibility with yq
+        "@name": repo.name,
         commit: getGitCommit(repo.target),
         date: getGitCommitDate(repo.target),
         branch: getRepoBranch(repo.target),
@@ -194,7 +194,10 @@ function writeDataMetadata (versions) {
 
   writeFileSync(metadataPath, JSON.stringify(versions, null, 2))
   console.log(`\n✓ Data versions written to ${metadataPath}`)
-  execSync(`yq -p=json -o=xml ${metadataPath} > ${metadataXmlPath}`)
+
+  // Generate XML version
+  const xml = create({ version: '1.0', encoding: 'UTF-8' }, versions)
+  writeFileSync(metadataXmlPath, xml.end({ prettyPrint: true }))
   console.log(`✓ Data versions written to ${metadataXmlPath}`)
 }
 

@@ -58,5 +58,8 @@
     "archiver": "^7.0.1",
     "chokidar": "^4.0.1",
     "standard": "^17.1.2"
+  },
+  "dependencies": {
+    "xmlbuilder2": "^4.0.3"
   }
 }
